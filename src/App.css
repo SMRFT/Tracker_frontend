@@ -1,0 +1,11 @@
+.App {
+  text-align: center;
+  min-height: 100vh; /* Ensures the app takes the full viewport height */
+  background-color: white; /* Sets the background to white */
+}
+
+body {
+  font-family: 'Times New Roman', Times, serif;
+  margin: 0; /* Removes default body margins */
+  background-color: white; /* Sets the body background to white */
+}
