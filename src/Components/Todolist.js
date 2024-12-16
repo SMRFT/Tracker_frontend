@@ -17,156 +17,7 @@ import Comment from './Comment';
 import { format, parseISO } from 'date-fns';
 
 import { VscWhitespace } from "react-icons/vsc";
-const ItemType = {
-  CARD: "card",
-};
-const localizer = momentLocalizer(moment);
-const Card = ({ id, index, columnId, text, moveCard, openModal }) => {
-  const [, drag] = useDrag({
-    type: ItemType.CARD,
-    item: { id, index, columnId },
-  });
 
-  return (
-    <div ref={drag} style={styles.card} onClick={() => openModal(text)}>
-      <div style={styles.cardContent}>
-        <span>{text || "No Name"}</span>
-        {/* Pen icon on the right */}
-      </div>
-    </div>
-  );
-};
-
-const Column = ({
-  id,
-  title,
-  cards = [],
-  moveCard,
-  openModal,
-  addCard,
-  columns,
-  setColumns,
-  backgroundColor,
-  showAddCardButton = false,
-}) => {
-  const [, drop] = useDrop({
-    accept: ItemType.CARD,
-    hover: (item) => {
-      if (!item) return;
-
-      const { id: cardId, index: fromIndex, columnId: fromColumnId } = item;
-      const toIndex = cards.findIndex(card => card.id === cardId);
-
-      if (fromColumnId === id) {
-        // Moving within the same column
-        if (toIndex !== -1 && fromIndex !== toIndex) {
-          moveCard(fromIndex, id, toIndex, id);
-          item.index = toIndex; // Update item index to reflect new position
-        }
-      } else {
-        // Moving to a different column
-        const toIndex = cards.length; // Place at the end of the column
-        moveCard(fromIndex, fromColumnId, toIndex, id);
-        item.columnId = id; // Update item columnId to reflect new column
-      }
-    },
-  });
-
-  const [inputValue, setInputValue] = useState("");
-  const [isAddingCard, setIsAddingCard] = useState(false);
-
-
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
-  };
-
-  const handleAddCard = () => {
-    if (inputValue.trim()) {
-      addCard(id, inputValue);
-      setInputValue("");
-      setIsAddingCard(false);
-    }
-  };
-
-  const handleRemoveCard = (cardId) => {
-    console.log("Deleting card with ID:", cardId);  // Log the cardId
-    fetch(`http://127.0.0.1:8000/cards/${cardId}/`, {
-        method: "DELETE",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    })
-    .then((response) => {
-        if (response.ok) {
-            const updatedCards = cards.filter((card) => card.cardId !== cardId);
-            const updatedColumns = { ...columns, [id]: updatedCards };
-            setColumns(updatedColumns);
-        } else {
-            console.error("Failed to delete the card.");
-        }
-    })
-    .catch((error) => {
-        console.error("Error deleting card:", error);
-    });
-  };
-
-  return (
-    <div ref={drop} style={{ ...styles.column, backgroundColor }}>
-      <h3 style={styles.columnTitle}>{title}</h3>
-      {cards.map((card, index) => (
-        <div key={card.cardId} style={styles.cardContainer}>
-          <Card
-            id={card.cardId}
-            index={index}
-            columnId={id}
-            text={card.cardName}
-            moveCard={moveCard}
-            openModal={(cardName) => openModal(card.cardName, card.cardId)} // Pass the required parameters
-          />
-          <button
-            onClick={() => handleRemoveCard(card.cardId)}
-            style={styles.removeCardButton}
-          >
-            ×
-          </button>
-        </div>
-      ))}
-      {showAddCardButton && (
-        <div style={styles.addCardContainer}>
-          {isAddingCard ? (
-            <>
-              <input
-                type="text"
-                placeholder="Enter a name for this card..."
-                value={inputValue}
-                onChange={handleInputChange}
-                style={styles.input}
-              />
-              <div style={styles.addCardActions}>
-                <button onClick={handleAddCard} style={styles.addCardButton}>
-                  Add card
-                </button>
-                <button
-                  onClick={() => setIsAddingCard(false)}
-                  style={styles.cancelButton}
-                >
-                  ×
-                </button>
-              </div>
-            </>
-          ) : (
-            <button
-              onClick={() => setIsAddingCard(true)}
-              style={styles.addInitialCardButton}
-            >
-              + Add a card
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
 const DragAndDropCards = ({ boards, setBoards }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -176,6 +27,156 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const [editedCardName, setEditedCardName] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [members, setMembers] = useState([]);
+  const ItemType = {
+    CARD: "card",
+  };
+  const localizer = momentLocalizer(moment);
+  const Card = ({ id, index, columnId, text, moveCard, openModal }) => {
+    const [, drag] = useDrag({
+      type: ItemType.CARD,
+      item: { id, index, columnId },
+    });
+  
+    return (
+      <div ref={drag} style={styles.card} onClick={() => openModal(text)}>
+        <div style={styles.cardContent}>
+          <span>{text || "No Name"}</span>
+          {/* Pen icon on the right */}
+        </div>
+      </div>
+    );
+  };
+  
+  const Column = ({
+    id,
+    title,
+    cards = [],
+    moveCard,
+    openModal,
+    addCard,
+    columns,
+    setColumns,
+    backgroundColor,
+    showAddCardButton = false,
+  }) => {
+    const [, drop] = useDrop({
+      accept: ItemType.CARD,
+      hover: (item) => {
+        if (!item) return;
+  
+        const { id: cardId, index: fromIndex, columnId: fromColumnId } = item;
+        const toIndex = cards.findIndex(card => card.id === cardId);
+  
+        if (fromColumnId === id) {
+          // Moving within the same column
+          if (toIndex !== -1 && fromIndex !== toIndex) {
+            moveCard(fromIndex, id, toIndex, id);
+            item.index = toIndex; // Update item index to reflect new position
+          }
+        } else {
+          // Moving to a different column
+          const toIndex = cards.length; // Place at the end of the column
+          moveCard(fromIndex, fromColumnId, toIndex, id);
+          item.columnId = id; // Update item columnId to reflect new column
+        }
+      },
+    });
+  
+    const [inputValue, setInputValue] = useState("");
+    const [isAddingCard, setIsAddingCard] = useState(false);
+  
+  
+    const handleInputChange = (e) => {
+      setInputValue(e.target.value);
+    };
+  
+    const handleAddCard = () => {
+      if (inputValue.trim()) {
+        addCard(id, inputValue);
+        setInputValue("");
+        setIsAddingCard(false);
+      }
+    };
+  
+    const handleRemoveCard = (cardId, employeeId) => {
+      console.log("Deleting card with ID:", cardId, "by Employee ID:", employeeId); // Log the cardId and employeeId
+    
+      fetch(`http://127.0.0.1:8000/cards/${cardId}/?employeeId=${employeeId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => {
+          if (response.ok) {
+            const updatedCards = cards.filter((card) => card.cardId !== cardId);
+            const updatedColumns = { ...columns, [id]: updatedCards };
+            setColumns(updatedColumns);
+          } else {
+            console.error("Failed to delete the card.");
+          }
+        })
+        .catch((error) => {
+          console.error("Error deleting card:", error);
+        });
+    };
+    return (
+      <div ref={drop} style={{ ...styles.column, backgroundColor }}>
+        <h3 style={styles.columnTitle}>{title}</h3>
+        {cards.map((card, index) => (
+          <div key={card.cardId} style={styles.cardContainer}>
+            <Card
+              id={card.cardId}
+              index={index}
+              columnId={id}
+              text={card.cardName}
+              moveCard={moveCard}
+              openModal={(cardName) => openModal(card.cardName, card.cardId)} // Pass the required parameters
+            />
+            <button
+              onClick={() => handleRemoveCard(card.cardId, employeeId)}
+              style={styles.removeCardButton}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        {showAddCardButton && (
+          <div style={styles.addCardContainer}>
+            {isAddingCard ? (
+              <>
+                <input
+                  type="text"
+                  placeholder="Enter a name for this card..."
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  style={styles.input}
+                />
+                <div style={styles.addCardActions}>
+                  <button onClick={handleAddCard} style={styles.addCardButton}>
+                    Add card
+                  </button>
+                  <button
+                    onClick={() => setIsAddingCard(false)}
+                    style={styles.cancelButton}
+                  >
+                    ×
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsAddingCard(true)}
+                style={styles.addInitialCardButton}
+              >
+                + Add a card
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
   console.log('employeename',employeeId)
   const closeModal = () => {
     setIsEditing(false);
@@ -217,18 +218,17 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
   const [events, setEvents] = useState([]); // State for calendar events
   const [cards, setCards] = useState([]);
-  useEffect(() => {
-    // const boardId = "1";  // Example board ID
-    // const employeeId = "10555";  // Logged-in employee ID
-    fetchCards(boardId, employeeId);
-  }, []);
+  // useEffect(() => {
+  //   // const boardId = "1";  // Example board ID
+  //   // const employeeId = "10555";  // Logged-in employee ID
+  //   fetchCards(boardId, employeeId);
+  // }, []);
   
 
   const fetchCards = (boardId, employeeId) => {
     fetch(`http://127.0.0.1:8000/cards/?boardId=${boardId}&employeeId=${employeeId}`)
       .then((response) => response.json())
       .then((data) => {
-        // Update the card data with parsed startdate and enddate
         const parsedData = data.map(card => ({
           ...card, 
           startdate: card.startdate ? parseISO(card.startdate) : null, 
@@ -245,7 +245,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
         setColumns(updatedColumns);
         setCards(parsedData); 
   
-        // Map the parsed data to calendar events
         const calendarEvents = parsedData.map(card => ({
           title: card.cardName,
           start: card.startdate || new Date(),  
@@ -257,7 +256,13 @@ const DragAndDropCards = ({ boards, setBoards }) => {
       })
       .catch((error) => console.error("Error fetching cards:", error));
   };
-  
+
+  useEffect(() => {
+    if (boardId && employeeId) {
+      fetchCards(boardId, employeeId); // Fetch cards whenever `boardId` or `employeeId` is available
+    }
+  }, [boardId, employeeId]); // Rerun the effect if these values change
+
   
   
   
@@ -337,29 +342,34 @@ const DragAndDropCards = ({ boards, setBoards }) => {
     }
   };
 
-  const openModal = (cardName, cardId, boardName,employeeId) => {
+  const openModal = (cardName, cardId, boardName, employeeId) => {
+    // Find the selected card by cardId
     const selectedCard = cards.find((card) => card.cardId === cardId);
-    if (selectedCard) {
-      setCardName(cardName);
-      setCardId(cardId);
-      setModalContent({ 
-        cardName, 
-        cardId, 
-        boardName, 
-        boardId, 
-        employeeId,
-        startdate: selectedCard.startdate ? selectedCard.startdate : null, 
-        enddate: selectedCard.enddate ? selectedCard.enddate : null 
-      });
-      setEditedCardName(cardName); // Initialize with the card name
-      setIsModalOpen(true);
-      setIsOpen(true);
-    }
+  
+    // Prepare default values if no card data is found
+    const defaultStartDate = selectedCard?.startdate || null;
+    const defaultEndDate = selectedCard?.enddate || null;
+  
+    setCardName(cardName || 'No Card Name');
+    setCardId(cardId || null);
+    setModalContent({
+      cardName: cardName || 'No Card Name',
+      cardId: cardId || null,
+      boardName: boardName || 'No Board Name',
+      boardId: boardId || null,
+      employeeId: employeeId || 'Unknown Employee',
+      startdate: defaultStartDate,
+      enddate: defaultEndDate,
+    });
+  
+    // Initialize the edited card name with a fallback
+    setEditedCardName(cardName || '');
+  
+    // Open the modal
+    setIsModalOpen(true);
+    setIsOpen(true);
   };
   
-  
-
-
   useEffect(() => {
     const fetchMembers = async () => {
       try {
@@ -380,7 +390,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   }, [cardId, boardId, cardName]);
 
   return (
-    <TodolistContainer style={{ background: boardColor, minHeight: '100vh' }}>
+    <TodolistContainer style={{ background: boardColor }}>
     <DndProvider backend={HTML5Backend}>
     <Notification employeeId={employeeId}/>
   <div>
@@ -528,7 +538,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
           
           {/* Add Members and Date Components */}
           <Addmembers cardId={cardId} />
-          <Date cardId={cardId} />
+          <Date cardId={cardId} boardId={boardId}  employeeId={employeeId} />
         </div>
       </div>
 

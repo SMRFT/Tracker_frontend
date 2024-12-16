@@ -9,16 +9,30 @@ import Sidebar from './Components/Sidebar';
 
 import styled from "styled-components";
 import LogIn from './Components/Login';
+import Homepage from './Components/Homepage';
 import './App.css';
 import SignOut from './Components/SignOut';
 import Members from './Components/Members';
+
+
 const ContentContainer = styled.div`
-    margin-left: ${({ sidebarVisible }) => (sidebarVisible ? '220px' : '0')}; /* Adjusted for sidebar width + some spacing */
+    margin-left: ${({ sidebarVisible }) => (sidebarVisible ? '250px' : '0')}; /* Adjusted for sidebar width */
+    margin-top: 50px; /* Fixed syntax for margin-bottom */
+    transition: margin-left 0.3s ease;
+
+    @media (max-width: 768px) {
+        margin-left: ${({ sidebarVisible }) => (sidebarVisible ? '180px' : '0')}; /* Adjust for smaller sidebar width */
+    }
+
+    @media (max-width: 480px) {
+        margin-left: 0; /* On very small screens, no margin for sidebar */
+    }
 `;
+
 const AppContent = ({ boards, addBoard }) => {
     const location = useLocation();
     // Determine if the sidebar should be visible based on the current path
-    const sidebarVisible = ![ '/', '/Register'].includes(location.pathname);
+    const sidebarVisible = !['/', '/Login', '/Register'].includes(location.pathname);
     return (
         <>
             {sidebarVisible && <Sidebar boards={boards} setBoards={addBoard} />}
@@ -27,7 +41,8 @@ const AppContent = ({ boards, addBoard }) => {
                     <Route path="/Board" element={<Board boards={boards} addBoard={addBoard} />} />
                     <Route path='/SignOut' element={<SignOut/>} />
                     <Route path="/Register" element={<Register />} />
-                    <Route path="/" element={<LogIn />} />
+                    <Route path="/" element={<Homepage />} />
+                    <Route path="/Login" element={<LogIn />} />
                     <Route path="/Todolist" element={<Todolist />} />
                     <Route path="/Members" element={<Members />} />
 

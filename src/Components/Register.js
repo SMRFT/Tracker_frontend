@@ -83,12 +83,8 @@ const Input = styled.input`
   border-radius: 5px;
   width: 100%;
   font-size: 1rem;
-  background-color: white; // Slightly lighter background for input fields
-  color: #FFFFFF;
-  &:focus {
-    outline: none;
-    background-color: skyblue; // Darken the background color on focus
-  }
+
+
 `;
 
 const Select = styled.select`
@@ -98,8 +94,6 @@ const Select = styled.select`
   border-radius: 5px;
   width: 100%;
   font-size: 1rem;
-  background-color: white; // Slightly lighter background for input fields
-  color: #FFFFFF;
   &:focus {
     outline: none;
     background-color: #55597A; // Darken the background color on focus

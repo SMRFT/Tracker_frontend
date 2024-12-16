@@ -10,8 +10,9 @@ import { HiOutlineTrash } from "react-icons/hi2";
 import { MdOutlineSpaceDashboard } from "react-icons/md";
 import { PiUsersThreeDuotone } from "react-icons/pi";
 import { FaRegEdit } from "react-icons/fa";
+
 const SidebarContainer = styled.div`
-    width: 220px;
+    width: 250px;
     background-color: ${(props) => props.bgColor || '#95A6DA'}; /* Use bgColor prop or fallback to white */
     padding: 20px;
     height: 100vh;
@@ -20,7 +21,12 @@ const SidebarContainer = styled.div`
     top: 0;
     left: 0;
     box-shadow: 1px 0 2px rgba(0, 0, 0, 0.5);
-    transition: background-color 0.3s ease; /* Add smooth transition */
+    transition: transform 0.3s ease, background-color 0.3s ease; /* Add smooth transition */
+    z-index: 1000;
+
+    @media (max-width: 768px) {
+        transform: ${(props) => (props.isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)')};
+    }
 `;
 
 const SidebarNav = styled.nav`
@@ -32,6 +38,33 @@ const SidebarNav = styled.nav`
     li {
         margin-bottom: 10px; /* Increased spacing between links */
     }
+`;
+
+const ToggleButton = styled.button`
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1100;
+
+    @media (min-width: 769px) {
+        display: none;
+    }
+`;
+
+const Overlay = styled.div`
+    display: ${(props) => (props.isOpen ? 'block' : 'none')};
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 900;
 `;
 
 const StyledNavLink = styled(NavLink)`
@@ -52,7 +85,6 @@ const StyledNavLink = styled(NavLink)`
         color: blue; /* Add hover effect if needed */
     }
 `;
-
 
 const BoardsSection = styled.div`
     margin-top: 30px;
@@ -101,11 +133,13 @@ const ShowMoreButton = styled.button`
     display: flex;
     align-items: center;
 `;
+
 const Sidebar = ({ boards, setBoards }) => {
     const [showMore, setShowMore] = useState(false);
     const [selectedBoard, setSelectedBoard] = useState(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [activeMenu, setActiveMenu] = useState(null);
     const [editingBoardIndex, setEditingBoardIndex] = useState(null);
     const [boardName, setBoardName] = useState('');
@@ -114,10 +148,12 @@ const Sidebar = ({ boards, setBoards }) => {
     const employeeId = localStorage.getItem('employeeId');
     const employeeName = localStorage.getItem('employeeName');
     const location = useLocation();
+
+    const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
     // Decide whether to show more boards
-    // Set initial displayedBoards to boards array
     const [displayedBoards, setDisplayedBoards] = useState(boards.slice(0, 5));
-    
+
     useEffect(() => {
         // Update displayedBoards whenever boards change or showMore toggles
         if (Array.isArray(boards)) {
@@ -145,24 +181,24 @@ const Sidebar = ({ boards, setBoards }) => {
     }, [location.pathname, boards, showMore]); // Listen for location changes
 
     const selectedBoardColor = location.state?.boardColor || '#95A6DA'; // Default color
-    
+
     const handleBoardClick = (board) => {
         setSelectedBoard(board); // This just sets the selected board
-        navigate('/Todolist', { 
-            state: { 
-                boardId: board.boardId, 
-                boardName: board.boardName, 
+        navigate('/Todolist', {
+            state: {
+                boardId: board.boardId,
+                boardName: board.boardName,
                 boardColor: board.boardColor ,
                 employeeId:employeeId,
                 employeeName:employeeName,
-            } 
+                
+            }
         });
     };
     useEffect(() => {
         setDisplayedBoards(boards); // Always set to all boards
     }, [boards]);
-    
-    
+
     const openDeleteModal = (board) => {
         setSelectedBoard(board);
         setBoardName(board.boardName);
@@ -203,7 +239,7 @@ const Sidebar = ({ boards, setBoards }) => {
                     employeeName: employeeName,
                 }),
             });
-    
+
             if (response.ok) {
                 const updatedBoards = boards.map((board) =>
                     board.boardId === selectedBoard.boardId ? updatedBoard : board
@@ -217,8 +253,7 @@ const Sidebar = ({ boards, setBoards }) => {
             console.error('Error updating board:', error);
         }
     };
-    
-    
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (activeMenu !== null && !event.target.closest(`.menu-${activeMenu}`)) {
@@ -258,94 +293,98 @@ const Sidebar = ({ boards, setBoards }) => {
     useEffect(() => {
         console.log('Displayed Boards:', displayedBoards);
     }, [displayedBoards]);
+
     return (
-        <SidebarContainer style={{ background: selectedBoardColor, minHeight: '100vh' }}>
-            <SidebarNav>
-                <ul>
-                    <li>
-                        <StyledNavLink to="/Board" className={({ isActive }) => (isActive ? 'active' : '')}>
-                            <MdOutlineSpaceDashboard style={{ marginRight: "10px" }} />
-                            Board
-                        </StyledNavLink>
-                    </li>
-                    <li>
-                        <StyledNavLink to="/Members" className={({ isActive }) => (isActive ? 'active' : '')}>
-                            <PiUsersThreeDuotone style={{ marginRight: "10px" }} />
-                            Members
-                        </StyledNavLink>
-                    </li>
-                </ul>
-            </SidebarNav>
+        <>
+            <ToggleButton onClick={toggleSidebar}>☰</ToggleButton>
+            <Overlay isOpen={isSidebarOpen} onClick={toggleSidebar} />
+            <SidebarContainer isSidebarOpen={isSidebarOpen} style={{ background: selectedBoardColor, minHeight: '100vh' }}>
+                <SidebarNav>
+                    <ul>
+                        <li>
+                            <StyledNavLink to="/Board" className={({ isActive }) => (isActive ? 'active' : '')}>
+                                <MdOutlineSpaceDashboard style={{ marginRight: "10px" }} />
+                                Board
+                            </StyledNavLink>
+                        </li>
+                        <li>
+                            <StyledNavLink to="/Members" className={({ isActive }) => (isActive ? 'active' : '')}>
+                                <PiUsersThreeDuotone style={{ marginRight: "10px" }} />
+                                Members
+                            </StyledNavLink>
+                        </li>
+                    </ul>
+                </SidebarNav>
 
-            <BoardsSection>
-                <BoardsTitle>Your Boards</BoardsTitle>
-                <BoardList>
-                    {displayedBoards.map(({ boardId, boardName, boardColor,employeeName }, index) => (
-                        <BoardItem 
-                            key={boardId} 
-                            isSelected={selectedBoard && selectedBoard.boardId === boardId} 
-                            bgColor={boardColor} 
-                            onClick={() => handleBoardClick({ boardId, boardName, boardColor,employeeName })}
-                        >
-                            <BoardDetails>
-                                <ColorBox bgColor={boardColor} />
-                                {boardName}
-                            </BoardDetails>
-                            <div>
-                                <FaRegEdit
-                                    style={{ marginRight: '10px', cursor: 'pointer', color: '#F9D689' }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        openEditModal({ boardId, boardName });
-                                    }}
-                                />
-                                <HiOutlineTrash
-                                    style={{ cursor: 'pointer', color: '#FF6464' }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        openDeleteModal({ boardId, boardName });
-                                    }}
-                                />
-                            </div>
-                        </BoardItem>
-                    ))}
-                </BoardList>
-                {boards?.length > 5 && (
-                    <ShowMoreButton onClick={() => setShowMore(!showMore)}>
-                        {showMore ? (
-                            <>
-                                Show Less <FontAwesomeIcon icon={faChevronUp} />
-                            </>
-                        ) : (
-                            <>
-                                Show More <FontAwesomeIcon icon={faChevronDown} />
-                            </>
-                        )}
-                    </ShowMoreButton>
+                <BoardsSection>
+                    <BoardsTitle>Your Boards</BoardsTitle>
+                    <BoardList>
+                        {displayedBoards.map(({ boardId, boardName, boardColor,employeeName }, index) => (
+                            <BoardItem 
+                                key={boardId} 
+                                isSelected={selectedBoard && selectedBoard.boardId === boardId} 
+                                bgColor={boardColor} 
+                                onClick={() => handleBoardClick({ boardId, boardName, boardColor,employeeName })}
+                            >
+                                <BoardDetails>
+                                    <ColorBox bgColor={boardColor} />
+                                    {boardName}
+                                </BoardDetails>
+                                <div>
+                                    <FaRegEdit
+                                        style={{ marginRight: '10px', cursor: 'pointer', color: '#F9D689' }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEditModal({ boardId, boardName });
+                                        }}
+                                    />
+                                    <HiOutlineTrash
+                                        style={{ cursor: 'pointer', color: '#FF6464' }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openDeleteModal({ boardId, boardName });
+                                        }}
+                                    />
+                                </div>
+                            </BoardItem>
+                        ))}
+                    </BoardList>
+                    {boards?.length > 5 && (
+                        <ShowMoreButton onClick={() => setShowMore(!showMore)}>
+                            {showMore ? (
+                                <>
+                                    Show Less <FontAwesomeIcon icon={faChevronUp} />
+                                </>
+                            ) : (
+                                <>
+                                    Show More <FontAwesomeIcon icon={faChevronDown} />
+                                </>
+                            )}
+                        </ShowMoreButton>
+                    )}
+                </BoardsSection>
+
+                <SignOut />
+
+                {/* Delete modal and edit modal components */}
+                {isDeleteModalOpen && (
+                    <DeleteBoardModal
+                        isOpen={isDeleteModalOpen}
+                        onClose={closeDeleteModal}
+                        onDelete={handleDeleteBoard}
+                        boardName={boardName}
+                    />
                 )}
-            </BoardsSection>
-
-
-            <SignOut />
-
-            {/* Delete modal and edit modal components */}
-            {isDeleteModalOpen && (
-                <DeleteBoardModal
-                    isOpen={isDeleteModalOpen}
-                    onClose={closeDeleteModal}
-                    onDelete={handleDeleteBoard}
-                    boardName={boardName}
-                />
-            )}
-            {isEditModalOpen && (
-                <EditBoardModal
-                    isOpen={isEditModalOpen}
-                    onClose={closeEditModal}
-                    boardName={boardName}
-                    onSave={saveEditedBoard}
-                />
-            )}
-        </SidebarContainer>
+                {isEditModalOpen && (
+                    <EditBoardModal
+                        isOpen={isEditModalOpen}
+                        onClose={closeEditModal}
+                        boardName={boardName}
+                        onSave={saveEditedBoard}
+                    />
+                )}
+            </SidebarContainer>
+        </>
     );
 };
 export default Sidebar;

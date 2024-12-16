@@ -4,7 +4,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaTimes } from "react-icons/fa"; // Import cross icon from react-icons
 import { CgCalendarDates } from "react-icons/cg";
-
+import { useLocation, useNavigate } from 'react-router-dom';
 // Styled Components
 const DateWrapper = styled.div`
   display: flex;
@@ -94,11 +94,12 @@ const ModalContainer = styled.div`
 const DateModal = ({ closeModal, cardId }) => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-
+  const location = useLocation();
+  const {employeeId, employeeName,boardId, boardName,boardColor } = location.state || {};
   const handleStartDateChange = (date) => {
     setStartDate(date);
   };
-
+console.log('id',employeeId)
   const handleEndDateChange = (date) => {
     setEndDate(date);
   };
@@ -119,7 +120,7 @@ const DateModal = ({ closeModal, cardId }) => {
     const formattedStartDate = formatDate(startDate);
     const formattedEndDate = formatDate(endDate);
    
-    const response = await fetch(`http://127.0.0.1:8000/cards/${cardId}/`, {
+    const response = await fetch(`http://127.0.0.1:8000/cards/${cardId}/?employeeId=${employeeId}`, {
         method: "PATCH",
         headers: {
             "Content-Type": "application/json",

@@ -17,11 +17,12 @@ from datetime import datetime
 
 #files and images post
 # Initialize MongoDB connection
-client = MongoClient('mongodb+srv://smrfttracker:tracker2024@projecttracker.fls8r.mongodb.net/')
-db = client['Tracker']
-fs = gridfs.GridFS(db)
+
 @api_view(['POST'])
 def upload_content(request):
+    client = MongoClient('mongodb://3.109.210.34:27017/')
+    db = client['Tracker']
+    fs = gridfs.GridFS(db)
     response_data = {}
 
     # Extract card-related details from the request
@@ -57,6 +58,9 @@ import datetime
 from pymongo.errors import PyMongoError
 @api_view(['GET'])
 def get_file(request, board_id, card_id):
+    client = MongoClient('mongodb://3.109.210.34:27017/')
+    db = client['Tracker']
+    fs = gridfs.GridFS(db)
     try:
         # Query to find all files related to the given boardId and cardId
         files = list(fs.find({"boardId": board_id, "cardId": card_id}))
@@ -89,6 +93,9 @@ def get_file(request, board_id, card_id):
 
 @api_view(['GET'])
 def get_files(request):
+    client = MongoClient('mongodb://3.109.210.34:27017/')
+    db = client['Tracker']
+    fs = gridfs.GridFS(db)
     filename = request.GET.get('filename')  # Retrieve filename from query parameters
     try:
         file = fs.find_one({"filename": filename})
@@ -121,12 +128,12 @@ from pymongo import MongoClient
 import gridfs
 
 # Setup MongoDB connection
-MONGO_URI = 'mongodb+srv://smrfttracker:tracker2024@projecttracker.fls8r.mongodb.net/'
-client = MongoClient(MONGO_URI)
-db = client['Tracker']
-fs = gridfs.GridFS(db)
+
 
 def delete_file_from_gridfs(filename, board_id, card_id):
+    client = MongoClient('mongodb://3.109.210.34:27017/')
+    db = client['Tracker']
+    fs = gridfs.GridFS(db)
     # Find the file in GridFS
     file_data = db.fs.files.find_one({'filename': filename, 'boardId': board_id, 'cardId': card_id})
     if file_data:
@@ -206,6 +213,7 @@ from django.shortcuts import get_object_or_404
 def CardCreateView(request, card_id=None):
     employee_id = request.query_params.get('employeeId', None)
 
+    # Handle POST request
     if request.method == 'POST':
         serializer = CardSerializer(data=request.data)
         if serializer.is_valid():
@@ -213,9 +221,9 @@ def CardCreateView(request, card_id=None):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    # Handle GET request
     elif request.method == 'GET':
         board_id = request.query_params.get('boardId', None)
-        employee_id = request.query_params.get('employeeId', None)
 
         if card_id:
             card = get_object_or_404(Card, cardId=card_id, boardId=board_id)
@@ -224,7 +232,7 @@ def CardCreateView(request, card_id=None):
         else:
             cards = Card.objects.filter(boardId=board_id)
 
-            # If an employee ID is provided, filter by members or card creator
+            # Filter by employee ID if provided
             if employee_id:
                 filtered_cards = []
                 for card in cards:
@@ -240,18 +248,34 @@ def CardCreateView(request, card_id=None):
 
             return Response(serializer.data)
 
-
+    # Handle DELETE request with employee ID check
     elif request.method == 'DELETE':
-        if card_id:
-            card = get_object_or_404(Card, cardId=card_id)
-            card.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        if not employee_id:
+            return Response({'error': 'Employee ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == 'PATCH':
         card = get_object_or_404(Card, cardId=card_id)
-        data = request.data
-        serializer = CardSerializer(card, data=data, partial=True)
+
+        # Check if the employee ID matches the card owner's employee ID
+        if card.employeeId != employee_id:
+            return Response({'error': 'Permission denied: You are not authorized to delete this card.'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Proceed to delete the card if the employee ID matches
+        card.delete()
+        return Response({'message': 'Card deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+
+    # Handle PATCH request with employee ID check
+    elif request.method == 'PATCH':
+        if not employee_id:
+            return Response({'error': 'Employee ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        card = get_object_or_404(Card, cardId=card_id)
+
+        # Check if the employee is the card owner or in the members
+        if card.employeeId != employee_id and not any(member['employeeId'] == employee_id for member in card.members):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = CardSerializer(card, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -259,57 +283,51 @@ def CardCreateView(request, card_id=None):
 
 
 
-
-
 from .models import Board
 from .serializers import BoardSerializer
-# Set up MongoDB connection
-client = MongoClient('mongodb+srv://smrfttracker:tracker2024@projecttracker.fls8r.mongodb.net/')  # Update with your MongoDB URI if different
-db = client['Tracker']  # Replace with your actual database name
-collection = db['Tracker_board']
+
 @csrf_exempt
 @api_view(['GET', 'POST', 'PUT', 'DELETE'])
 def BoardsView(request, boardId=None):
-    if request.method == 'PUT':
+    client = MongoClient('mongodb://3.109.210.34:27017/')
+    db = client['Tracker']
+    fs = gridfs.GridFS(db)
+    collection = db['Tracker_board']
+    if request.method == 'POST':
+        serializer = BoardSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Board created successfully!'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == 'PUT':
         if boardId is None:
             return JsonResponse({'error': 'Board ID is required to update a board.'}, status=400)
-
         board = collection.find_one({'boardId': boardId})
         if not board:
             return JsonResponse({'error': 'Board not found.'}, status=404)
-
-        # Ensure the employeeId from the request matches the board's employeeId
         request_employee_id = request.data.get('employeeId')
-        if not request_employee_id or board['employeeId'] != request_employee_id:
+        if board['employeeId'] != request_employee_id:
             return JsonResponse({'error': 'Unauthorized to edit this board.'}, status=403)
-
-        # Update board fields
         updated_data = {
             'boardName': request.data.get('boardName', board['boardName']),
             'boardColor': request.data.get('boardColor', board['boardColor']),
             'employeeId': request_employee_id,
             'employeeName': request.data.get('employeeName', board['employeeName']),
         }
-
         result = collection.update_one({'boardId': boardId}, {'$set': updated_data})
         if result.modified_count > 0:
             return JsonResponse({'message': 'Board updated successfully!'}, status=200)
         else:
             return JsonResponse({'message': 'No changes made to the board.'}, status=200)
-
     elif request.method == 'DELETE':
         if boardId is None:
-            return JsonResponse({'error': 'Board ID is required to delete a board.'}, status=400)
-
+            return JsonResponse({'error': 'Title is required to delete a board.'}, status=400)
         board = collection.find_one({'boardId': boardId})
         if not board:
             return JsonResponse({'error': 'Board not found.'}, status=404)
-
-        # Ensure the employeeId from the request matches the board's employeeId
         request_employee_id = request.data.get('employeeId')
-        if not request_employee_id or board['employeeId'] != request_employee_id:
+        if board['employeeId'] != request_employee_id:
             return JsonResponse({'error': 'Unauthorized to delete this board.'}, status=403)
-
         result = collection.delete_one({'boardId': boardId})
         if result.deleted_count > 0:
             return JsonResponse({'message': 'Board deleted successfully!'}, status=204)

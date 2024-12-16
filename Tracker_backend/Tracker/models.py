@@ -7,7 +7,6 @@ class Employee(models.Model):
     employeeName = models.CharField(max_length=100)
     employeeDepartment = models.CharField(max_length=100)
     employeeDesignation = models.CharField(max_length=100)
-    role = models.CharField(max_length=100)
     email = models.EmailField(unique=True) 
     password = models.CharField(max_length=255) 
 

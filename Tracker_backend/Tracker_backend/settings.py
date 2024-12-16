@@ -96,7 +96,7 @@ DATABASES = {
         'NAME': 'Tracker',
         'ENFORCE_SCHEMA': False,
         'CLIENT': {
-            'host': 'mongodb+srv://smrfttracker:tracker2024@projecttracker.fls8r.mongodb.net/',
+            'host': 'mongodb://3.109.210.34:27017/',
         }
     }
 }

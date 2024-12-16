@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import styled , { keyframes } from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import axios from 'axios';
@@ -8,6 +8,18 @@ import Image2 from './Images/Login-background2.jpg';
 import Vector1 from './Images/Login-vector1.jpg';
 import Vector2 from './Images/Login-vector2.jpg';
 // LoginWrapper: Ensures the background image covers the entire viewport
+
+const gradientAnimation = keyframes`
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+`;
 const LoginWrapper = styled.div`
   position: relative;
   display: flex;
