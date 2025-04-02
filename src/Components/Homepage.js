@@ -3,28 +3,22 @@ import { Link } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import Home from './Images/home.png';
 
-// Title Animation: Fade-in and color change
-const fadeInColor = keyframes`
+// More subtle and modern animations
+const fadeIn = keyframes`
   0% {
     opacity: 0;
-    transform: translateY(-20px);
-    color: #ffffff;
-  }
-  50% {
-    color: #FFD700;
+    transform: translateY(-10px);
   }
   100% {
     opacity: 1;
     transform: translateY(0);
-    color: #ffffff;
   }
 `;
 
-// Paragraph Animation: Slide-in from the right
-const slideInRight = keyframes`
+const slideIn = keyframes`
   0% {
     opacity: 0;
-    transform: translateX(30px);
+    transform: translateX(15px);
   }
   100% {
     opacity: 1;
@@ -32,123 +26,204 @@ const slideInRight = keyframes`
   }
 `;
 
+// Modern gradient overlay for background image
 const HomeWrapper = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: 100vh;
-  background-image: url(${Home});
+  padding: 0 8rem;
+  background-image: linear-gradient(
+    to right,
+    rgba(13, 17, 23, 0.8) 0%,
+    rgba(13, 17, 23, 0.6) 50%,
+    rgba(13, 17, 23, 0.3) 100%
+  ), url(${Home});
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   position: relative;
-  text-align: center;
+  
+  @media (max-width: 1024px) {
+    padding: 0 4rem;
+  }
 
   @media (max-width: 768px) {
+    padding: 0 2rem;
     justify-content: flex-start;
-    padding-top: 2rem;
+    padding-top: 6rem;
+    align-items: center;
   }
 `;
 
+// Modern typography with lighter weight
 const Title = styled.h1`
-  font-size: 3rem;
+  font-size: 3.5rem;
+  font-weight: 600;
   color: white;
-  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
-  animation: ${fadeInColor} 3s ease-in-out;
-  margin: 2rem 1rem;
-  margin-left: 400px;
-
-  @media (max-width: 768px) {
-    font-size: 2rem;
-    margin: 1rem;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 1.5rem;
-    margin: 0.5rem;
-  }
-`;
-
-const Paragraph = styled.p`
-  color: white;
-  font-size: 1.2rem;
-  text-align: center;
+  letter-spacing: -0.5px;
+  animation: ${fadeIn} 1s ease-out;
+  margin: 0 0 1.5rem 0;
   max-width: 600px;
-  margin: 1rem;
-  margin-left: 400px;
-  animation: ${slideInRight} 2s ease-out;
-
+  line-height: 1.2;
+  
   @media (max-width: 768px) {
-    font-size: 1rem;
-    margin: 0.5rem;
+    font-size: 2.5rem;
+    text-align: center;
   }
-
+  
   @media (max-width: 480px) {
-    font-size: 0.9rem;
-    margin: 0.5rem;
+    font-size: 2rem;
   }
 `;
 
+// Subtle accent color and modern typography
+const AccentSpan = styled.span`
+  color: #6366f1;
+  font-weight: 700;
+`;
+
+// Modern paragraph styling
+const Paragraph = styled.p`
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.6;
+  max-width: 550px;
+  margin: 0 0 2.5rem 0;
+  animation: ${slideIn} 1s ease-out 0.3s forwards;
+  opacity: 0;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+    text-align: center;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1rem;
+  }
+`;
+
+// Modern button container with fixed position
 const ButtonContainer = styled.div`
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
   display: flex;
   gap: 1rem;
-  position: absolute;
-  top: 1.5rem;
-  right: 2rem;
-
+  z-index: 10;
+  
   @media (max-width: 768px) {
+    top: 1.5rem;
+    right: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
     top: 1rem;
     right: 1rem;
-    gap: 0.5rem;
-  }
-
-  @media (max-width: 480px) {
-    top: 0.5rem;
-    right: 0.5rem;
-    flex-direction: column;
-    gap: 0.75rem;
   }
 `;
 
-const StyledButton = styled(Link)`
-  text-decoration: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 5px;
-  font-size: 1rem;
-  font-weight: bold;
-  color: white;
-  background-color: #6B728E;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  transition: background-color 0.3s ease, transform 0.2s ease;
-
-  &:hover {
-    background-color: #4b5563;
-    transform: translateY(-3px);
-  }
-
-  @media (max-width: 768px) {
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-  }
-
+// Action button container for CTA
+const ActionContainer = styled.div`
+  display: flex;
+  gap: 1rem;
+  
   @media (max-width: 480px) {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+    align-items: center;
+  }
+`;
+
+// Modern primary button with subtle hover effect
+const PrimaryButton = styled(Link)`
+  text-decoration: none;
+  padding: 0.75rem 1.75rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%);
+  border: none;
+  box-shadow: 0 4px 6px rgba(99, 102, 241, 0.25);
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px rgba(99, 102, 241, 0.35);
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.7rem 1.5rem;
+  }
+`;
+
+// Modern secondary button (outline style)
+const SecondaryButton = styled(Link)`
+  text-decoration: none;
+  padding: 0.75rem 1.75rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.7rem 1.5rem;
+  }
+`;
+
+// Modern navigation button
+const NavButton = styled(Link)`
+  text-decoration: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: white;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
   }
 `;
 
 const HomePage = () => {
   return (
     <HomeWrapper>
-      <Title>Welcome to Shinova</Title>
-      <Paragraph>
-        Boost your productivity with our innovative Jira-based work tracking solution. Stay organized, collaborate seamlessly, and achieve your goals efficiently.
-      </Paragraph>
       <ButtonContainer>
-        <StyledButton to="/Login">Login</StyledButton>
-        <StyledButton to="/Register">Register</StyledButton>
+        <NavButton to="/Login">Login</NavButton>
       </ButtonContainer>
+      
+      <Title>Welcome to <AccentSpan>SHiNova</AccentSpan></Title>
+      <Paragraph>
+        Boost your productivity with our innovative Jira-based work tracking solution. 
+        Stay organized, collaborate seamlessly, and achieve your goals efficiently.
+      </Paragraph>
+      
+      <ActionContainer>
+        <PrimaryButton to="/Register">Get Started</PrimaryButton>
+        {/* <SecondaryButton to="/Demo">See Demo</SecondaryButton> */}
+      </ActionContainer>
     </HomeWrapper>
   );
 };

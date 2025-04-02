@@ -24,7 +24,7 @@ const Modal = () => {
   });
 
   const handleEditCardName = () => {
-    fetch(`http://127.0.0.1:8000/cards/${modalContent.cardId}/`, {
+    fetch(`https://tracker.shinovadatabase.in/cards/${modalContent.cardId}/`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cardName: editedCardName }),

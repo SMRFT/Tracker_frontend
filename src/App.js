@@ -13,11 +13,11 @@ import Homepage from './Components/Homepage';
 import './App.css';
 import SignOut from './Components/SignOut';
 import Members from './Components/Members';
-
+import "react-toastify/dist/ReactToastify.css";
 
 const ContentContainer = styled.div`
-    margin-left: ${({ sidebarVisible }) => (sidebarVisible ? '250px' : '0')}; /* Adjusted for sidebar width */
-    margin-top: 50px; /* Fixed syntax for margin-bottom */
+    margin-left: ${({ sidebarVisible }) => (sidebarVisible ? '270px' : '0')}; /* Adjusted for sidebar width */
+    margin-top: 0px; /* Fixed syntax for margin-bottom */
     transition: margin-left 0.3s ease;
 
     @media (max-width: 768px) {
@@ -31,29 +31,36 @@ const ContentContainer = styled.div`
 
 const AppContent = ({ boards, addBoard }) => {
     const location = useLocation();
+
     // Determine if the sidebar should be visible based on the current path
     const sidebarVisible = !['/', '/Login', '/Register'].includes(location.pathname);
+
+    // Check if the current path is the Homepage
+    const isHomepage = location.pathname === '/';
+
     return (
         <>
             {sidebarVisible && <Sidebar boards={boards} setBoards={addBoard} />}
-            <ContentContainer sidebarVisible={sidebarVisible}>
+            {isHomepage ? (
                 <Routes>
-                    <Route path="/Board" element={<Board boards={boards} addBoard={addBoard} />} />
-                    <Route path='/SignOut' element={<SignOut/>} />
-                    <Route path="/Register" element={<Register />} />
                     <Route path="/" element={<Homepage />} />
-                    <Route path="/Login" element={<LogIn />} />
-                    <Route path="/Todolist" element={<Todolist />} />
-                    <Route path="/Members" element={<Members />} />
-
-
-
                 </Routes>
-            </ContentContainer>
+            ) : (
+                <ContentContainer sidebarVisible={sidebarVisible}>
+                    <Routes>
+                        
+                        <Route path="/Board" element={<Board boards={boards} addBoard={addBoard} />} />
+                        <Route path="/SignOut" element={<SignOut />} />
+                        <Route path="/Register" element={<Register />} />        
+                        <Route path="/Login" element={<LogIn />} />
+                        <Route path="/Todolist" element={<Todolist />} />
+                        <Route path="/Members" element={<Members />} />
+                    </Routes>
+                </ContentContainer>
+            )}
         </>
     );
 };
-
 
 const App = () => {
     const [boards, setBoards] = useState([]);
@@ -79,7 +86,7 @@ const App = () => {
 
         try {
             const response = await fetch(
-                `http://127.0.0.1:8000/get-boards/?employeeId=${employeeId}`
+                `https://tracker.shinovadatabase.in/get-boards/?employeeId=${employeeId}`
             );
 
             if (response.ok) {

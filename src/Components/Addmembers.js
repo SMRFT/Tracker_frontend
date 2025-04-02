@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { FaPlusCircle, FaTrashAlt, FaTimes } from 'react-icons/fa';
 import { MdOutlinePersonOutline } from "react-icons/md";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 const ModalBackdrop = styled.div`
   position: fixed;
   top: 0;
@@ -87,22 +90,25 @@ const Message = styled.div`
   color: ${props => (props.success ? 'green' : 'red')};
   background-color: ${props => (props.success ? '#D4EDDA' : '#F8D7DA')};
 `;
+
 const Button = styled.button`
-  margin-top: 16px;
-  padding: 8px 16px;
-  background-color: grey;
+  margin-top: 15px;
+  padding: 10px 20px;
+  background-color: #4caf50;
   color: white;
   border: none;
-  border-radius: 4px;
-  width: 120px;
+  border-radius: 8px;
+  width: 150px;
   cursor: pointer;
-  font-size: 1.1rem;
-  display: flex; // Use flexbox
-  align-items: center; // Center vertically
-  justify-content: center; // Center horizontally
-  float:right;
+  font-size: 1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  float: right;
+  transition: background-color 0.3s ease;
   &:hover {
-    background-color: gray;
+    background-color: #45a049;
   }
 `;
 const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
@@ -111,11 +117,12 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [message, setMessage] = useState(null);
+  const role = localStorage.getItem('role');
+
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/get-employees/');
+        const response = await fetch('https://tracker.shinovadatabase.in/get-employees/');
         const data = await response.json();
         setEmployees(data);
       } catch (error) {
@@ -126,7 +133,9 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
     };
     const fetchAddedMembers = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/add_member_to_card/?cardId=${cardId}&boardId=${boardId}&cardName=${cardName}`);
+        const response = await fetch(
+          `https://tracker.shinovadatabase.in/add_member_to_card/?cardId=${cardId}&boardId=${boardId}&cardName=${cardName}`
+        );
         const data = await response.json();
         setAddedMembers(data);
       } catch (error) {
@@ -136,59 +145,65 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
     fetchEmployees();
     fetchAddedMembers();
   }, [cardId, boardId, cardName]);
+
   const handleSelect = async (employee) => {
+    setLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/add_member_to_card/', {
+      const response = await fetch('https://tracker.shinovadatabase.in/add_member_to_card/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cardId: cardId,
+          cardId,
           employeeId: employee.employeeId,
           employeeName: employee.employeeName,
         }),
       });
       const result = await response.json();
       if (!response.ok) {
-        if (result.error === 'This member is already added to the card.') {
-          setMessage({ text: 'This member is already added to the card.', success: false });
-        } else {
-          throw new Error(result.error || 'Failed to add member');
-        }
+        toast.error(result.error || 'Error adding member.');
       } else {
         setAddedMembers([...addedMembers, employee]);
-        setEmployees(employees.filter(emp => emp.employeeId !== employee.employeeId)); // Update employees list
-        setMessage({ text: 'Member added successfully!', success: true });
+        setEmployees(employees.filter((emp) => emp.employeeId !== employee.employeeId));
+        toast.success('Member added successfully!');
       }
     } catch (error) {
-      console.error('Error adding member:', error);
-      setMessage({ text: 'Error adding member.', success: false });
+      toast.error('Error adding member.');
+    } finally {
+      setLoading(false);
     }
   };
+
   const handleRemove = async (employee) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/add_member_to_card/?cardId=${cardId}&employeeId=${employee.employeeId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `https://tracker.shinovadatabase.in/add_member_to_card/?cardId=${cardId}&employeeId=${employee.employeeId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
       if (!response.ok) {
         const result = await response.json();
         throw new Error(result.error || 'Failed to remove member');
       }
-      setAddedMembers(addedMembers.filter(member => member.employeeId !== employee.employeeId));
+      setAddedMembers(addedMembers.filter((member) => member.employeeId !== employee.employeeId));
       setEmployees([...employees, employee]);
-      setMessage({ text: 'Member removed successfully!', success: true });
+      toast.warn('Member removed successfully!');
     } catch (error) {
       console.error('Error removing member:', error);
-      setMessage({ text: 'Error removing member.', success: false });
+      toast.error('Error removing member.');
     }
   };
-  const filteredEmployees = employees.filter(employee =>
-    employee.employeeName.toLowerCase().includes(searchQuery.toLowerCase())
+
+  const filteredEmployees = employees.filter(
+    (employee) =>
+      employee.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !addedMembers.some((member) => member.employeeId === employee.employeeId)
   );
+
+
   return (
     <ModalBackdrop>
       <ModalContainer>
@@ -201,9 +216,7 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
-          {message && (
-            <Message success={message.success}>{message.text}</Message>
-          )}
+
           {filteredEmployees.length > 0 ? (
             filteredEmployees.map(employee => (
               <EmployeeCard key={employee.employeeId}>
@@ -245,12 +258,14 @@ const Addmembersbutton = ({ cardId }) => {
   const closeModal = () => {
     setShowModal(false);
   };
+  const role = localStorage.getItem('role');
   return (
     <div>
+      {(role === 'Admin' || role === 'HOD') && (
        <Button onClick={openModal}>
         <MdOutlinePersonOutline  style={{ marginRight: "8px", fontSize: "1.2rem" }} />
         Member
-      </Button>
+      </Button>   )}
       {showModal && <Addmembers closeModal={closeModal} cardId={cardId} />}
     </div>
   );

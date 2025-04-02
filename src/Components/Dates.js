@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { FaTimes } from "react-icons/fa"; // Import cross icon from react-icons
-import { CgCalendarDates } from "react-icons/cg";
-import { useLocation, useNavigate } from 'react-router-dom';
+import { FaTimes, FaCalendarAlt } from "react-icons/fa";
+import { useLocation } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 // Styled Components
 const DateWrapper = styled.div`
   display: flex;
@@ -15,7 +17,8 @@ const DateWrapper = styled.div`
 const Label = styled.label`
   width: 100px;
   font-size: 16px;
-  color: black;
+  color: #4a4a4a;
+  font-weight: bold;
 `;
 
 const DateTextContainer = styled.div`
@@ -23,33 +26,43 @@ const DateTextContainer = styled.div`
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  background-color: white;
-  border-radius: 16px;
+  background-color: #f3f4f6;
+  border-radius: 8px;
   padding: 8px;
   margin-left: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
-const StyledSpan = styled.span`
+const IconWrapper = styled.div`
+  cursor: pointer;
+  color: #4caf50;
+  font-size: 1.5rem;
   margin-right: 8px;
-  color: black;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: #45a049;
+  }
 `;
 
 const Button = styled.button`
   margin-top: 15px;
-  padding: 8px 16px;
-  background-color: grey;
+  padding: 10px 20px;
+  background-color: #4caf50;
   color: white;
   border: none;
-  border-radius: 4px;
-  width: 120px;
+  border-radius: 8px;
+  width: 150px;
   cursor: pointer;
-  font-size: 1.1rem;
-  display: flex; // Use flexbox
-  align-items: center; // Center vertically
-  justify-content: center; // Center horizontally
-  float:right;
+  font-size: 1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  float: right;
+  transition: background-color 0.3s ease;
   &:hover {
-    background-color: gray;
+    background-color: #45a049;
   }
 `;
 
@@ -57,13 +70,14 @@ const CloseIconButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: red;
+  color: #f44336;
   font-size: 24px;
   position: absolute;
   top: 10px;
   right: 10px;
+  transition: color 0.3s ease;
   &:hover {
-    color: darkred;
+    color: #d32f2f;
   }
 `;
 
@@ -73,7 +87,7 @@ const ModalBackdrop = styled.div`
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,110 +95,148 @@ const ModalBackdrop = styled.div`
 `;
 
 const ModalContainer = styled.div`
-  background-color: white;
+  background-color: #ffffff;
   padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  width: 400px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  width: 420px;
   position: relative;
   z-index: 1001;
+  animation: fadeIn 0.3s ease;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 `;
 
-// Date Component
+// Date Modal Component
 const DateModal = ({ closeModal, cardId }) => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [isStartDatePickerOpen, setStartDatePickerOpen] = useState(false);
+  const [isEndDatePickerOpen, setEndDatePickerOpen] = useState(false);
   const location = useLocation();
-  const {employeeId, employeeName,boardId, boardName,boardColor } = location.state || {};
-  const handleStartDateChange = (date) => {
-    setStartDate(date);
-  };
-console.log('id',employeeId)
-  const handleEndDateChange = (date) => {
-    setEndDate(date);
+  const { employeeId } = location.state || {};
+
+  const toggleStartDatePicker = () => {
+    setStartDatePickerOpen(!isStartDatePickerOpen);
   };
 
-  const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = ('0' + (date.getMonth() + 1)).slice(-2);
-    const day = ('0' + date.getDate()).slice(-2);
-    return `${year}-${month}-${day}`;
+  const toggleEndDatePicker = () => {
+    setEndDatePickerOpen(!isEndDatePickerOpen);
+  };
+
+  const handleStartDateChange = (date) => {
+    setStartDate(date);
+    if (endDate && date > endDate) {
+      setEndDate(date);
+    }
+    setStartDatePickerOpen(false);
+  };
+
+  const handleEndDateChange = (date) => {
+    setEndDate(date);
+    if (startDate && date < startDate) {
+      setStartDate(date);
+    }
+    setEndDatePickerOpen(false);
   };
 
   const handleSave = async () => {
     if (!startDate || !endDate) {
-        alert("Please select both start and end dates.");
-        return;
+      toast.error("Please select both start and end dates.");
+      return;
     }
-
-    const formattedStartDate = formatDate(startDate);
-    const formattedEndDate = formatDate(endDate);
-   
-    const response = await fetch(`http://127.0.0.1:8000/cards/${cardId}/?employeeId=${employeeId}`, {
-        method: "PATCH",
-        headers: {
+  
+    const formatDateToLocal = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+  
+    const formattedStartDate = formatDateToLocal(startDate);
+    const formattedEndDate = formatDateToLocal(endDate);
+  
+    try {
+      const response = await fetch(
+        `https://tracker.shinovadatabase.in/cards/${cardId}/?employeeId=${employeeId}`,
+        {
+          method: "PATCH",
+          headers: {
             "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+          },
+          body: JSON.stringify({
             startdate: formattedStartDate,
             enddate: formattedEndDate,
-        }),
-    });
-
-    if (response.ok) {
-        
+          }),
+        }
+      );
+      const responseData = await response.json();  // Ensure you're parsing the response correctly
+  
+      if (response.ok) {
+        // Show success toast if response contains the message
+        toast.success(responseData.message || "Date updated successfully!", {
+          autoClose: 3000,
+          position: "top-right",
+        });
         closeModal();
-    } else {
-        const errorData = await response.json();
-        alert(`Failed to save dates: ${errorData.error || 'Unknown error'}`);
+      } else {
+        toast.error(responseData.error || "Failed to save dates.");
+      }
+    } catch (error) {
+      toast.error(`Error: ${error.message}`);
     }
-};
+  };
+  
+  
+  
 
   return (
     <ModalBackdrop>
       <ModalContainer>
         <CloseIconButton onClick={closeModal}>
-          <FaTimes /> {/* Cross icon */}
+          <FaTimes />
         </CloseIconButton>
-        <h3>Select Dates</h3>
-        <div>
-          <DatePicker
-            selected={startDate}
-            onChange={handleStartDateChange}
-            selectsStart
-            startDate={startDate}
-            endDate={endDate}
-            placeholderText="Select start date"
-          />
-        </div>
-        <div>
+        <h3 style={{ color: "#4caf50" }}>Select Dates</h3>
+        <DateWrapper>
+          <Label>Start Date:</Label>
+          <IconWrapper onClick={toggleStartDatePicker}>
+            <FaCalendarAlt />
+          </IconWrapper>
+          <DateTextContainer>
+            <span>{startDate ? startDate.toLocaleDateString() : "Not selected"}</span>
+          </DateTextContainer>
+        </DateWrapper>
+        {isStartDatePickerOpen && (
+          <DatePicker selected={startDate} onChange={handleStartDateChange} inline />
+        )}
+        <DateWrapper>
+          <Label>End Date:</Label>
+          <IconWrapper onClick={toggleEndDatePicker}>
+            <FaCalendarAlt />
+          </IconWrapper>
+          <DateTextContainer>
+            <span>{endDate ? endDate.toLocaleDateString() : "Not selected"}</span>
+          </DateTextContainer>
+        </DateWrapper>
+        {isEndDatePickerOpen && (
           <DatePicker
             selected={endDate}
             onChange={handleEndDateChange}
-            selectsEnd
-            startDate={startDate}
-            endDate={endDate}
             minDate={startDate}
-            placeholderText="Select end date"
+            inline
           />
-          <DateWrapper>
-            <Label>Start Date:</Label>
-            <DateTextContainer>
-              <StyledSpan>
-                {startDate ? startDate.toLocaleDateString() : 'Not selected'}
-              </StyledSpan>
-            </DateTextContainer>
-          </DateWrapper>
-          <DateWrapper>
-            <Label>End Date:</Label>
-            <DateTextContainer>
-              <StyledSpan>
-                {endDate ? endDate.toLocaleDateString() : 'Not selected'}
-              </StyledSpan>
-            </DateTextContainer>
-          </DateWrapper>
-        </div>
-        <Button onClick={handleSave}>Save</Button> {/* Save button */}
+        )}
+        <Button onClick={handleSave}>Save</Button>
+        <ToastContainer />
       </ModalContainer>
     </ModalBackdrop>
   );
@@ -202,14 +254,17 @@ const DateButton = ({ cardId }) => {
     setShowModal(false);
   };
 
+  const role = localStorage.getItem('role');
   return (
     <div>
-      <Button onClick={openModal}>
-        <CgCalendarDates style={{ marginRight: "8px", fontSize: "1.2rem" }} />
+      {(role === 'Admin' || role === 'HOD') && (
+      <Button onClick={openModal} style={{ fontWeight: "bold" }}>
+        <FaCalendarAlt style={{ marginRight: "8px", fontSize: "1.2rem" }} />
         Dates
-      </Button>
+      </Button>)}
 
       {showModal && <DateModal closeModal={closeModal} cardId={cardId} />}
+      <ToastContainer />
     </div>
   );
 };
