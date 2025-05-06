@@ -347,7 +347,7 @@ const Board = () => {
   const [success, setSuccess] = useState('');
   const [role, setRole] = useState('');
   const [boardId, setBoardId] = useState(''); // Added to match original code
-
+const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   const navigate = useNavigate();
   
   const gradients = [
@@ -376,7 +376,7 @@ const Board = () => {
   const fetchBoards = async () => {
     if (!employeeId) return;
     try {
-      const response = await fetch(`https://tracker.shinovadatabase.in/get-boards/?employeeId=${employeeId}`);
+      const response = await fetch(`${Trackerbaseurl}get-boards/?employeeId=${employeeId}`);
       if (response.ok) {
         const data = await response.json();
         setBoards(Array.isArray(data) ? data : []);
@@ -407,7 +407,7 @@ const Board = () => {
     if (boardName.trim()) {
       const newBoard = { boardName, boardColor, employeeId, employeeName, boardId };
       try {
-        const response = await fetch('https://tracker.shinovadatabase.in/boards/', {
+        const response = await fetch(`${Trackerbaseurl}boards/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newBoard),

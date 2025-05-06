@@ -163,12 +163,12 @@ const Members = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
-
+const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch("https://tracker.shinovadatabase.in/get-employees/")
+        const response = await fetch(`${Trackerbaseurl}get-employees/`)
         const data = await response.json()
         setEmployees(data)
         setFilteredEmployees(data)

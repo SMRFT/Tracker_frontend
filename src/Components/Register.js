@@ -324,7 +324,7 @@ const Register = () => {
     const [validationErrors, setValidationErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
-
+  const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
     const navigate = useNavigate();
 
     // Password validation criteria
@@ -382,7 +382,7 @@ const Register = () => {
         formData.append('employeeDesignation', employeeDesignation);
 
         try {
-            const response = await axios.post('https://tracker.shinovadatabase.in/register/', formData, {
+            const response = await axios.post(`${Trackerbaseurl}register/`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },

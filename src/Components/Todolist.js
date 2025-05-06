@@ -28,6 +28,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [members, setMembers] = useState([]);
   const [cardMembers, setCardMembers] = useState([]);
+const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   const role = localStorage.getItem('role');
   const ItemType = {
     CARD: "card",
@@ -93,7 +94,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
     };
     const handleRemoveCard = (cardId, employeeId) => {
       console.log("Deleting card with ID:", cardId, "by Employee ID:", employeeId);
-      fetch(`https://tracker.shinovadatabase.in/cards/${cardId}/?employeeId=${employeeId}`, {
+      fetch(`${Trackerbaseurl}cards/${cardId}/?employeeId=${employeeId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -277,7 +278,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
 
    // Handle saving the edited card name
    const handleEditCardName = () => {
-    fetch(`https://tracker.shinovadatabase.in/cards/${modalContent.cardId}/`, {
+    fetch(`${Trackerbaseurl}cards/${modalContent.cardId}/`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cardName: editedCardName }),
@@ -312,7 +313,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const fetchCardsWithMembers = async (boardId, employeeId, role) => {
     try {
       const response = await fetch(
-        `https://tracker.shinovadatabase.in/cards/?boardId=${boardId}&employeeId=${employeeId}&role=${role}`
+        `${Trackerbaseurl}cards/?boardId=${boardId}&employeeId=${employeeId}&role=${role}`
       );
       const data = await response.json();
   
@@ -334,7 +335,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   
       const memberRequests = parsedData.map(card =>
         fetch(
-          `http://127.0.0.1:8000/add_member_to_card/?cardId=${card.cardId}&boardId=${boardId}&cardName=${card.cardName}`
+          `${Trackerbaseurl}add_member_to_card/?cardId=${card.cardId}&boardId=${boardId}&cardName=${card.cardName}`
         ).then(response => response.json().then(data => ({ cardId: card.cardId, data })))
       );
   
@@ -379,7 +380,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
     }
     updatedColumns[toColumnId].splice(toIndex, 0, movedCard);
     setColumns(updatedColumns);
-    fetch(`https://tracker.shinovadatabase.in/cards/${movedCard.cardId}/`, {
+    fetch(`${Trackerbaseurl}cards/${movedCard.cardId}/`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -405,7 +406,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
     };
 
     try {
-      const response = await fetch("https://tracker.shinovadatabase.in/cards/", {
+      const response = await fetch(`${Trackerbaseurl}cards/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -466,7 +467,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const response = await fetch(`https://tracker.shinovadatabase.in/add_member_to_card/?cardId=${cardId}&boardId=${boardId}&cardName=${cardName}`);
+        const response = await fetch(`${Trackerbaseurl}add_member_to_card/?cardId=${cardId}&boardId=${boardId}&cardName=${cardName}`);
         const data = await response.json();
         if (response.ok) {
           console.log('Fetched members:', data);
@@ -494,7 +495,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const [members1, setMembers1] = useState([]);
 
   const fetchEmployees = (boardId) => {
-    fetch(`http://127.0.0.1:8000/employees/${boardId}/`)
+    fetch(`${Trackerbaseurl}employees/${boardId}/`)
       .then(response => response.json())
       .then(data => {
         if (data.employees) {
@@ -515,7 +516,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
 
   
   const fetchEmployeeCards = (employeeId, boardId) => {
-    fetch(`http://127.0.0.1:8000/cards/${employeeId}/${boardId}/`)
+    fetch(`${Trackerbaseurl}cards/${employeeId}/${boardId}/`)
       .then(response => response.json())
       .then(data => {
         if (data.cards) {

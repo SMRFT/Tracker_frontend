@@ -223,7 +223,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   const activityInputRef = useRef(null);
   const [employeeId, setEmployeeId] = useState(null);
   const [employeeName, setEmployeeName] = useState(null);
-
+const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   useEffect(() => {
     const id = localStorage.getItem("employeeId");
     const name = localStorage.getItem("employeeName");
@@ -287,7 +287,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   const fetchComments = async () => {
     try {
       const queryParams = new URLSearchParams({ cardId, boardId }).toString();
-      const response = await fetch(`https://tracker.shinovadatabase.in/get_comments/?${queryParams}`);
+      const response = await fetch(`${Trackerbaseurl}get_comments/?${queryParams}`);
       const data = await response.json();
       setComments(data.comments);
     } catch (error) {
@@ -310,7 +310,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     const date = currentDate.toISOString().split("T")[0];
     const time = currentDate.toTimeString().split(" ")[0];
     try {
-      const response = await fetch("https://tracker.shinovadatabase.in/save_comment/", {
+      const response = await fetch(`${Trackerbaseurl}save_comment/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -341,7 +341,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
 
   const handleDeleteComment = async (commentText) => {
     try {
-      const response = await fetch("https://tracker.shinovadatabase.in/delete_comment/", {
+      const response = await fetch(`${Trackerbaseurl}delete_comment/`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -368,7 +368,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
 
   const handleEditComment = async (originalCommentText) => {
     try {
-      const response = await fetch("https://tracker.shinovadatabase.in/edit_comment/", {
+      const response = await fetch(`${Trackerbaseurl}edit_comment/`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -151,10 +151,10 @@ const Notification = ({ employeeId }) => {
   const [notifications, setNotifications] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-
+const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   useEffect(() => {
     axios
-      .get(`https://tracker.shinovadatabase.in/notifications/?employeeId=${employeeId}`)
+      .get(`${Trackerbaseurl}notifications/?employeeId=${employeeId}`)
       .then((response) => {
         setNotifications(response.data);
         setUnreadCount(response.data.length);
@@ -164,7 +164,7 @@ const Notification = ({ employeeId }) => {
   
   const markNotificationsAsRead = async () => {
     try {
-      const response = await axios.patch('http://127.0.0.1:8000/notifications/mark-read/', {
+      const response = await axios.patch(`${Trackerbaseurl}notifications/mark-read/`, {
         employeeId,
       });
       console.log("Response:", response.data);

@@ -365,7 +365,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
   const [employeeName, setEmployeeName] = useState(null);
   const [imageArray, setImageArray] = useState([]);
   const imagesFetched = useRef(new Set());
-  
+const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
 
@@ -478,7 +478,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
     const text = descriptionRef.current.textContent;
   
     try {
-      const response = await fetch("https://tracker.shinovadatabase.in/save-description/", {
+      const response = await fetch(`${Trackerbaseurl}save-description/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -506,7 +506,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
   const fetchDescription = async () => {
     try {
       const response = await fetch(
-        `https://tracker.shinovadatabase.in/save-description/?cardId=${cardId}&boardId=${boardId}`,
+        `${Trackerbaseurl}save-description/?cardId=${cardId}&boardId=${boardId}`,
         {
           method: "GET",
         }
@@ -535,7 +535,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
   // Function to fetch the files
   const fetchFiles = async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/get-file/${boardId}/${cardId}/`);
+      const response = await fetch(`${Trackerbaseurl}get-file/${boardId}/${cardId}/`);
       const data = await response.json();
       
       if (response.ok) {
@@ -577,7 +577,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
     if (imagesFetched.current.has(filename)) return;
   
     try {
-      const imageResponse = await axios.get(`http://127.0.0.1:8000/get-files/?filename=${encodeURIComponent(filename)}`, {
+      const imageResponse = await axios.get(`${Trackerbaseurl}get-files/?filename=${encodeURIComponent(filename)}`, {
         responseType: 'blob',
       });
   
@@ -616,7 +616,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
   
   // Function to handle file download
   const handleDownload = (filename) => {
-    window.open(`http://127.0.0.1:8000/get-files/?filename=${filename}`, '_blank');
+    window.open(`${Trackerbaseurl}get-files/?filename=${filename}`, '_blank');
     showToast(`Downloading ${filename}`, "info");
   };
 
@@ -642,7 +642,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
     formData.append("employeeName", employeeName);
   
     try {
-      const response = await fetch("https://tracker.shinovadatabase.in/upload-content/", {
+      const response = await fetch(`${Trackerbaseurl}upload-content/`, {
         method: "POST",
         body: formData,
       });
@@ -674,7 +674,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
   // Function to handle file deletion
   const handleDeleteFile = async (filename) => {
     try {
-      await axios.delete(`https://tracker.shinovadatabase.in/delete-file/${boardId}/${cardId}/${filename}/`);
+      await axios.delete(`${Trackerbaseurl}delete-file/${boardId}/${cardId}/${filename}/`);
       setFiles(prevFiles => prevFiles.filter(file => file.filename !== filename));
       setImageArray(prevImages => prevImages.filter(image => image.filename !== filename));
       showToast(`Successfully deleted ${filename}`, "success");

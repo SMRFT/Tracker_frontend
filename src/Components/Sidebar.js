@@ -171,7 +171,7 @@ const Sidebar = ({ boards, setBoards }) => {
     const employeeName = localStorage.getItem('employeeName');
     const location = useLocation();
     const role = localStorage.getItem('role');
-
+    const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
     useEffect(() => {
@@ -233,7 +233,7 @@ const Sidebar = ({ boards, setBoards }) => {
     const saveEditedBoard = async (newTitle) => {
         try {
             const updatedBoard = { ...selectedBoard, boardName: newTitle };
-            const response = await fetch(`https://tracker.shinovadatabase.in/boards/${selectedBoard.boardId}/`, {
+            const response = await fetch(`${Trackerbaseurl}boards/${selectedBoard.boardId}/`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -282,7 +282,7 @@ const Sidebar = ({ boards, setBoards }) => {
 
     const handleDeleteBoard = async () => {
         try {
-            const response = await fetch(`https://tracker.shinovadatabase.in/boards/${selectedBoard.boardId}/`, {
+            const response = await fetch(`${Trackerbaseurl}boards/${selectedBoard.boardId}/`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

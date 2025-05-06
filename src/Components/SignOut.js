@@ -19,7 +19,7 @@ const SignOut = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-
+const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   useEffect(() => {
     const storedUserName = localStorage.getItem('employeeName');
     const storedUserEmail = localStorage.getItem('email');
@@ -70,7 +70,7 @@ const SignOut = () => {
     }
 
     try {
-      const response = await axios.post('https://tracker.shinovadatabase.in/change-password/', {
+      const response = await axios.post(`${Trackerbaseurl}change-password/`, {
         email,
         employeeId,
         currentPassword,

@@ -124,7 +124,7 @@ const DateModal = ({ closeModal, cardId }) => {
   const [isEndDatePickerOpen, setEndDatePickerOpen] = useState(false);
   const location = useLocation();
   const { employeeId } = location.state || {};
-
+const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   const toggleStartDatePicker = () => {
     setStartDatePickerOpen(!isStartDatePickerOpen);
   };
@@ -167,7 +167,7 @@ const DateModal = ({ closeModal, cardId }) => {
   
     try {
       const response = await fetch(
-        `https://tracker.shinovadatabase.in/cards/${cardId}/?employeeId=${employeeId}`,
+        `${Trackerbaseurl}cards/${cardId}/?employeeId=${employeeId}`,
         {
           method: "PATCH",
           headers: {

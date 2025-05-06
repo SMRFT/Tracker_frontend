@@ -66,7 +66,7 @@ const App = () => {
     const [boards, setBoards] = useState([]);
     const [employeeId, setEmployeeId] = useState(null);
     const [employeeName, setEmployeeName] = useState(null);
-
+    const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
     useEffect(() => {
         const id = localStorage.getItem('employeeId');
         const name = localStorage.getItem('employeeName');
@@ -86,7 +86,7 @@ const App = () => {
 
         try {
             const response = await fetch(
-                `https://tracker.shinovadatabase.in/get-boards/?employeeId=${employeeId}`
+                `${Trackerbaseurl}get-boards/?employeeId=${employeeId}`
             );
 
             if (response.ok) {

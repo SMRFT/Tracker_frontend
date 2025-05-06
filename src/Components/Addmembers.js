@@ -118,11 +118,11 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const role = localStorage.getItem('role');
-
+const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch('https://tracker.shinovadatabase.in/get-employees/');
+        const response = await fetch(`${Trackerbaseurl}get-employees/`);
         const data = await response.json();
         setEmployees(data);
       } catch (error) {
@@ -134,7 +134,7 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
     const fetchAddedMembers = async () => {
       try {
         const response = await fetch(
-          `https://tracker.shinovadatabase.in/add_member_to_card/?cardId=${cardId}&boardId=${boardId}&cardName=${cardName}`
+          `${Trackerbaseurl}add_member_to_card/?cardId=${cardId}&boardId=${boardId}&cardName=${cardName}`
         );
         const data = await response.json();
         setAddedMembers(data);
@@ -149,7 +149,7 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
   const handleSelect = async (employee) => {
     setLoading(true);
     try {
-      const response = await fetch('https://tracker.shinovadatabase.in/add_member_to_card/', {
+      const response = await fetch(`${Trackerbaseurl}add_member_to_card/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -176,7 +176,7 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
   const handleRemove = async (employee) => {
     try {
       const response = await fetch(
-        `https://tracker.shinovadatabase.in/add_member_to_card/?cardId=${cardId}&employeeId=${employee.employeeId}`,
+        `${Trackerbaseurl}hadd_member_to_card/?cardId=${cardId}&employeeId=${employee.employeeId}`,
         {
           method: 'DELETE',
           headers: {
