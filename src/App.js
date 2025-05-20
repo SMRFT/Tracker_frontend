@@ -67,6 +67,8 @@ const App = () => {
     const [employeeId, setEmployeeId] = useState(null);
     const [employeeName, setEmployeeName] = useState(null);
     const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+    const BASE_PATH = process.env.PUBLIC_URL;
+
     useEffect(() => {
         const id = localStorage.getItem('employeeId');
         const name = localStorage.getItem('employeeName');
@@ -113,7 +115,7 @@ const App = () => {
     };
 
     return (
-        <Router>
+        <Router basename={BASE_PATH}>
             <AppContent boards={boards} addBoard={addBoard} />
         </Router>
     );
