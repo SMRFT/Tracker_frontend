@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
-import { FaPlusCircle, FaTrashAlt, FaTimes } from 'react-icons/fa';
+import React, { useEffect, useState } from "react";
+import styled from "styled-components";
+import { FaPlusCircle, FaTrashAlt, FaTimes } from "react-icons/fa";
 import { MdOutlinePersonOutline } from "react-icons/md";
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ModalBackdrop = styled.div`
   position: fixed;
@@ -36,7 +36,7 @@ const MembersContainer = styled.div`
   position: relative;
 `;
 const EmployeeCard = styled.div`
-  background-color: #F0F0F0;
+  background-color: #f0f0f0;
   color: black;
   border-radius: 8px;
   padding: 10px 20px;
@@ -56,7 +56,7 @@ const IconButton = styled.button`
   cursor: pointer;
   display: flex;
   align-items: center;
-  color: ${props => (props.delete ? 'red' : 'green')};
+  color: ${(props) => (props.delete ? "red" : "green")};
   font-size: 1.2em;
   &:hover {
     opacity: 0.8;
@@ -87,8 +87,8 @@ const Message = styled.div`
   padding: 10px;
   margin: 10px 0;
   border-radius: 4px;
-  color: ${props => (props.success ? 'green' : 'red')};
-  background-color: ${props => (props.success ? '#D4EDDA' : '#F8D7DA')};
+  color: ${(props) => (props.success ? "green" : "red")};
+  background-color: ${(props) => (props.success ? "#D4EDDA" : "#F8D7DA")};
 `;
 
 const Button = styled.button`
@@ -116,17 +116,18 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
   const [addedMembers, setAddedMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const role = localStorage.getItem('role');
-const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+  const [searchQuery, setSearchQuery] = useState("");
+  const role = localStorage.getItem("role");
+  const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   useEffect(() => {
     const fetchEmployees = async () => {
+      
       try {
         const response = await fetch(`${Trackerbaseurl}get-employees/`);
         const data = await response.json();
         setEmployees(data);
       } catch (error) {
-        setError('Error fetching employee data');
+        setError("Error fetching employee data");
       } finally {
         setLoading(false);
       }
@@ -139,7 +140,7 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
         const data = await response.json();
         setAddedMembers(data);
       } catch (error) {
-        console.error('Error fetching added members:', error);
+        console.error("Error fetching added members:", error);
       }
     };
     fetchEmployees();
@@ -150,8 +151,8 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
     setLoading(true);
     try {
       const response = await fetch(`${Trackerbaseurl}add_member_to_card/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cardId,
           employeeId: employee.employeeId,
@@ -160,14 +161,16 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
       });
       const result = await response.json();
       if (!response.ok) {
-        toast.error(result.error || 'Error adding member.');
+        toast.error(result.error || "Error adding member.");
       } else {
         setAddedMembers([...addedMembers, employee]);
-        setEmployees(employees.filter((emp) => emp.employeeId !== employee.employeeId));
-        toast.success('Member added successfully!');
+        setEmployees(
+          employees.filter((emp) => emp.employeeId !== employee.employeeId)
+        );
+        toast.success("Member added successfully!");
       }
     } catch (error) {
-      toast.error('Error adding member.');
+      toast.error("Error adding member.");
     } finally {
       setLoading(false);
     }
@@ -176,24 +179,28 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   const handleRemove = async (employee) => {
     try {
       const response = await fetch(
-        `${Trackerbaseurl}hadd_member_to_card/?cardId=${cardId}&employeeId=${employee.employeeId}`,
+        `${Trackerbaseurl}add_member_to_card/?cardId=${cardId}&employeeId=${employee.employeeId}`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
       if (!response.ok) {
         const result = await response.json();
-        throw new Error(result.error || 'Failed to remove member');
+        throw new Error(result.error || "Failed to remove member");
       }
-      setAddedMembers(addedMembers.filter((member) => member.employeeId !== employee.employeeId));
+      setAddedMembers(
+        addedMembers.filter(
+          (member) => member.employeeId !== employee.employeeId
+        )
+      );
       setEmployees([...employees, employee]);
-      toast.warn('Member removed successfully!');
+      toast.warn("Member removed successfully!");
     } catch (error) {
-      console.error('Error removing member:', error);
-      toast.error('Error removing member.');
+      console.error("Error removing member:", error);
+      toast.error("Error removing member.");
     }
   };
 
@@ -203,22 +210,23 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
       !addedMembers.some((member) => member.employeeId === employee.employeeId)
   );
 
-
   return (
     <ModalBackdrop>
       <ModalContainer>
         <MembersContainer>
-          <CloseButton onClick={closeModal}><FaTimes /></CloseButton>
+          <CloseButton onClick={closeModal}>
+            <FaTimes />
+          </CloseButton>
           <h2>Members</h2>
           <SearchBox
             type="text"
             placeholder="Search members..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
 
           {filteredEmployees.length > 0 ? (
-            filteredEmployees.map(employee => (
+            filteredEmployees.map((employee) => (
               <EmployeeCard key={employee.employeeId}>
                 <EmployeeName>{employee.employeeName}</EmployeeName>
                 <span>{employee.employeeId}</span>
@@ -232,7 +240,7 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
           )}
           <h2>Added Members</h2>
           {addedMembers.length > 0 ? (
-            addedMembers.map(member => (
+            addedMembers.map((member) => (
               <EmployeeCard key={member.employeeId}>
                 <EmployeeName>{member.employeeName}</EmployeeName>
                 <span>{member.employeeId}</span>
@@ -258,14 +266,17 @@ const Addmembersbutton = ({ cardId }) => {
   const closeModal = () => {
     setShowModal(false);
   };
-  const role = localStorage.getItem('role');
+  const role = localStorage.getItem("role");
   return (
     <div>
-      {(role === 'Admin' || role === 'HOD') && (
-       <Button onClick={openModal}>
-        <MdOutlinePersonOutline  style={{ marginRight: "8px", fontSize: "1.2rem" }} />
-        Member
-      </Button>   )}
+      {(role === "Admin" || role === "HOD") && (
+        <Button onClick={openModal}>
+          <MdOutlinePersonOutline
+            style={{ marginRight: "8px", fontSize: "1.2rem" }}
+          />
+          Member
+        </Button>
+      )}
       {showModal && <Addmembers closeModal={closeModal} cardId={cardId} />}
     </div>
   );

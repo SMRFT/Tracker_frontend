@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
-import { FaTimes } from 'react-icons/fa'; // Close Icon
+import React, { useState } from "react";
+import styled from "styled-components";
+import { FaTimes } from "react-icons/fa"; // Close Icon
 import { FaRegCreditCard } from "react-icons/fa";
-import Date from './Dates';
-import Addmembers from './Addmembers';
-import Description from './Description';
-import Comment from './Comment';
+import Date from "./Dates";
+import Addmembers from "./Addmembers";
+import Description from "./Description";
+import Comment from "./Comment";
 
 const Modal = () => {
-  const [modalContent, setModalContent] = useState({ cardName: "", cardId: "", boardName: "" ,boardId:""});
+  const [modalContent, setModalContent] = useState({
+    cardName: "",
+    cardId: "",
+    boardName: "",
+    boardId: "",
+  });
   const [isOpen, setIsOpen] = useState(false);
   const [editedCardName, setEditedCardName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,38 +28,21 @@ const Modal = () => {
     hold: [],
   });
 
-  const handleEditCardName = () => {
-    fetch(`${Trackerbaseurl}cards/${modalContent.cardId}/`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardName: editedCardName }),
-    })
-      .then((response) => {
-        if (response.ok) {
-          const updatedColumns = { ...columns };
-          const updatedCards = updatedColumns[modalContent.boardName].map((card) =>
-            card.cardId === modalContent.cardId ? { ...card, cardName: editedCardName } : card
-          );
-          setColumns({ ...updatedColumns, [modalContent.boardName]: updatedCards });
-          setIsModalOpen(false);
-        }
-      })
-      .catch((error) => console.error("Error updating card name:", error));
-  };
-
   return (
     <>
       <OpenButton onClick={openModal}>Open Modal</OpenButton>
 
       {isOpen && (
         <ModalOverlay>
-          <ModalContainer >
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <FaRegCreditCard style={{ fontSize: '1.2rem', marginRight: '10px' }} />
-            <div style={{ fontSize: '1.5rem' }}>Task 1</div>
-        </div>
+          <ModalContainer>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <FaRegCreditCard
+                style={{ fontSize: "1.2rem", marginRight: "10px" }}
+              />
+              <div style={{ fontSize: "1.5rem" }}>Task 1</div>
+            </div>
 
-          <input
+            <input
               type="text"
               value={editedCardName}
               onChange={(e) => setEditedCardName(e.target.value)}
@@ -65,10 +53,10 @@ const Modal = () => {
               <FaTimes />
             </CloseIcon>
             <ModalContent>
-            {/* <Date/>
+              {/* <Date/>
             <Addmembers/> */}
-            <Description/>
-            <Comment/>
+              <Description />
+              <Comment />
             </ModalContent>
           </ModalContainer>
         </ModalOverlay>
@@ -78,12 +66,12 @@ const Modal = () => {
 };
 
 const styles = {
-input: {
+  input: {
     padding: "5px",
     width: "50%",
     marginBottom: "5px",
     marginRight: "15px",
-    display: 'none',
+    display: "none",
   },
   addCardButton: {
     padding: "5px 10px",
@@ -94,7 +82,7 @@ input: {
     cursor: "pointer",
     marginBottom: "5px",
   },
-}
+};
 
 // Styled components for the modal
 
