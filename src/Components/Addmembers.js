@@ -4,6 +4,7 @@ import { FaPlusCircle, FaTrashAlt, FaTimes } from "react-icons/fa";
 import { MdOutlinePersonOutline } from "react-icons/md";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import apiRequest from "./apiRequest";
 
 const ModalBackdrop = styled.div`
   position: fixed;
@@ -121,12 +122,18 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   useEffect(() => {
     const fetchEmployees = async () => {
-      
       try {
-        const response = await fetch(`${Trackerbaseurl}get-employees/`);
-        const data = await response.json();
-        setEmployees(data);
+        const response = await apiRequest(`${Trackerbaseurl}get-employees/`);
+
+        // Check if the API request was successful
+        if (response.success) {
+          setEmployees(response.data);
+        } else {
+          console.error("API Error:", response.error);
+          setError(response.error || "Error fetching employee data");
+        }
       } catch (error) {
+        console.error("Error fetching employees:", error);
         setError("Error fetching employee data");
       } finally {
         setLoading(false);
@@ -134,11 +141,18 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
     };
     const fetchAddedMembers = async () => {
       try {
-        const response = await fetch(
+        const response = await apiRequest(
           `${Trackerbaseurl}add_member_to_card/?cardId=${cardId}&boardId=${boardId}&cardName=${cardName}`
         );
-        const data = await response.json();
-        setAddedMembers(data);
+
+        // Check if the API request was successful
+        if (response.success) {
+          setAddedMembers(response.data);
+        } else {
+          console.error("API Error:", response.error);
+          // Optionally show a toast notification
+          // toast.error(response.error || "Failed to fetch added members");
+        }
       } catch (error) {
         console.error("Error fetching added members:", error);
       }
@@ -150,26 +164,28 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
   const handleSelect = async (employee) => {
     setLoading(true);
     try {
-      const response = await fetch(`${Trackerbaseurl}add_member_to_card/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await apiRequest(
+        `${Trackerbaseurl}add_member_to_card/`,
+        "POST",
+        {
           cardId,
           employeeId: employee.employeeId,
           employeeName: employee.employeeName,
-        }),
-      });
-      const result = await response.json();
-      if (!response.ok) {
+        }
+      );
+
+      if (!result.success) {
         toast.error(result.error || "Error adding member.");
       } else {
         setAddedMembers([...addedMembers, employee]);
         setEmployees(
           employees.filter((emp) => emp.employeeId !== employee.employeeId)
         );
-        toast.success("Member added successfully!");
+        // Use backend success message if available, otherwise fallback to default
+        toast.success(result.data?.message || "Member added successfully!");
       }
     } catch (error) {
+      console.error("Unexpected error:", error);
       toast.error("Error adding member.");
     } finally {
       setLoading(false);
@@ -178,28 +194,24 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
 
   const handleRemove = async (employee) => {
     try {
-      const response = await fetch(
+      const result = await apiRequest(
         `${Trackerbaseurl}add_member_to_card/?cardId=${cardId}&employeeId=${employee.employeeId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        "DELETE"
       );
-      if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error || "Failed to remove member");
+
+      if (!result.success) {
+        toast.error(result.error || "Failed to remove member");
+      } else {
+        setAddedMembers(
+          addedMembers.filter(
+            (member) => member.employeeId !== employee.employeeId
+          )
+        );
+        setEmployees([...employees, employee]);
+        toast.warn("Member removed successfully!");
       }
-      setAddedMembers(
-        addedMembers.filter(
-          (member) => member.employeeId !== employee.employeeId
-        )
-      );
-      setEmployees([...employees, employee]);
-      toast.warn("Member removed successfully!");
     } catch (error) {
-      console.error("Error removing member:", error);
+      console.error("Unexpected error:", error);
       toast.error("Error removing member.");
     }
   };
@@ -258,7 +270,7 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
   );
 };
 // Parent Component
-const Addmembersbutton = ({ cardId }) => {
+const Addmembersbutton = ({ cardId, boardId, cardName }) => {
   const [showModal, setShowModal] = useState(false);
   const openModal = () => {
     setShowModal(true);
@@ -277,7 +289,14 @@ const Addmembersbutton = ({ cardId }) => {
           Member
         </Button>
       )}
-      {showModal && <Addmembers closeModal={closeModal} cardId={cardId} />}
+      {showModal && (
+        <Addmembers
+          closeModal={closeModal}
+          cardId={cardId}
+          boardId={boardId}
+          cardName={cardName}
+        />
+      )}
     </div>
   );
 };

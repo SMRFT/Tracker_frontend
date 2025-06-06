@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBell, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { FaUserCircle, FaCalendarAlt } from 'react-icons/fa';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import styled, { keyframes } from "styled-components";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBell, faTimes } from "@fortawesome/free-solid-svg-icons";
+import apiRequest from "./apiRequest";
 
 // Keyframe for sliding animation
 const slideIn = keyframes`
@@ -51,7 +50,7 @@ const Overlay = styled.div`
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  display: ${({ show }) => (show ? 'block' : 'none')};
+  display: ${({ show }) => (show ? "block" : "none")};
   z-index: 900;
 `;
 
@@ -89,113 +88,60 @@ const CloseIcon = styled(FontAwesomeIcon)`
   cursor: pointer;
 `;
 
-const IconWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: 10px 15px;
-  border-radius: 10px;
-  margin-right: 20px;
-
-  @media (max-width: 768px) {
-    justify-content: center;
-    width: 100%;
-    margin-right: 0;
-  }
-`;
-
-const MemberList = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-`;
-
-const MemberCircle = styled.div`
-  width: 35px;
-  height: 35px;
-  background-color: ${(props) => props.bgColor || "#4a90e2"};
-  color: white;
-  font-weight: bold;
-  font-size: 16px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 50%;
-  text-transform: uppercase;
-
-  @media (max-width: 600px) {
-    width: 30px;
-    height: 30px;
-    font-size: 14px;
-  }
-`;
-
-const CalendarIcon = styled(FaCalendarAlt)`
-  color: white;
-  font-size: 1.6rem;
-  cursor: pointer;
-  transition: transform 0.2s ease-in-out;
-
-  &:hover {
-    transform: scale(1.1);
-  }
-
-  @media (max-width: 600px) {
-    font-size: 1.4rem;
-  }
-`;
-
-const Notification = ({ employeeId }) => {
+const Notification = () => {
   const [notifications, setNotifications] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+  const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
   useEffect(() => {
-    axios
-      .get(`${Trackerbaseurl}notifications/?employeeId=${employeeId}`)
-      .then((response) => {
+    const fetchNotifications = async () => {
+      const response = await apiRequest(
+        `${Trackerbaseurl}notifications/`,
+        "GET"
+      );
+
+      if (response.success) {
         setNotifications(response.data);
         setUnreadCount(response.data.length);
-      })
-      .catch((error) => console.error(error));
-  }, [employeeId]); // Runs once when the component mounts
-  
+      } else {
+        console.error("Failed to fetch notifications:", response.error);
+      }
+    };
+
+    fetchNotifications();
+  }, []); // Removed employeeId dependency since it's handled by the token
+
   const markNotificationsAsRead = async () => {
-    try {
-      const response = await axios.patch(`${Trackerbaseurl}notifications/mark-read/`, {
-        employeeId,
-      });
-      console.log("Response:", response.data);
-    } catch (err) {
-      console.error("Failed to mark notifications as read:", err.response?.data || err.message);
+    const response = await apiRequest(
+      `${Trackerbaseurl}notifications/mark-read/`,
+      "PATCH"
+    );
+
+    if (response.success) {
+      console.log("Notifications marked as read:", response.data);
+    } else {
+      console.error("Failed to mark notifications as read:", response.error);
     }
   };
-  
-  
-  
+
   const toggleModal = () => {
     const willOpen = !showModal;
-  
+
     setShowModal(willOpen);
-  
+
     if (willOpen) {
       markNotificationsAsRead(); // ✅ mark as read when opening
       setUnreadCount(0);
     }
   };
-  
-
 
   return (
     <>
-
-<NotificationIcon onClick={toggleModal}>
-  <FontAwesomeIcon icon={faBell} />
-  {unreadCount > 0 && <Badge>{unreadCount}</Badge>}
-</NotificationIcon>
-
+      <NotificationIcon onClick={toggleModal}>
+        <FontAwesomeIcon icon={faBell} />
+        {unreadCount > 0 && <Badge>{unreadCount}</Badge>}
+      </NotificationIcon>
 
       <Overlay show={showModal} onClick={toggleModal} />
       <NotificationModal show={showModal}>

@@ -6,6 +6,7 @@ import { FaTimes, FaCalendarAlt } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import apiRequest from "./apiRequest";
 
 // Styled Components
 const DateWrapper = styled.div`
@@ -124,7 +125,8 @@ const DateModal = ({ closeModal, cardId }) => {
   const [isEndDatePickerOpen, setEndDatePickerOpen] = useState(false);
   const location = useLocation();
   const { employeeId } = location.state || {};
-const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+  const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
   const toggleStartDatePicker = () => {
     setStartDatePickerOpen(!isStartDatePickerOpen);
   };
@@ -154,50 +156,50 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
       toast.error("Please select both start and end dates.");
       return;
     }
-  
+
     const formatDateToLocal = (date) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, "0");
       const day = String(date.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
     };
-  
+
     const formattedStartDate = formatDateToLocal(startDate);
     const formattedEndDate = formatDateToLocal(endDate);
-  
+
     try {
-      const response = await fetch(
-        `${Trackerbaseurl}cards/${cardId}/?employeeId=${employeeId}`,
+      // Use the correct apiRequest signature: (url, method, data, headers)
+      const response = await apiRequest(
+        `${Trackerbaseurl}cards/${cardId}`,
+        "PATCH",
         {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            startdate: formattedStartDate,
-            enddate: formattedEndDate,
-          }),
+          startdate: formattedStartDate,
+          enddate: formattedEndDate,
         }
       );
-      const responseData = await response.json();  // Ensure you're parsing the response correctly
-  
-      if (response.ok) {
-        // Show success toast if response contains the message
-        toast.success(responseData.message || "Date updated successfully!", {
+
+      if (response.success) {
+        // Show success toast
+        toast.success(response.data?.message || "Date updated successfully!", {
           autoClose: 3000,
           position: "top-right",
         });
         closeModal();
       } else {
-        toast.error(responseData.error || "Failed to save dates.");
+        // Handle different error scenarios
+        if (response.status === 401) {
+          toast.error("Session expired. Please log in again.");
+        } else if (response.status === 400) {
+          toast.error(response.data?.error || "Invalid data provided.");
+        } else {
+          toast.error(response.error || "Failed to save dates.");
+        }
       }
     } catch (error) {
-      toast.error(`Error: ${error.message}`);
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
-  
-  
-  
 
   return (
     <ModalBackdrop>
@@ -212,11 +214,17 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
             <FaCalendarAlt />
           </IconWrapper>
           <DateTextContainer>
-            <span>{startDate ? startDate.toLocaleDateString() : "Not selected"}</span>
+            <span>
+              {startDate ? startDate.toLocaleDateString() : "Not selected"}
+            </span>
           </DateTextContainer>
         </DateWrapper>
         {isStartDatePickerOpen && (
-          <DatePicker selected={startDate} onChange={handleStartDateChange} inline />
+          <DatePicker
+            selected={startDate}
+            onChange={handleStartDateChange}
+            inline
+          />
         )}
         <DateWrapper>
           <Label>End Date:</Label>
@@ -224,7 +232,9 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
             <FaCalendarAlt />
           </IconWrapper>
           <DateTextContainer>
-            <span>{endDate ? endDate.toLocaleDateString() : "Not selected"}</span>
+            <span>
+              {endDate ? endDate.toLocaleDateString() : "Not selected"}
+            </span>
           </DateTextContainer>
         </DateWrapper>
         {isEndDatePickerOpen && (
@@ -254,14 +264,15 @@ const DateButton = ({ cardId }) => {
     setShowModal(false);
   };
 
-  const role = localStorage.getItem('role');
+  const role = localStorage.getItem("role");
   return (
     <div>
-      {(role === 'Admin' || role === 'HOD') && (
-      <Button onClick={openModal} style={{ fontWeight: "bold" }}>
-        <FaCalendarAlt style={{ marginRight: "8px", fontSize: "1.2rem" }} />
-        Dates
-      </Button>)}
+      {(role === "Admin" || role === "HOD") && (
+        <Button onClick={openModal} style={{ fontWeight: "bold" }}>
+          <FaCalendarAlt style={{ marginRight: "8px", fontSize: "1.2rem" }} />
+          Dates
+        </Button>
+      )}
 
       {showModal && <DateModal closeModal={closeModal} cardId={cardId} />}
       <ToastContainer />

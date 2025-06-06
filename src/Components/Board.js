@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { FaTimes, FaSearch, FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
+import apiRequest from "./apiRequest"; // Import the API helper
 
 // Modern styled components with more subtle shadows, rounded corners, and cleaner spacing
 const BoardContainer = styled.div`
@@ -323,6 +324,11 @@ const CreateButton = styled(Button)`
   &:active {
     background: #2b6cb0;
   }
+
+  &:disabled {
+    background: #a0aec0;
+    cursor: not-allowed;
+  }
 `;
 
 const CloseIcon = styled(FaTimes)`
@@ -338,14 +344,40 @@ const CloseIcon = styled(FaTimes)`
   }
 `;
 
-const SuccessMessage = styled.div`
-  color: #38a169;
-  font-weight: 500;
-  font-size: 0.875rem;
+const MessageContainer = styled.div`
   margin-top: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: 500;
+  font-size: 0.875rem;
+`;
+
+const SuccessMessage = styled(MessageContainer)`
+  color: #38a169;
+`;
+
+const ErrorMessage = styled(MessageContainer)`
+  color: #e53e3e;
+`;
+
+const LoadingSpinner = styled.div`
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #4299e1;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
 `;
 
 const Board = () => {
@@ -359,9 +391,11 @@ const Board = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [employeeId, setEmployeeId] = useState(null);
   const [employeeName, setEmployeeName] = useState(null);
-  const [success, setSuccess] = useState("");
+  const [message, setMessage] = useState({ type: "", text: "" });
   const [role, setRole] = useState("");
-  const [boardId, setBoardId] = useState(""); // Added to match original code
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   const navigate = useNavigate();
 
@@ -389,74 +423,95 @@ const Board = () => {
   }, []);
 
   const fetchBoards = async () => {
-    if (!employeeId) return;
+    setIsLoading(true);
     try {
-      const response = await fetch(
-        `${Trackerbaseurl}get-boards/?employeeId=${employeeId}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setBoards(Array.isArray(data) ? data : []);
+      // Using apiRequest helper - backend will get employeeId from token
+      const result = await apiRequest(`${Trackerbaseurl}get-boards/`, "GET");
+
+      if (result.success) {
+        setBoards(Array.isArray(result.data) ? result.data : []);
+        setMessage({ type: "", text: "" });
       } else {
-        console.error("Failed to fetch boards");
+        console.error("Failed to fetch boards:", result.error);
+        setMessage({ type: "error", text: result.error });
+        setBoards([]);
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error fetching boards:", error);
+      setMessage({ type: "error", text: "Failed to load boards" });
+      setBoards([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBoards();
+    if (employeeId) {
+      fetchBoards();
+    }
   }, [employeeId]);
 
   const openDialog = () => {
     setIsDialogOpen(true);
-    setSuccess("");
+    setMessage({ type: "", text: "" });
   };
 
   const closeDialog = () => {
     setIsDialogOpen(false);
     setBoardName("");
     setBoardColor("linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)");
+    setMessage({ type: "", text: "" });
   };
 
   const handleCreateBoard = async () => {
-    if (boardName.trim()) {
+    if (!boardName.trim()) {
+      setMessage({ type: "error", text: "Board name cannot be empty" });
+      return;
+    }
+
+    setIsCreating(true);
+    setMessage({ type: "", text: "" });
+
+    try {
       const newBoard = {
-        boardName,
+        boardName: boardName.trim(),
         boardColor,
-        employeeId,
-        employeeName,
-        boardId,
       };
-      try {
-        const response = await fetch(`${Trackerbaseurl}boards/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newBoard),
+
+      const result = await apiRequest(
+        `${Trackerbaseurl}boards/`,
+        "POST",
+        newBoard
+      );
+
+      console.log("API Result:", result); // Debug log
+
+      // Check if the request was successful
+      if (result.success || (result.data && result.data.message)) {
+        const successMessage =
+          result.data?.message ||
+          result.message ||
+          "Board created successfully!";
+        setMessage({ type: "success", text: successMessage });
+        setBoardName("");
+        setBoardColor("linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)");
+
+        await fetchBoards();
+
+        setTimeout(() => {
+          closeDialog();
+        }, 1500);
+      } else {
+        setMessage({
+          type: "error",
+          text: result.error || result.message || "Failed to create board",
         });
-
-        if (response.ok) {
-          setSuccess("Board created successfully!");
-          setBoardName("");
-          setBoardColor("linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)");
-
-          await fetchBoards();
-          setTimeout(() => {
-            closeDialog();
-            setSuccess("");
-          }, 1500);
-        } else {
-          const error = await response.json();
-          setSuccess(
-            `Failed to create board: ${error.message || "Unknown error"}`
-          );
-        }
-      } catch (error) {
-        setSuccess(`Error creating board: ${error.message}`);
       }
-    } else {
-      setSuccess("Board name cannot be empty");
+    } catch (error) {
+      console.error("Error creating board:", error);
+      setMessage({ type: "error", text: "Error creating board" });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -528,23 +583,42 @@ const Board = () => {
         </MainHeader>
 
         <BoardsSection>
-          {getFilteredAndSortedBoards().map((board) => (
-            <BoardCard
-              key={board.boardId}
-              bgColor={board.boardColor}
-              onClick={() => handleBoardClick(board)}
+          {isLoading ? (
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                textAlign: "center",
+                padding: "2rem",
+              }}
             >
-              <BoardTitle>{board.boardName}</BoardTitle>
-            </BoardCard>
-          ))}
+              <LoadingSpinner style={{ margin: "0 auto" }} />
+              <div>Loading boards...</div>
+            </div>
+          ) : (
+            <>
+              {getFilteredAndSortedBoards().map((board) => (
+                <BoardCard
+                  key={board.boardId}
+                  bgColor={board.boardColor}
+                  onClick={() => handleBoardClick(board)}
+                >
+                  <BoardTitle>{board.boardName}</BoardTitle>
+                </BoardCard>
+              ))}
 
-          {(role === "Admin" || role === "HOD") && (
-            <CreateNewBoardCard onClick={openDialog}>
-              <PlusIcon />
-              <CreateText>Create New Board</CreateText>
-            </CreateNewBoardCard>
+              {(role === "Admin" || role === "HOD") && (
+                <CreateNewBoardCard onClick={openDialog}>
+                  <PlusIcon />
+                  <CreateText>Create New Board</CreateText>
+                </CreateNewBoardCard>
+              )}
+            </>
           )}
         </BoardsSection>
+
+        {message.type === "error" && !isDialogOpen && (
+          <ErrorMessage>{message.text}</ErrorMessage>
+        )}
 
         {isDialogOpen && (
           <DialogOverlay>
@@ -556,6 +630,7 @@ const Board = () => {
                 placeholder="Enter board name"
                 value={boardName}
                 onChange={(e) => setBoardName(e.target.value)}
+                disabled={isCreating}
               />
               <GradientPickerContainer>
                 {gradients.map((gradient) => (
@@ -563,17 +638,28 @@ const Board = () => {
                     key={gradient.id}
                     gradient={gradient.value}
                     selected={boardColor === gradient.value}
-                    onClick={() => setBoardColor(gradient.value)}
+                    onClick={() => !isCreating && setBoardColor(gradient.value)}
                   />
                 ))}
               </GradientPickerContainer>
               <ButtonContainer>
-                <CancelButton onClick={closeDialog}>Cancel</CancelButton>
-                <CreateButton onClick={handleCreateBoard}>
-                  Create Board
+                <CancelButton onClick={closeDialog} disabled={isCreating}>
+                  Cancel
+                </CancelButton>
+                <CreateButton
+                  onClick={handleCreateBoard}
+                  disabled={isCreating || !boardName.trim()}
+                >
+                  {isCreating && <LoadingSpinner />}
+                  {isCreating ? "Creating..." : "Create Board"}
                 </CreateButton>
               </ButtonContainer>
-              {success && <SuccessMessage>{success}</SuccessMessage>}
+              {message.text &&
+                (message.type === "success" ? (
+                  <SuccessMessage>{message.text}</SuccessMessage>
+                ) : (
+                  <ErrorMessage>{message.text}</ErrorMessage>
+                ))}
             </Dialog>
           </DialogOverlay>
         )}

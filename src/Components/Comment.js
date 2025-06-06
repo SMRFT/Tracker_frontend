@@ -1,10 +1,18 @@
 import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
 import { RxActivityLog } from "react-icons/rx";
-import { FaUserCircle, FaEdit, FaTrashAlt, FaCheck, FaInfoCircle, FaExclamationTriangle } from "react-icons/fa";
+import {
+  FaUserCircle,
+  FaEdit,
+  FaTrashAlt,
+  FaCheck,
+  FaInfoCircle,
+  FaExclamationTriangle,
+} from "react-icons/fa";
 import "react-datepicker/dist/react-datepicker.css";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import apiRequest from "./apiRequest";
 
 // All existing styled components remain the same...
 const Section = styled.div`
@@ -38,7 +46,7 @@ const Actions = styled.div`
 `;
 
 const Button = styled.button`
-  background-color: #3498DB;
+  background-color: #3498db;
   color: white;
   padding: 8px 12px;
   border-radius: 4px;
@@ -46,7 +54,7 @@ const Button = styled.button`
   cursor: pointer;
   font-size: 14px;
   &:hover {
-    background-color: #2980B9;
+    background-color: #2980b9;
   }
 `;
 
@@ -70,7 +78,7 @@ const CommentItem = styled.div`
 const Avatar = styled.div`
   margin-right: 15px;
   font-size: 2rem;
-  color: #3498DB;
+  color: #3498db;
 `;
 
 const CommentContent = styled.div`
@@ -125,9 +133,9 @@ const ActionIcon = styled.div`
   margin-left: 10px;
   cursor: pointer;
   font-size: 1.2rem;
-  color: #3498DB;
+  color: #3498db;
   &:hover {
-    color: #2980B9;
+    color: #2980b9;
   }
 
   &.delete-icon {
@@ -144,7 +152,7 @@ const StyledToastContainer = styled(ToastContainer)`
     border-radius: 8px;
     padding: 16px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .Toastify__toast-body {
@@ -223,7 +231,8 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   const activityInputRef = useRef(null);
   const [employeeId, setEmployeeId] = useState(null);
   const [employeeName, setEmployeeName] = useState(null);
-const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+  const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
   useEffect(() => {
     const id = localStorage.getItem("employeeId");
     const name = localStorage.getItem("employeeName");
@@ -248,7 +257,9 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   const successToast = (title, message) => {
     toast.success(
       <ToastMessage>
-        <ToastIcon><FaCheck /></ToastIcon>
+        <ToastIcon>
+          <FaCheck />
+        </ToastIcon>
         <ToastContent>
           <ToastTitle>{title}</ToastTitle>
           <ToastDescription>{message}</ToastDescription>
@@ -261,7 +272,9 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   const errorToast = (title, message) => {
     toast.error(
       <ToastMessage>
-        <ToastIcon><FaExclamationTriangle /></ToastIcon>
+        <ToastIcon>
+          <FaExclamationTriangle />
+        </ToastIcon>
         <ToastContent>
           <ToastTitle>{title}</ToastTitle>
           <ToastDescription>{message}</ToastDescription>
@@ -274,7 +287,9 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   const infoToast = (title, message) => {
     toast.info(
       <ToastMessage>
-        <ToastIcon><FaInfoCircle /></ToastIcon>
+        <ToastIcon>
+          <FaInfoCircle />
+        </ToastIcon>
         <ToastContent>
           <ToastTitle>{title}</ToastTitle>
           <ToastDescription>{message}</ToastDescription>
@@ -287,12 +302,36 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   const fetchComments = async () => {
     try {
       const queryParams = new URLSearchParams({ cardId, boardId }).toString();
-      const response = await fetch(`${Trackerbaseurl}get_comments/?${queryParams}`);
-      const data = await response.json();
-      setComments(data.comments);
+      const data = await apiRequest(
+        `${Trackerbaseurl}get_comments/?${queryParams}`
+      );
+      // Handle the actual API response structure: {success: true, data: {...}}
+      console.log("Fetched comments data:", data);
+
+      if (data && data.success && data.data) {
+        if (Array.isArray(data.data)) {
+          // If data.data is directly an array
+          setComments(data.data);
+        } else if (data.data.comments && Array.isArray(data.data.comments)) {
+          // If data.data has a comments property
+          setComments(data.data.comments);
+        } else {
+          // Fallback to empty array
+          console.warn("No comments array found in data.data:", data.data);
+          setComments([]);
+        }
+      } else {
+        // Fallback to empty array
+        console.warn("Unexpected response structure:", data);
+        setComments([]);
+      }
     } catch (error) {
       console.error("Error fetching comments:", error);
-      errorToast("Network Error", "Failed to load comments. Please try again later.");
+      setComments([]); // Set empty array on error
+      errorToast(
+        "Network Error",
+        "Failed to load comments. Please try again later."
+      );
     }
   };
 
@@ -310,7 +349,7 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
     const date = currentDate.toISOString().split("T")[0];
     const time = currentDate.toTimeString().split(" ")[0];
     try {
-      const response = await fetch(`${Trackerbaseurl}save_comment/`, {
+      const data = await apiRequest(`${Trackerbaseurl}save_comment/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -325,23 +364,25 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
           time,
         }),
       });
-      if (response.ok) {
-        const data = await response.json();
-        successToast("Comment Added", "Your comment has been posted successfully");
-        fetchComments();
-        activityInputRef.current.value = "";
-      } else {
-        errorToast("Submission Failed", "Could not save your comment. Please try again.");
-      }
+      // Remove response.ok check and .json() call
+      successToast(
+        "Comment Added",
+        "Your comment has been posted successfully"
+      );
+      fetchComments();
+      activityInputRef.current.value = "";
     } catch (error) {
       console.error("Error saving comment:", error);
-      errorToast("Network Error", "Failed to connect to the server. Please check your connection.");
+      errorToast(
+        "Network Error",
+        "Failed to connect to the server. Please check your connection."
+      );
     }
   };
 
   const handleDeleteComment = async (commentText) => {
     try {
-      const response = await fetch(`${Trackerbaseurl}delete_comment/`, {
+      const data = await apiRequest(`${Trackerbaseurl}delete_comment/`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -352,23 +393,24 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
           commenttext: commentText,
         }),
       });
-      if (response.ok) {
-        const data = await response.json();
-        errorToast("Comment Deleted", "The comment has been removed successfully");
-        fetchComments();
-      } else {
-        const errorData = await response.json();
-        errorToast("Deletion Failed", errorData.error || "Unable to delete the comment");
-      }
+      // Remove response.ok check and .json() call
+      errorToast(
+        "Comment Deleted",
+        "The comment has been removed successfully"
+      );
+      fetchComments();
     } catch (error) {
       console.error("Error deleting comment:", error);
-      errorToast("Network Error", "Failed to connect to the server. Please try again later.");
+      errorToast(
+        "Network Error",
+        "Failed to connect to the server. Please try again later."
+      );
     }
   };
 
   const handleEditComment = async (originalCommentText) => {
     try {
-      const response = await fetch(`${Trackerbaseurl}edit_comment/`, {
+      const data = await apiRequest(`${Trackerbaseurl}edit_comment/`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -380,18 +422,16 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
           newCommentText: editCommentText,
         }),
       });
-      if (response.ok) {
-        const data = await response.json();
-        infoToast("Comment Updated", "Your changes have been saved successfully");
-        fetchComments();
-        setEditingCommentIndex(null);
-      } else {
-        const errorData = await response.json();
-        errorToast("Update Failed", errorData.error || "Unable to edit the comment");
-      }
+      // Remove response.ok check and .json() call
+      infoToast("Comment Updated", "Your changes have been saved successfully");
+      fetchComments();
+      setEditingCommentIndex(null);
     } catch (error) {
       console.error("Error editing comment:", error);
-      errorToast("Network Error", "Failed to connect to the server. Please try again later.");
+      errorToast(
+        "Network Error",
+        "Failed to connect to the server. Please try again later."
+      );
     }
   };
 
@@ -399,10 +439,19 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
     <div>
       <Section>
         <SectionTitle>
-          <RxActivityLog style={{ fontSize: "1rem", marginRight: "10px", fontWeight: "bold" }} />
+          <RxActivityLog
+            style={{
+              fontSize: "1rem",
+              marginRight: "10px",
+              fontWeight: "bold",
+            }}
+          />
           Activity
         </SectionTitle>
-        <ActivityInput placeholder="Add a comment or activity..." ref={activityInputRef} />
+        <ActivityInput
+          placeholder="Add a comment or activity..."
+          ref={activityInputRef}
+        />
         <Actions>
           <Button onClick={handleSaveActivity}>Comment</Button>
         </Actions>
@@ -424,25 +473,36 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
                 ) : (
                   <>
                     <p>
-                      <CommentAuthor>{comment.empname || "Anonymous"}</CommentAuthor>
-                      <CommentDate>{comment.date} at {comment.time}</CommentDate>
+                      <CommentAuthor>
+                        {comment.empname || "Anonymous"}
+                      </CommentAuthor>
+                      <CommentDate>
+                        {comment.date} at {comment.time}
+                      </CommentDate>
                     </p>
                     <CommentText>{comment.commenttext}</CommentText>
                   </>
                 )}
                 <ActionIcons>
-                  <ActionIcon onClick={() => {
-                    setEditingCommentIndex(index);
-                    setEditCommentText(comment.commenttext);
-                  }}>
+                  <ActionIcon
+                    onClick={() => {
+                      setEditingCommentIndex(index);
+                      setEditCommentText(comment.commenttext);
+                    }}
+                  >
                     <FaEdit />
                   </ActionIcon>
-                  <ActionIcon className="delete-icon" onClick={() => handleDeleteComment(comment.commenttext)}>
+                  <ActionIcon
+                    className="delete-icon"
+                    onClick={() => handleDeleteComment(comment.commenttext)}
+                  >
                     <FaTrashAlt />
                   </ActionIcon>
                 </ActionIcons>
                 {editingCommentIndex === index && (
-                  <Button onClick={() => handleEditComment(comment.commenttext)}>
+                  <Button
+                    onClick={() => handleEditComment(comment.commenttext)}
+                  >
                     Save
                   </Button>
                 )}

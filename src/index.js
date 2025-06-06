@@ -14,7 +14,7 @@ console.log("REDIRECT_URL:", REDIRECT_URL);
 // --- Function to set token for local development ---
 function setforlocaldev() {
   const dev_token =
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJTSDAwNyIsImVtYWlsIjoic2l2YXN1bmRhcmlzbXJmdEBnbWFpbC5jb20iLCJlbXBsb3llZUlkIjoiU0gwMDciLCJuYW1lIjoiZGV2aSIsInJvbGVfbmFtZSI6IkFkbWluIiwiYWxsb3dlZC1hY3Rpb25zIjpbIlNELVAtT0QtUiIsIlNELVAtUkQtUlciLCJTVC1QLUNNVC1SIiwiU1QtUC1ERVMtUlciLCJTVC1QLUFNUy1SIiwiU1QtUC1OVEYtUlciLCJTVC1QLU5URi1SIiwiU0QtUC1JTlYtUiIsIlNULVAtVERMLVIiLCJTVC1QLUJSRC1SIiwiU0QtUC1SQS1SVyIsIlNULVAtQlJELVJXIiwiU1QtUC1SRUctUlciLCJTVC1QLUNNVC1SVyIsIlNULVAtTUJTLVIiLCJTVC1QLUxPRy1SVyIsIlNULVAtQU1TLVJXIiwiU0QtUC1NSVMtUiIsIkdMLVAtRVBNLVJXIiwiU1QtUC1UREwtUlciLCJTVC1QLVNEQi1SVyIsIlNELVAtU1ZELVIiLCJTVC1QLVNOTy1SVyIsIlNELVAtQkJBLVJXIiwiU0QtUC1SRC1SIiwiU1QtUC1EVEUtUlciLCJTVC1QLURFUy1SIiwiU0QtUC1DVC1SIiwiU0QtUC1MRC1SIl0sImFsbG93ZWQtZGF0YSI6WyJTSEIwMDMiLCJTSEIwMDEiXSwiaXNzIjoiaHR0cHM6Ly9sYWIuc2hpbm92YS5pbi8iLCJpYXQiOjE3NDg4MzUzNjUsImV4cCI6MTc0ODkyMTc2NSwianRpIjoiNWEwMjc4MDYtZDJkOS00MzMwLTgzNWItMWMwNGRlYzFmNzY2In0.HFL9tP9W-AQXI1E1TI1mnPEuWqsoqCvDHAVNkmM6Xu37cLofmOP2GEwtshz1SfbeFPUvb4mi1xN6RHTDca2V3R5TaB3vGVewtmLvOXNU_Jo6dxmPuX_isRuBspLmX-zqZyLBnsUOrAXPnVcHFXb8wEzTaOBo0cbOWr5Z2GBkOu8NZ9orRE4-V8bTlMOm8HHrd1N9QrCONDuBG5jT3MTZFL8oEpAdBFcMgCaqDcWiztDb0-_Gwn7pmr44L0-WfoMspB8dFOH64BuIewK9AenJ95aQUnsClyCcPx47LMFdMGPQxqBcJNVdupsYTFWPyfxcmt6MkZXPoLwjvko1wXCSNg";
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJTSDAwNyIsImVtYWlsIjoic2l2YXN1bmRhcmlzbXJmdEBnbWFpbC5jb20iLCJlbXBsb3llZUlkIjoiU0gwMDciLCJuYW1lIjoiZGV2aSIsInJvbGVfbmFtZSI6IkFkbWluIiwiYWxsb3dlZC1hY3Rpb25zIjpbIlNULVAtREVTLVIiLCJTRC1QLVJELVJXIiwiU1QtUC1TTk8tUlciLCJTRC1QLUlOVi1SIiwiU0QtUC1TVkQtUiIsIlNULUFQSS1FTVAtUiIsIlNELVAtQkJBLVJXIiwiU1QtUC1DTVQtUiIsIlNULVAtVERMLVIiLCJTRC1QLUNULVIiLCJTRC1QLU9ELVIiLCJTVC1BUEktQ1JELVJXIiwiU0QtUC1MRC1SIiwiU0QtUC1NSVMtUiIsIlNULVAtVERMLVJXIiwiU1QtQVBJLUFNQy1SVyIsIlNULVAtTlRGLVIiLCJTVC1QLU5URi1SVyIsIlNULVAtREVTLVJXIiwiU1QtUC1CUkQtUiIsIlNULVAtQ01ULVJXIiwiU1QtQVBJLUJSRC1SVyIsIlNELVAtUkQtUiIsIkdMLVAtRVBNLVJXIiwiU0QtUC1SQS1SVyJdLCJhbGxvd2VkLWRhdGEiOlsiU0hCMDAzIiwiU0hCMDAxIl0sImlzcyI6Imh0dHBzOi8vbGFiLnNoaW5vdmEuaW4vIiwiaWF0IjoxNzQ5MTgxMDIzLCJleHAiOjE3NDkyNjc0MjMsImp0aSI6IjE3YjBiZjllLTU2MjktNDhmMC1iY2JlLWFhNmRhN2Q3ZmNmMCJ9.VMQdYGm8DUkGsHIUWiv8DDKQjSQzo47gpi56nJ3YQG2NSvHOEJwWskGQEDXkDsk5Qxrz53ZS4sG17hHrYn9vgCtX8DWtXz0_RIPVSEb-NqgmwNL3h5qxAOw0xm4j-KS79hWOPA4NI1d1yRP2k7pT1yZnrfIpgGxiiTsogCkljuTWHNp-a0DW6MzR5unUUONsuXdC-t1VruSqAHx8onCWw3AYAq-Y6IN1veE_6z_mTv7lzPfBVHKyPNUNz4Z8nT8TQy6H9qswoDjAU1HnnJSkNkffqi5yqj79p2wNMxn6kIvv0OwZc6MvuJPiHK9hJMShZzdMBi-i-tW8jsNygwy_Hg";
   console.log("🔧 Using your fresh development token");
   return dev_token;
 }
@@ -64,13 +64,13 @@ if (!accessToken) {
     // Extract user information
     const employeeId = userPayload.employeeId;
     const employeeName = userPayload.name;
-    const userRole = userPayload.role_name;
+    const role = userPayload.role_name;
     const userEmail = userPayload.email;
 
     console.log("Employee ID:", employeeId);
     console.log("Employee Name:", employeeName);
     console.log("Email:", userEmail);
-    console.log("Role:", userRole);
+    console.log("role:", role);
 
     // Check if we have required data
     const isLoggedIn = !!(employeeId && employeeName);
@@ -81,7 +81,7 @@ if (!accessToken) {
       localStorage.setItem("user_payload", JSON.stringify(userPayload));
       localStorage.setItem("employeeId", employeeId);
       localStorage.setItem("employeeName", employeeName);
-      localStorage.setItem("userRole", userRole);
+      localStorage.setItem("role", role);
       localStorage.setItem("userEmail", userEmail);
       console.log("✅ User payload stored in localStorage");
 
@@ -119,7 +119,7 @@ if (!accessToken) {
         localStorage.setItem("user_payload", JSON.stringify(freshPayload));
         localStorage.setItem("employeeId", employeeId);
         localStorage.setItem("employeeName", employeeName);
-        localStorage.setItem("userRole", freshPayload.role_name);
+        localStorage.setItem("role", freshPayload.role_name);
         localStorage.setItem("userEmail", freshPayload.email);
 
         console.log(

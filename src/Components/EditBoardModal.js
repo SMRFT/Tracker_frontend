@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import styled from "styled-components"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState, useEffect } from "react";
+import styled from "styled-components";
+import { motion, AnimatePresence } from "framer-motion";
 
 const ModalOverlay = styled(motion.div)`
   position: fixed;
@@ -16,7 +16,7 @@ const ModalOverlay = styled(motion.div)`
   align-items: center;
   z-index: 1200;
   backdrop-filter: blur(4px);
-`
+`;
 
 const ModalContent = styled(motion.div)`
   background: white;
@@ -24,14 +24,14 @@ const ModalContent = styled(motion.div)`
   border-radius: 12px;
   width: 380px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-`
+`;
 
 const ModalTitle = styled.h2`
   margin-bottom: 24px;
   font-size: 20px;
   font-weight: 600;
   color: #333;
-`
+`;
 
 const ModalInput = styled.input`
   width: 100%;
@@ -41,19 +41,19 @@ const ModalInput = styled.input`
   border: 1px solid #e0e0e0;
   font-size: 16px;
   transition: border 0.2s ease;
-  
+
   &:focus {
     outline: none;
     border-color: #7c5dfa;
     box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.2);
   }
-`
+`;
 
 const ButtonContainer = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-`
+`;
 
 const ModalButton = styled.button`
   padding: 12px 20px;
@@ -63,7 +63,7 @@ const ModalButton = styled.button`
   font-weight: 500;
   font-size: 15px;
   transition: all 0.2s ease;
-  
+
   ${(props) =>
     props.primary &&
     `
@@ -74,7 +74,7 @@ const ModalButton = styled.button`
       background: #6c4ae6;
     }
   `}
-  
+
   ${(props) =>
     props.secondary &&
     `
@@ -96,34 +96,34 @@ const ModalButton = styled.button`
       background: #ff9797;
     }
   `}
-`
+`;
 
 const EditBoardModal = ({ boardName, onSave, onClose }) => {
-  const [newTitle, setNewTitle] = useState(boardName)
+  const [newTitle, setNewTitle] = useState(boardName);
 
   useEffect(() => {
     // Focus the input when modal opens
     const timer = setTimeout(() => {
-      const input = document.getElementById("board-name-input")
-      if (input) input.focus()
-    }, 100)
+      const input = document.getElementById("board-name-input");
+      if (input) input.focus();
+    }, 100);
 
-    return () => clearTimeout(timer)
-  }, [])
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSave = () => {
     if (newTitle.trim()) {
-      onSave(newTitle)
+      onSave(newTitle);
     }
-  }
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
-      handleSave()
+      handleSave();
     } else if (e.key === "Escape") {
-      onClose()
+      onClose();
     }
-  }
+  };
 
   return (
     <AnimatePresence>
@@ -132,7 +132,7 @@ const EditBoardModal = ({ boardName, onSave, onClose }) => {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={(e) => {
-          if (e.target === e.currentTarget) onClose()
+          if (e.target === e.currentTarget) onClose();
         }}
       >
         <ModalContent
@@ -161,8 +161,7 @@ const EditBoardModal = ({ boardName, onSave, onClose }) => {
         </ModalContent>
       </ModalOverlay>
     </AnimatePresence>
-  )
-}
+  );
+};
 
-export default EditBoardModal
-
+export default EditBoardModal;
