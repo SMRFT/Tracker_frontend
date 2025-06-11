@@ -413,20 +413,24 @@ const Board = () => {
   useEffect(() => {
     const id = localStorage.getItem("employeeId");
     const name = localStorage.getItem("employeeName");
-    const userRole = localStorage.getItem("role");
+    const role = localStorage.getItem("role");
 
-    if (id && name) {
+    if (id && name && role) {
       setEmployeeId(id);
       setEmployeeName(name);
-      setRole(userRole);
+      setRole(role);
     }
   }, []);
 
   const fetchBoards = async () => {
     setIsLoading(true);
     try {
-      // Using apiRequest helper - backend will get employeeId from token
-      const result = await apiRequest(`${Trackerbaseurl}get-boards/`, "GET");
+      const role = localStorage.getItem("role");
+
+      const result = await apiRequest(
+        `${Trackerbaseurl}get-boards/${role}/`, // FIXED: path param, not query
+        "GET"
+      );
 
       if (result.success) {
         setBoards(Array.isArray(result.data) ? result.data : []);
@@ -446,10 +450,10 @@ const Board = () => {
   };
 
   useEffect(() => {
-    if (employeeId) {
+    if (employeeId && role) {
       fetchBoards();
     }
-  }, [employeeId]);
+  }, [employeeId, role]);
 
   const openDialog = () => {
     setIsDialogOpen(true);
@@ -471,7 +475,7 @@ const Board = () => {
 
     setIsCreating(true);
     setMessage({ type: "", text: "" });
-
+    const name = localStorage.getItem("employeeName");
     try {
       const newBoard = {
         boardName: boardName.trim(),
@@ -479,7 +483,7 @@ const Board = () => {
       };
 
       const result = await apiRequest(
-        `${Trackerbaseurl}boards/`,
+        `${Trackerbaseurl}boards/${name}/`,
         "POST",
         newBoard
       );

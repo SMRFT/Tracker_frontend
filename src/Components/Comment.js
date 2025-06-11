@@ -12,7 +12,7 @@ import {
 import "react-datepicker/dist/react-datepicker.css";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import apiRequest from "./apiRequest";
+import apiRequest from "./apiRequest"; // Import your apiRequest helper
 
 // All existing styled components remain the same...
 const Section = styled.div`
@@ -55,6 +55,10 @@ const Button = styled.button`
   font-size: 14px;
   &:hover {
     background-color: #2980b9;
+  }
+  &:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
   }
 `;
 
@@ -228,6 +232,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   const [comments, setComments] = useState([]);
   const [editingCommentIndex, setEditingCommentIndex] = useState(null);
   const [editCommentText, setEditCommentText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const activityInputRef = useRef(null);
   const [employeeId, setEmployeeId] = useState(null);
   const [employeeName, setEmployeeName] = useState(null);
@@ -302,32 +307,37 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   const fetchComments = async () => {
     try {
       const queryParams = new URLSearchParams({ cardId, boardId }).toString();
-      const data = await apiRequest(
-        `${Trackerbaseurl}get_comments/?${queryParams}`
+      const result = await apiRequest(
+        `${Trackerbaseurl}get_comments/?${queryParams}`,
+        "GET"
       );
-      // Handle the actual API response structure: {success: true, data: {...}}
-      console.log("Fetched comments data:", data);
 
-      if (data && data.success && data.data) {
-        if (Array.isArray(data.data)) {
-          // If data.data is directly an array
-          setComments(data.data);
-        } else if (data.data.comments && Array.isArray(data.data.comments)) {
-          // If data.data has a comments property
-          setComments(data.data.comments);
+      console.log("Fetch comments result:", result);
+
+      if (result.success && result.data) {
+        // Handle different response structures
+        if (result.data.comments && Array.isArray(result.data.comments)) {
+          setComments(result.data.comments);
+        } else if (Array.isArray(result.data)) {
+          setComments(result.data);
         } else {
-          // Fallback to empty array
-          console.warn("No comments array found in data.data:", data.data);
+          console.warn("Unexpected comments data structure:", result.data);
           setComments([]);
         }
       } else {
-        // Fallback to empty array
-        console.warn("Unexpected response structure:", data);
+        console.error("Failed to fetch comments:", result.error);
         setComments([]);
+        if (result.status !== 404) {
+          // Don't show error for no comments found
+          errorToast(
+            "Network Error",
+            result.error || "Failed to load comments. Please try again later."
+          );
+        }
       }
     } catch (error) {
       console.error("Error fetching comments:", error);
-      setComments([]); // Set empty array on error
+      setComments([]);
       errorToast(
         "Network Error",
         "Failed to load comments. Please try again later."
@@ -337,68 +347,156 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
 
   useEffect(() => {
     fetchComments();
-  }, []);
+  }, [cardId, boardId]);
 
   const handleSaveActivity = async () => {
-    const commentText = activityInputRef.current.value.trim();
+    console.log("=== SAVE ACTIVITY DEBUG START ===");
+
+    if (isSubmitting) {
+      console.log("Already submitting, returning early");
+      return;
+    }
+
+    const commentText = activityInputRef.current?.value?.trim();
+    console.log("Comment Text:", commentText);
+
     if (!commentText) {
+      console.log("Comment text is empty");
       errorToast("Empty Comment", "Comment cannot be empty!");
       return;
     }
-    const currentDate = new Date();
-    const date = currentDate.toISOString().split("T")[0];
-    const time = currentDate.toTimeString().split(" ")[0];
-    try {
-      const data = await apiRequest(`${Trackerbaseurl}save_comment/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: commentText,
-          cardId,
-          boardId,
-          employeeId,
-          employeeName,
-          date,
-          time,
-        }),
-      });
-      // Remove response.ok check and .json() call
-      successToast(
-        "Comment Added",
-        "Your comment has been posted successfully"
+
+    // Validate required props
+    console.log("Props validation:");
+    console.log("- cardId:", cardId, typeof cardId);
+    console.log("- boardId:", boardId, typeof boardId);
+    console.log("- employeeId:", employeeId, typeof employeeId);
+    console.log("- employeeName:", employeeName, typeof employeeName);
+
+    if (!cardId || !boardId) {
+      errorToast("Missing Information", "Card ID or Board ID is missing!");
+      console.error("Missing cardId or boardId:", { cardId, boardId });
+      return;
+    }
+
+    if (!employeeId || !employeeName) {
+      errorToast(
+        "Authentication Error",
+        "Employee information not found. Please log in again."
       );
-      fetchComments();
-      activityInputRef.current.value = "";
+      console.error("Missing employee info:", { employeeId, employeeName });
+      return;
+    }
+
+    setIsSubmitting(true);
+    console.log("Starting API request...");
+
+    try {
+      const currentDate = new Date();
+      const date = currentDate.toISOString().split("T")[0];
+      const time = currentDate.toTimeString().split(" ")[0];
+
+      const payload = {
+        text: commentText,
+        cardId: String(cardId),
+        boardId: String(boardId),
+        employeeId: String(employeeId),
+        employeeName: String(employeeName),
+        date,
+        time,
+      };
+
+      console.log(
+        "Final payload being sent:",
+        JSON.stringify(payload, null, 2)
+      );
+      console.log("API URL:", `${Trackerbaseurl}save_comment/`);
+
+      // Use apiRequest helper instead of fetch
+      const result = await apiRequest(
+        `${Trackerbaseurl}save_comment/`,
+        "POST",
+        payload
+      );
+
+      console.log("API Response received:", result);
+
+      if (result.success) {
+        console.log("API call successful");
+        successToast(
+          "Comment Added",
+          "Your comment has been posted successfully"
+        );
+
+        // Clear the input and refresh comments
+        if (activityInputRef.current) {
+          activityInputRef.current.value = "";
+          console.log("Input cleared");
+        }
+
+        console.log("Refreshing comments...");
+        await fetchComments();
+        console.log("Comments refreshed");
+      } else {
+        console.log("API call failed:", result.error);
+
+        // Handle different error types
+        if (result.status === 401) {
+          errorToast(
+            "Authentication Error",
+            "Session expired. Please log in again."
+          );
+        } else if (result.status === 400) {
+          errorToast(
+            "Validation Error",
+            result.error || "Invalid data sent to server."
+          );
+        } else {
+          errorToast(
+            "Save Failed",
+            result.error || "Failed to save comment. Please try again."
+          );
+        }
+      }
     } catch (error) {
       console.error("Error saving comment:", error);
       errorToast(
         "Network Error",
         "Failed to connect to the server. Please check your connection."
       );
+    } finally {
+      setIsSubmitting(false);
+      console.log("=== SAVE ACTIVITY DEBUG END ===");
     }
   };
 
   const handleDeleteComment = async (commentText) => {
     try {
-      const data = await apiRequest(`${Trackerbaseurl}delete_comment/`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          cardId,
-          boardId,
-          commenttext: commentText,
-        }),
-      });
-      // Remove response.ok check and .json() call
-      errorToast(
-        "Comment Deleted",
-        "The comment has been removed successfully"
+      const payload = {
+        cardId: String(cardId),
+        boardId: String(boardId),
+        commenttext: commentText,
+      };
+
+      const result = await apiRequest(
+        `${Trackerbaseurl}delete_comment/`,
+        "DELETE",
+        payload
       );
-      fetchComments();
+
+      if (result.success) {
+        errorToast(
+          "Comment Deleted",
+          "The comment has been removed successfully"
+        );
+        fetchComments();
+      } else {
+        console.error("Delete failed:", result.error);
+        errorToast(
+          "Deletion Failed",
+          result.error || "Unable to delete the comment"
+        );
+      }
     } catch (error) {
       console.error("Error deleting comment:", error);
       errorToast(
@@ -410,28 +508,46 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
 
   const handleEditComment = async (originalCommentText) => {
     try {
-      const data = await apiRequest(`${Trackerbaseurl}edit_comment/`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          cardId,
-          boardId,
-          originalCommentText,
-          newCommentText: editCommentText,
-        }),
-      });
-      // Remove response.ok check and .json() call
-      infoToast("Comment Updated", "Your changes have been saved successfully");
-      fetchComments();
-      setEditingCommentIndex(null);
+      const payload = {
+        cardId: String(cardId),
+        boardId: String(boardId),
+        originalCommentText,
+        newCommentText: editCommentText,
+      };
+
+      const result = await apiRequest(
+        `${Trackerbaseurl}edit_comment/`,
+        "PUT",
+        payload
+      );
+
+      if (result.success) {
+        infoToast(
+          "Comment Updated",
+          "Your changes have been saved successfully"
+        );
+        fetchComments();
+        setEditingCommentIndex(null);
+      } else {
+        console.error("Edit failed:", result.error);
+        errorToast(
+          "Update Failed",
+          result.error || "Unable to edit the comment"
+        );
+      }
     } catch (error) {
       console.error("Error editing comment:", error);
       errorToast(
         "Network Error",
         "Failed to connect to the server. Please try again later."
       );
+    }
+  };
+
+  // Add Enter key handler for better UX
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && e.ctrlKey) {
+      handleSaveActivity();
     }
   };
 
@@ -449,11 +565,14 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
           Activity
         </SectionTitle>
         <ActivityInput
-          placeholder="Add a comment or activity..."
+          placeholder="Add a comment or activity... (Ctrl+Enter to submit)"
           ref={activityInputRef}
+          onKeyDown={handleKeyPress}
         />
         <Actions>
-          <Button onClick={handleSaveActivity}>Comment</Button>
+          <Button onClick={handleSaveActivity} disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Comment"}
+          </Button>
         </Actions>
       </Section>
       <CommentsSection>
@@ -513,7 +632,6 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
           <p>No comments available.</p>
         )}
       </CommentsSection>
-      {/* Custom styled toast container */}
       <StyledToastContainer />
     </div>
   );

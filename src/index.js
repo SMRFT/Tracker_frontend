@@ -14,7 +14,7 @@ console.log("REDIRECT_URL:", REDIRECT_URL);
 // --- Function to set token for local development ---
 function setforlocaldev() {
   const dev_token =
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJTSDAwNyIsImVtYWlsIjoic2l2YXN1bmRhcmlzbXJmdEBnbWFpbC5jb20iLCJlbXBsb3llZUlkIjoiU0gwMDciLCJuYW1lIjoiZGV2aSIsInJvbGVfbmFtZSI6IkFkbWluIiwiYWxsb3dlZC1hY3Rpb25zIjpbIlNULVAtREVTLVIiLCJTRC1QLVJELVJXIiwiU1QtUC1TTk8tUlciLCJTRC1QLUlOVi1SIiwiU0QtUC1TVkQtUiIsIlNULUFQSS1FTVAtUiIsIlNELVAtQkJBLVJXIiwiU1QtUC1DTVQtUiIsIlNULVAtVERMLVIiLCJTRC1QLUNULVIiLCJTRC1QLU9ELVIiLCJTVC1BUEktQ1JELVJXIiwiU0QtUC1MRC1SIiwiU0QtUC1NSVMtUiIsIlNULVAtVERMLVJXIiwiU1QtQVBJLUFNQy1SVyIsIlNULVAtTlRGLVIiLCJTVC1QLU5URi1SVyIsIlNULVAtREVTLVJXIiwiU1QtUC1CUkQtUiIsIlNULVAtQ01ULVJXIiwiU1QtQVBJLUJSRC1SVyIsIlNELVAtUkQtUiIsIkdMLVAtRVBNLVJXIiwiU0QtUC1SQS1SVyJdLCJhbGxvd2VkLWRhdGEiOlsiU0hCMDAzIiwiU0hCMDAxIl0sImlzcyI6Imh0dHBzOi8vbGFiLnNoaW5vdmEuaW4vIiwiaWF0IjoxNzQ5MTgxMDIzLCJleHAiOjE3NDkyNjc0MjMsImp0aSI6IjE3YjBiZjllLTU2MjktNDhmMC1iY2JlLWFhNmRhN2Q3ZmNmMCJ9.VMQdYGm8DUkGsHIUWiv8DDKQjSQzo47gpi56nJ3YQG2NSvHOEJwWskGQEDXkDsk5Qxrz53ZS4sG17hHrYn9vgCtX8DWtXz0_RIPVSEb-NqgmwNL3h5qxAOw0xm4j-KS79hWOPA4NI1d1yRP2k7pT1yZnrfIpgGxiiTsogCkljuTWHNp-a0DW6MzR5unUUONsuXdC-t1VruSqAHx8onCWw3AYAq-Y6IN1veE_6z_mTv7lzPfBVHKyPNUNz4Z8nT8TQy6H9qswoDjAU1HnnJSkNkffqi5yqj79p2wNMxn6kIvv0OwZc6MvuJPiHK9hJMShZzdMBi-i-tW8jsNygwy_Hg";
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJTSDAwNyIsImVtYWlsIjoic2l2YXN1bmRhcmlzbXJmdEBnbWFpbC5jb20iLCJuYW1lIjoiZGV2aSIsImFsbG93ZWQtYWN0aW9ucyI6WyJTVC1QLU5URi1SIiwiU0QtUC1MRC1SIiwiU1QtQVBJLUVNUC1SIiwiU1QtUC1CUkQtUiIsIlNULUFQSS1DUkQtUlciLCJTVC1QLUNNVC1SVyIsIlNELVAtT0QtUiIsIlNELVAtUkQtUiIsIlNULVAtQ01ULVIiLCJTVC1QLVNOTy1SVyIsIlNULVAtVERMLVJXIiwiU0QtUC1JTlYtUiIsIlNELVAtU1ZELVIiLCJTRC1QLUNULVIiLCJTRC1QLVJBLVJXIiwiU0QtUC1CQkEtUlciLCJTRC1QLVJELVJXIiwiU1QtQVBJLUJSRC1SVyIsIlNULVAtREVTLVIiLCJTRC1QLU1JUy1SIiwiU1QtUC1ERVMtUlciLCJTVC1UT0RPLUFETUlOIiwiU1QtQVBJLUFNQy1SVyIsIkdMLVAtRVBNLVJXIiwiU1QtUC1UREwtUiIsIlNULVAtTlRGLVJXIl0sImFsbG93ZWQtZGF0YSI6WyJTSEIwMDMiLCJTSEIwMDEiXSwiaXNzIjoiaHR0cHM6Ly9sYWIuc2hpbm92YS5pbi8iLCJpYXQiOjE3NDk2MjI1MTcsImV4cCI6MTc0OTcwODkxNywianRpIjoiZTk1ZmY2OWEtNjEwNC00ZTM1LWIzOTItMTM4MWI5ZTRkOGJkIn0.ds3vXiVzi_1ycNDttfPV6xRYPV_X5Oakv3H47DUm-Yg2F9aG-Oc3Bj2dkF25IYy5Ai11cI_E8b7NWjgG6cGf8tdZaDAtxDqfc_n_mbegCGCV-t7bA7m28ixhzzZjdHLjzl-zzxtHzFB4MYfcxfom2OUdzQAJld-vGz8p6JIOwBcHWGxY5TCQjYEuhc8VGpf06zzlmR0qOSuhZ8Oy0k-HoBfW8XlNegKdTekN3zeZk6ywzUx5X5nGocaGC9dOtl7s6azekUdLbA-DScRZQYbIbJ2tKqeD6ZGk8R4P9gSnwWiCc2ChcHf4pG-a1-OR_EH8kS9D33iWXxyj2Sc_tGWUnw";
   console.log("🔧 Using your fresh development token");
   return dev_token;
 }
@@ -30,6 +30,23 @@ function validate(token) {
     return payload;
   } catch (err) {
     throw new Error("Invalid token");
+  }
+}
+
+// --- Function to determine user role based on allowed-actions ---
+function getUserRole(allowedActions) {
+  if (!allowedActions || !Array.isArray(allowedActions)) {
+    return "Employee"; // Default role
+  }
+
+  if (allowedActions.includes("ST-TODO-ADMIN")) {
+    return "Admin";
+  } else if (allowedActions.includes("ST-TODO-HOD")) {
+    return "HOD";
+  } else if (allowedActions.includes("ST-TODO-EMPLOYEE")) {
+    return "Employee";
+  } else {
+    return "Employee"; // Default role if none of the specific roles are found
   }
 }
 
@@ -61,29 +78,36 @@ if (!accessToken) {
     console.log("✅ Token validated successfully");
     console.log("Decoded token payload:", userPayload);
 
-    // Extract user information
-    const employeeId = userPayload.employeeId;
+    // Extract user information from token payload
+    const employeeId = userPayload.aud; // Using 'aud' field as ID
     const employeeName = userPayload.name;
-    const role = userPayload.role_name;
     const userEmail = userPayload.email;
+    const userRole = getUserRole(userPayload["allowed-actions"]);
 
     console.log("Employee ID:", employeeId);
     console.log("Employee Name:", employeeName);
     console.log("Email:", userEmail);
-    console.log("role:", role);
+    console.log("User Role:", userRole);
 
     // Check if we have required data
     const isLoggedIn = !!(employeeId && employeeName);
     console.log("Is logged in:", isLoggedIn);
 
     if (isLoggedIn) {
-      // Store user payload for app usage
+      // Store user payload and extracted information for app usage
       localStorage.setItem("user_payload", JSON.stringify(userPayload));
       localStorage.setItem("employeeId", employeeId);
       localStorage.setItem("employeeName", employeeName);
-      localStorage.setItem("role", role);
       localStorage.setItem("userEmail", userEmail);
-      console.log("✅ User payload stored in localStorage");
+      localStorage.setItem("role", userRole);
+
+      console.log("✅ User payload and extracted data stored in localStorage");
+      console.log("Stored data:", {
+        employeeId,
+        employeeName,
+        userEmail,
+        role: userRole,
+      });
 
       // Token is valid, render app
       console.log("✅ Rendering tracker app...");
@@ -111,20 +135,29 @@ if (!accessToken) {
 
       // Validate the fresh token
       const freshPayload = validate(freshToken);
-      const employeeId = freshPayload.employeeId;
+      const employeeId = freshPayload.aud; // Using 'aud' field as ID
       const employeeName = freshPayload.name;
+      const userEmail = freshPayload.email;
+      const userRole = getUserRole(freshPayload["allowed-actions"]);
+
       const isLoggedIn = !!(employeeId && employeeName);
 
       if (isLoggedIn) {
         localStorage.setItem("user_payload", JSON.stringify(freshPayload));
         localStorage.setItem("employeeId", employeeId);
         localStorage.setItem("employeeName", employeeName);
-        localStorage.setItem("role", freshPayload.role_name);
-        localStorage.setItem("userEmail", freshPayload.email);
+        localStorage.setItem("userEmail", userEmail);
+        localStorage.setItem("role", userRole);
 
         console.log(
           "✅ Fresh development token set and validated successfully"
         );
+        console.log("Fresh token data:", {
+          employeeId,
+          employeeName,
+          userEmail,
+          role: userRole,
+        });
 
         // Render app with fresh token
         const root = ReactDOM.createRoot(document.getElementById("root"));

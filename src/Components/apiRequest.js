@@ -27,7 +27,7 @@ const apiRequest = async (url, method = "GET", data = null, headers = {}) => {
       validateStatus: () => true,
     };
 
-    if (data && ["POST", "PUT", "PATCH"].includes(method)) {
+    if (data && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
       config.data = data;
     }
 

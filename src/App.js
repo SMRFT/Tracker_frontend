@@ -63,20 +63,18 @@ const AppContent = ({ boards, addBoard }) => {
 
 const App = () => {
   const [boards, setBoards] = useState([]);
-  const [employeeId, setEmployeeId] = useState(null);
-  const [employeeName, setEmployeeName] = useState(null);
+  const [role, setRole] = useState("");
 
   useEffect(() => {
-    const id = localStorage.getItem("employeeId");
-    const name = localStorage.getItem("employeeName");
-    if (id && name) {
-      setEmployeeId(id);
-      setEmployeeName(name);
+    const role = localStorage.getItem("role");
+    if (role) {
+      setRole(role);
     }
   }, []);
 
   const fetchBoards = async () => {
-    const result = await apiRequest(`${Trackerbaseurl}get-boards/`);
+    const role = localStorage.getItem("role");
+    const result = await apiRequest(`${Trackerbaseurl}get-boards/${role}/`);
     if (result.success) {
       setBoards(Array.isArray(result.data) ? result.data : []);
     } else {

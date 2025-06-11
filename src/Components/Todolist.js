@@ -35,6 +35,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const [members, setMembers] = useState([]);
   const [cardMembers, setCardMembers] = useState([]);
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
   const ItemType = {
     CARD: "card",
   };
@@ -341,11 +342,20 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
   const [events, setEvents] = useState([]);
   const [cards, setCards] = useState([]);
+  const [userRole, setRole] = useState("");
+  useEffect(() => {
+    const userRole = localStorage.getItem("role");
+
+    if (userRole) {
+      setRole(userRole);
+    }
+  }, []);
 
   const fetchCardsWithMembers = async (boardId) => {
+    const userRole = localStorage.getItem("role");
     try {
       const result = await apiRequest(
-        `${Trackerbaseurl}cards/?boardId=${boardId}`
+        `${Trackerbaseurl}cards/${boardId}/${userRole}/`
       );
 
       if (!result.success) {
@@ -404,8 +414,8 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   };
 
   useEffect(() => {
-    fetchCardsWithMembers(boardId);
-  }, [boardId]);
+    fetchCardsWithMembers(boardId, userRole);
+  }, [boardId, userRole]);
 
   const moveCard = async (fromIndex, fromColumnId, toIndex, toColumnId) => {
     const updatedColumns = { ...columns };
@@ -446,10 +456,10 @@ const DragAndDropCards = ({ boards, setBoards }) => {
       employeeName,
       boardName,
     };
-
+    const userRole = localStorage.getItem("role");
     try {
       const result = await apiRequest(
-        `${Trackerbaseurl}cards/`,
+        `${Trackerbaseurl}cards/${userRole}/`,
         "POST",
         newCard
       );

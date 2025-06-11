@@ -400,29 +400,36 @@ const CloseToast = styled.button`
 `;
 
 // Main Component
-const Description = ({ cardId, cardName, boardName, boardId }) => {
+const Description = ({
+  cardId = 14,
+  cardName = "Tracker",
+  boardName = "IT",
+  boardId = 1,
+}) => {
   const [isDropdownOpen, setDropdownOpen] = useState(false);
-  const [description, setDescription] = useState(null);
+  const [description, setDescription] = useState("");
   const [file, setFile] = useState(null);
   const [image, setImage] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filesLoading, setFilesLoading] = useState(true);
   const descriptionRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const [isEditing, setEditing] = useState(false);
-  const [employeeName, setEmployeeName] = useState(null);
+  const [employeeName, setEmployeeName] = useState("Demo User");
   const [imageArray, setImageArray] = useState([]);
   const imagesFetched = useRef(new Set());
-  const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
+  // Mock base URL for demonstration
+  const Trackerbaseurl = "http://127.0.0.1:2700/_b_a_c_k_e_n_d/Tracker/";
+
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
-    const name = localStorage.getItem("employeeName");
-    if (name) {
-      setEmployeeName(name);
-    }
+    const name = localStorage.getItem("employeeName") || "Demo User";
+    setEmployeeName(name);
   }, []);
 
   // Function to show toast notification
@@ -430,13 +437,11 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
     const id = Date.now();
     setToasts((prevToasts) => [...prevToasts, { id, message, type }]);
 
-    // Auto remove toast after duration
     setTimeout(() => {
       setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
     }, duration);
   };
 
-  // Function to manually remove a toast
   const removeToast = (id) => {
     setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
   };
@@ -480,7 +485,6 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
         range.startContainer.parentNode.tagName.toLowerCase() ===
           formatElement.tagName.toLowerCase()
       ) {
-        // If already formatted, remove the format by replacing the node with its contents
         const parentNode = range.startContainer.parentNode;
         const fragment = document.createDocumentFragment();
         while (parentNode.firstChild) {
@@ -557,7 +561,9 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
     }
   };
 
+  // Fixed fetchDescription function
   const fetchDescription = async () => {
+    setLoading(true);
     try {
       const response = await apiRequest(
         `${Trackerbaseurl}save-description/?cardId=${cardId}&boardId=${boardId}`,
@@ -566,63 +572,80 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
         }
       );
 
-      const data = await response.json();
       if (response.ok) {
+        const data = await response.json();
         console.log("Description fetched successfully:", data);
-        setDescription(data.description);
+
+        // Handle the response properly - the description should be in data.description
+        if (data && data.description) {
+          setDescription(data.description);
+          showToast("Description loaded successfully", "success");
+        } else {
+          // No description found
+          setDescription("");
+          console.log("No description found for this card");
+        }
       } else {
-        console.error("Error fetching description:", data.error);
+        console.error("Error fetching description: Response not OK");
+        setDescription("");
         showToast("Failed to load description", "error");
       }
     } catch (error) {
       console.error("Error fetching description:", error);
+      setDescription("");
       showToast("Failed to load description", "error");
-    }
-  };
-
-  useEffect(() => {
-    if (descriptionRef.current) {
-      descriptionRef.current.textContent = description;
-    }
-  }, [description]);
-
-  // Function to fetch the files
-  const fetchFiles = async () => {
-    try {
-      const response = await apiRequest(
-        `${Trackerbaseurl}get-file/${boardId}/${cardId}/`
-      );
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log("Fetched files:", data);
-
-        // Filter out duplicates before setting the state
-        const uniqueFiles = data.filter(
-          (file) =>
-            !files.some(
-              (existingFile) => existingFile.filename === file.filename
-            )
-        );
-
-        setFiles((prevFiles) => [...prevFiles, ...uniqueFiles]);
-
-        if (uniqueFiles.length > 0) {
-          showToast(`Loaded ${uniqueFiles.length} attachment(s)`, "info");
-        }
-      } else {
-        console.error("Error fetching files:", data.error);
-        showToast("Failed to load attachments", "error");
-      }
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      showToast("Failed to load attachments", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Function to fetch and store image blobs using apiRequest
+  // Update the content editable div when description changes
+  useEffect(() => {
+    if (descriptionRef.current && description !== null) {
+      descriptionRef.current.innerHTML = description || "";
+    }
+  }, [description, isEditing]);
+
+  // Function to fetch the files
+  const fetchFiles = async () => {
+    setFilesLoading(true);
+    try {
+      const response = await apiRequest(
+        `${Trackerbaseurl}get-file/${boardId}/${cardId}/`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Fetched files:", data);
+
+        if (Array.isArray(data) && data.length > 0) {
+          const uniqueFiles = data.filter(
+            (file) =>
+              !files.some(
+                (existingFile) => existingFile.filename === file.filename
+              )
+          );
+
+          setFiles(uniqueFiles);
+          showToast(`Loaded ${uniqueFiles.length} attachment(s)`, "info");
+        } else {
+          setFiles([]);
+          console.log("No files found for this card");
+        }
+      } else {
+        console.error("Error fetching files");
+        setFiles([]);
+        showToast("Failed to load attachments", "error");
+      }
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      setFiles([]);
+      showToast("Failed to load attachments", "error");
+    } finally {
+      setFilesLoading(false);
+    }
+  };
+
   const fetchAndStoreImage = async (file) => {
     if (!file || !file.filename) {
       console.error("Invalid file object or missing filename:", file);
@@ -637,12 +660,9 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
         `${Trackerbaseurl}get-files/?filename=${encodeURIComponent(filename)}`,
         {
           method: "GET",
-          responseType: "blob", // This tells apiRequest to handle blob response
+          responseType: "blob",
         }
       );
-
-      // If apiRequest doesn't support responseType, you might need to handle it differently
-      // Check your apiRequest implementation to see how it handles blob responses
 
       let blob;
       let fileType;
@@ -651,7 +671,6 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
         blob = imageResponse;
         fileType = imageResponse.type;
       } else {
-        // If response is not a blob, create one from the response
         blob = await imageResponse.blob();
         fileType =
           imageResponse.headers?.get?.("content-type") ||
@@ -676,19 +695,19 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
     }
   };
 
-  // Fetch images once files are loaded
   useEffect(() => {
     if (files.length > 0) {
       files.forEach((file) => fetchAndStoreImage(file));
+    } else {
+      setImageArray([]);
+      imagesFetched.current.clear();
     }
   }, [files]);
 
-  // Fetch files when the component mounts
   useEffect(() => {
     fetchFiles();
-  }, []);
+  }, [cardId, boardId]);
 
-  // Function to handle file download
   const handleDownload = (filename) => {
     window.open(`${Trackerbaseurl}get-files/?filename=${filename}`, "_blank");
     showToast(`Downloading ${filename}`, "info");
@@ -730,26 +749,22 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
         "success"
       );
 
-      // Clear the file and image state
       setFile(null);
       setImage(null);
-
-      // Refresh the file list
-      fetchFiles();
+      await fetchFiles();
     } catch (error) {
       console.error("Error uploading files and images:", error);
       showToast("Failed to upload attachments. Please try again.", "error");
     }
   };
 
-  const handleSave = () => {
-    handleSaveDescription();
+  const handleSave = async () => {
+    await handleSaveDescription();
     if (file || image) {
-      handleSaveFilesImages();
+      await handleSaveFilesImages();
     }
   };
 
-  // Function to handle file deletion using apiRequest
   const handleDeleteFile = async (filename) => {
     try {
       await apiRequest(
@@ -764,6 +779,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
       setImageArray((prevImages) =>
         prevImages.filter((image) => image.filename !== filename)
       );
+      imagesFetched.current.delete(filename);
       showToast(`Successfully deleted ${filename}`, "success");
       console.log(`File ${filename} deleted successfully.`);
     } catch (error) {
@@ -772,6 +788,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
     }
   };
 
+  // Fetch description on component mount
   useEffect(() => {
     fetchDescription();
   }, [cardId, boardId]);
