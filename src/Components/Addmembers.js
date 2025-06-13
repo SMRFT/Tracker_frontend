@@ -112,7 +112,13 @@ const Button = styled.button`
     background-color: #45a049;
   }
 `;
-const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
+const Addmembers = ({
+  cardId,
+  cardName,
+  boardId,
+  closeModal,
+  onMemberUpdate,
+}) => {
   const [employees, setEmployees] = useState([]);
   const [addedMembers, setAddedMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -120,12 +126,12 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const role = localStorage.getItem("role");
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
         const response = await apiRequest(`${Trackerbaseurl}get-employees/`);
 
-        // Check if the API request was successful
         if (response.success) {
           setEmployees(response.data);
         } else {
@@ -139,24 +145,23 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
         setLoading(false);
       }
     };
+
     const fetchAddedMembers = async () => {
       try {
         const response = await apiRequest(
           `${Trackerbaseurl}add_member_to_card/?cardId=${cardId}&boardId=${boardId}&cardName=${cardName}`
         );
 
-        // Check if the API request was successful
         if (response.success) {
           setAddedMembers(response.data);
         } else {
           console.error("API Error:", response.error);
-          // Optionally show a toast notification
-          // toast.error(response.error || "Failed to fetch added members");
         }
       } catch (error) {
         console.error("Error fetching added members:", error);
       }
     };
+
     fetchEmployees();
     fetchAddedMembers();
   }, [cardId, boardId, cardName]);
@@ -177,16 +182,24 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
       if (!result.success) {
         toast.error(result.error || "Error adding member.");
       } else {
+        // Update local state
         setAddedMembers([...addedMembers, employee]);
         setEmployees(
           employees.filter((emp) => emp.employeeId !== employee.employeeId)
         );
-        // Use backend success message if available, otherwise fallback to default
-        toast.success(result.data?.message || "Member added successfully!");
+
+        // Call the callback to update parent component
+        if (onMemberUpdate) {
+          onMemberUpdate();
+        }
+
+        const successMessage =
+          result.data?.message || "Member added successfully!";
+        toast.success(successMessage);
       }
     } catch (error) {
       console.error("Unexpected error:", error);
-      toast.error("Error adding member.");
+      toast.error("Unexpected error occurred.");
     } finally {
       setLoading(false);
     }
@@ -202,12 +215,19 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
       if (!result.success) {
         toast.error(result.error || "Failed to remove member");
       } else {
+        // Update local state
         setAddedMembers(
           addedMembers.filter(
             (member) => member.employeeId !== employee.employeeId
           )
         );
         setEmployees([...employees, employee]);
+
+        // Call the callback to update parent component
+        if (onMemberUpdate) {
+          onMemberUpdate();
+        }
+
         toast.warn("Member removed successfully!");
       }
     } catch (error) {
@@ -222,6 +242,7 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
       !addedMembers.some((member) => member.employeeId === employee.employeeId)
   );
 
+  // Rest of your component JSX remains the same...
   return (
     <ModalBackdrop>
       <ModalContainer>
@@ -269,16 +290,21 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal }) => {
     </ModalBackdrop>
   );
 };
-// Parent Component
-const Addmembersbutton = ({ cardId, boardId, cardName }) => {
+
+// Updated Addmembersbutton component to pass the callback
+const Addmembersbutton = ({ cardId, boardId, cardName, onMemberUpdate }) => {
   const [showModal, setShowModal] = useState(false);
+
   const openModal = () => {
     setShowModal(true);
   };
+
   const closeModal = () => {
     setShowModal(false);
   };
+
   const role = localStorage.getItem("role");
+
   return (
     <div>
       {(role === "Admin" || role === "HOD") && (
@@ -295,6 +321,7 @@ const Addmembersbutton = ({ cardId, boardId, cardName }) => {
           cardId={cardId}
           boardId={boardId}
           cardName={cardName}
+          onMemberUpdate={onMemberUpdate}
         />
       )}
     </div>

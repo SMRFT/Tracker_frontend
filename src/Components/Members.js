@@ -209,7 +209,7 @@ const Members = () => {
   }, [searchTerm, employees]);
 
   const handleRegisterClick = () => {
-    navigate("/Register");
+    window.location.href = "https://test.shinova.in/global";
   };
 
   const getInitials = (name) => {

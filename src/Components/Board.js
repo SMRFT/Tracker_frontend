@@ -475,7 +475,7 @@ const Board = () => {
 
     setIsCreating(true);
     setMessage({ type: "", text: "" });
-    const name = localStorage.getItem("employeeName");
+
     try {
       const newBoard = {
         boardName: boardName.trim(),
@@ -483,7 +483,7 @@ const Board = () => {
       };
 
       const result = await apiRequest(
-        `${Trackerbaseurl}boards/${name}/`,
+        `${Trackerbaseurl}boards/`,
         "POST",
         newBoard
       );

@@ -103,7 +103,11 @@ const Notification = () => {
 
       if (response.success) {
         setNotifications(response.data);
-        setUnreadCount(response.data.length);
+        // ✅ Count only unread notifications (where is_read is false)
+        const unreadNotifications = response.data.filter(
+          (notification) => !notification.is_read
+        );
+        setUnreadCount(unreadNotifications.length);
       } else {
         console.error("Failed to fetch notifications:", response.error);
       }
@@ -120,6 +124,13 @@ const Notification = () => {
 
     if (response.success) {
       console.log("Notifications marked as read:", response.data);
+      // ✅ Update local state to reflect that notifications are now read
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) => ({
+          ...notification,
+          is_read: true,
+        }))
+      );
     } else {
       console.error("Failed to mark notifications as read:", response.error);
     }
@@ -132,7 +143,7 @@ const Notification = () => {
 
     if (willOpen) {
       markNotificationsAsRead(); // ✅ mark as read when opening
-      setUnreadCount(0);
+      setUnreadCount(0); // ✅ Reset unread count immediately
     }
   };
 

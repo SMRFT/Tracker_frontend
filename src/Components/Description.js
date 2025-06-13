@@ -536,49 +536,54 @@ const Description = ({
     const text = descriptionRef.current.textContent;
 
     try {
-      const response = await apiRequest(`${Trackerbaseurl}save-description/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      // ✅ CORRECT: Use your apiRequest helper properly
+      const response = await apiRequest(
+        `${Trackerbaseurl}save-description/`,
+        "POST", // method as second parameter
+        {
+          // data as third parameter
           cardId,
           boardId,
           cardName,
           boardName,
           description: text,
-        }),
-      });
+        }
+      );
 
-      const data = await response.json();
-      setEditing(false);
-      setDescription(text);
-      showToast("Description saved successfully", "success");
-      console.log("Description saved successfully:", data);
+      // ✅ CORRECT: Handle the response from your apiRequest helper
+      if (response.success) {
+        setEditing(false);
+        setDescription(text);
+        showToast("Description saved successfully", "success");
+        console.log("Description saved successfully:", response.data);
+      } else {
+        console.error("Error saving description:", response.error);
+        showToast(
+          response.error || "Failed to save description. Please try again.",
+          "error"
+        );
+      }
     } catch (error) {
       console.error("Error saving description:", error);
       showToast("Failed to save description. Please try again.", "error");
     }
   };
 
-  // Fixed fetchDescription function
+  // ✅ ALSO FIX: Your fetchDescription function has similar issues
   const fetchDescription = async () => {
     setLoading(true);
     try {
       const response = await apiRequest(
         `${Trackerbaseurl}save-description/?cardId=${cardId}&boardId=${boardId}`,
-        {
-          method: "GET",
-        }
+        "GET"
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Description fetched successfully:", data);
+      if (response.success) {
+        console.log("Description fetched successfully:", response.data);
 
-        // Handle the response properly - the description should be in data.description
-        if (data && data.description) {
-          setDescription(data.description);
+        // Handle the response properly - the description should be in response.data.description
+        if (response.data && response.data.description) {
+          setDescription(response.data.description);
           showToast("Description loaded successfully", "success");
         } else {
           // No description found
@@ -586,9 +591,9 @@ const Description = ({
           console.log("No description found for this card");
         }
       } else {
-        console.error("Error fetching description: Response not OK");
+        console.error("Error fetching description:", response.error);
         setDescription("");
-        showToast("Failed to load description", "error");
+        showToast(response.error || "Failed to load description", "error");
       }
     } catch (error) {
       console.error("Error fetching description:", error);
@@ -606,20 +611,23 @@ const Description = ({
     }
   }, [description, isEditing]);
 
-  // Function to fetch the files
+  // Fixed fetchFiles function
   const fetchFiles = async () => {
     setFilesLoading(true);
     try {
+      // ✅ CORRECT: Use apiRequest properly
       const response = await apiRequest(
-        `${Trackerbaseurl}get-file/${boardId}/${cardId}/`
+        `${Trackerbaseurl}get-file/${boardId}/${cardId}/`,
+        "GET"
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Fetched files:", data);
+      // ✅ CORRECT: Check response.success instead of response.ok
+      if (response.success) {
+        console.log("Fetched files:", response.data);
 
-        if (Array.isArray(data) && data.length > 0) {
-          const uniqueFiles = data.filter(
+        // ✅ CORRECT: Use response.data instead of await response.json()
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          const uniqueFiles = response.data.filter(
             (file) =>
               !files.some(
                 (existingFile) => existingFile.filename === file.filename
@@ -633,9 +641,9 @@ const Description = ({
           console.log("No files found for this card");
         }
       } else {
-        console.error("Error fetching files");
+        console.error("Error fetching files:", response.error);
         setFiles([]);
-        showToast("Failed to load attachments", "error");
+        showToast(response.error || "Failed to load attachments", "error");
       }
     } catch (error) {
       console.error("Error fetching files:", error);
@@ -656,39 +664,41 @@ const Description = ({
     if (imagesFetched.current.has(filename)) return;
 
     try {
-      const imageResponse = await apiRequest(
+      // ✅ CORRECT: For file downloads, you might need to handle this differently
+      // Your apiRequest helper expects JSON, but file downloads return binary data
+      const imageResponse = await fetch(
         `${Trackerbaseurl}get-files/?filename=${encodeURIComponent(filename)}`,
         {
           method: "GET",
-          responseType: "blob",
+          headers: {
+            Authorization: localStorage.getItem("access_token"),
+          },
         }
       );
 
-      let blob;
-      let fileType;
-
-      if (imageResponse instanceof Blob) {
-        blob = imageResponse;
-        fileType = imageResponse.type;
-      } else {
-        blob = await imageResponse.blob();
-        fileType =
-          imageResponse.headers?.get?.("content-type") ||
+      if (imageResponse.ok) {
+        const blob = await imageResponse.blob();
+        const fileType =
+          imageResponse.headers.get("content-type") ||
           "application/octet-stream";
+
+        setImageArray((prevArray) => [
+          ...prevArray.filter((image) => image.filename !== filename),
+          {
+            src: URL.createObjectURL(blob),
+            filename: filename,
+            type: fileType,
+            employeeName: file.employeeName,
+            uploadDate: file.uploadDate,
+          },
+        ]);
+
+        imagesFetched.current.add(filename);
+      } else {
+        throw new Error(
+          `HTTP ${imageResponse.status}: ${imageResponse.statusText}`
+        );
       }
-
-      setImageArray((prevArray) => [
-        ...prevArray.filter((image) => image.filename !== filename),
-        {
-          src: URL.createObjectURL(blob),
-          filename: filename,
-          type: fileType,
-          employeeName: file.employeeName,
-          uploadDate: file.uploadDate,
-        },
-      ]);
-
-      imagesFetched.current.add(filename);
     } catch (error) {
       console.error(`Error fetching image for ${filename}:`, error);
       showToast(`Failed to load attachment: ${filename}`, "error");
@@ -734,30 +744,41 @@ const Description = ({
     formData.append("employeeName", employeeName);
 
     try {
-      const response = await apiRequest(`${Trackerbaseurl}upload-content/`, {
+      // ✅ CORRECT: For file uploads, use fetch directly since FormData needs special handling
+      const response = await fetch(`${Trackerbaseurl}upload-content/`, {
         method: "POST",
+        headers: {
+          Authorization: localStorage.getItem("access_token"),
+          // Don't set Content-Type for FormData - let browser set it with boundary
+        },
         body: formData,
       });
 
-      const data = await response.json();
-      console.log(
-        "Files, images, and card details uploaded successfully:",
-        data
-      );
-      showToast(
-        `Successfully uploaded ${uploadedItems.join(" and ")}`,
-        "success"
-      );
+      if (response.ok) {
+        const data = await response.json();
+        console.log(
+          "Files, images, and card details uploaded successfully:",
+          data
+        );
+        showToast(
+          `Successfully uploaded ${uploadedItems.join(" and ")}`,
+          "success"
+        );
 
-      setFile(null);
-      setImage(null);
-      await fetchFiles();
+        setFile(null);
+        setImage(null);
+        await fetchFiles();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `HTTP ${response.status}: ${response.statusText}`
+        );
+      }
     } catch (error) {
       console.error("Error uploading files and images:", error);
       showToast("Failed to upload attachments. Please try again.", "error");
     }
   };
-
   const handleSave = async () => {
     await handleSaveDescription();
     if (file || image) {
@@ -769,9 +790,7 @@ const Description = ({
     try {
       await apiRequest(
         `${Trackerbaseurl}delete-file/${boardId}/${cardId}/${filename}/`,
-        {
-          method: "DELETE",
-        }
+        "DELETE" // Pass method as string, not object
       );
       setFiles((prevFiles) =>
         prevFiles.filter((file) => file.filename !== filename)

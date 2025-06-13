@@ -12,7 +12,6 @@ const SignOut = () => {
   const navigate = useNavigate();
   const [employeeName, setEmployeeName] = useState("");
   const [employeeId, setEmployeeId] = useState("");
-  const [email, setEmail] = useState("");
   const [showSignOut, setShowSignOut] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -22,10 +21,10 @@ const SignOut = () => {
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   useEffect(() => {
     const storedUserName = localStorage.getItem("employeeName");
-    const storedUserEmail = localStorage.getItem("email");
     const storedEmployeeId = localStorage.getItem("employeeId");
+    console.log("Stored User Name:", storedUserName);
+    console.log("Stored Employee ID:", storedEmployeeId);
     setEmployeeName(storedUserName || "User");
-    setEmail(storedUserEmail || "user@example.com");
     setEmployeeId(storedEmployeeId || "");
   }, []);
 
@@ -45,9 +44,8 @@ const SignOut = () => {
   const handleSignOut = () => {
     localStorage.removeItem("employeeId");
     localStorage.removeItem("employeeName");
-    localStorage.removeItem("email");
     localStorage.removeItem("role");
-    navigate("/");
+    window.location.href = "https://loginshanmuga.netlify.app/";
   };
 
   const openChangePasswordModal = () => {
@@ -71,7 +69,6 @@ const SignOut = () => {
 
     try {
       const response = await apiRequest(`${Trackerbaseurl}change-password/`, {
-        email,
         employeeId,
         currentPassword,
         newPassword,
@@ -114,7 +111,7 @@ const SignOut = () => {
       >
         <TooltipContent>
           <div>{employeeName}</div>
-          <div>{email}</div>
+          <div>{employeeId}</div>
         </TooltipContent>
       </Tooltip>
 
@@ -124,7 +121,7 @@ const SignOut = () => {
             <UserAvatar>{employeeName.charAt(0).toUpperCase()}</UserAvatar>
             <UserDetails>
               <UserName>{employeeName}</UserName>
-              <UserEmail>{email}</UserEmail>
+              <UserID>{employeeId}</UserID>
             </UserDetails>
           </UserInfo>
 
@@ -309,7 +306,7 @@ const UserName = styled.div`
   margin-bottom: 2px;
 `;
 
-const UserEmail = styled.div`
+const UserID = styled.div`
   font-size: 12px;
   color: #666;
   white-space: nowrap;

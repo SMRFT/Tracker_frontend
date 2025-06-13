@@ -8,7 +8,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest";
 
-// Styled Components
+// Styled Components (keeping all your existing styles)
 const DateWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -117,8 +117,8 @@ const ModalContainer = styled.div`
   }
 `;
 
-// Date Modal Component
-const DateModal = ({ closeModal, cardId }) => {
+// Updated Date Modal Component to accept and use the callback
+const DateModal = ({ closeModal, cardId, boardId, onDateUpdate }) => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [isStartDatePickerOpen, setStartDatePickerOpen] = useState(false);
@@ -166,11 +166,11 @@ const DateModal = ({ closeModal, cardId }) => {
 
     const formattedStartDate = formatDateToLocal(startDate);
     const formattedEndDate = formatDateToLocal(endDate);
+    const userRole = localStorage.getItem("role");
 
     try {
-      // Use the correct apiRequest signature: (url, method, data, headers)
       const response = await apiRequest(
-        `${Trackerbaseurl}cards/${cardId}`,
+        `${Trackerbaseurl}cards/${cardId}/${boardId}/${userRole}/`,
         "PATCH",
         {
           startdate: formattedStartDate,
@@ -184,6 +184,12 @@ const DateModal = ({ closeModal, cardId }) => {
           autoClose: 3000,
           position: "top-right",
         });
+
+        // Call the callback to update parent component
+        if (onDateUpdate) {
+          onDateUpdate();
+        }
+
         closeModal();
       } else {
         // Handle different error scenarios
@@ -252,8 +258,8 @@ const DateModal = ({ closeModal, cardId }) => {
   );
 };
 
-// Parent Component
-const DateButton = ({ cardId }) => {
+// Updated Parent Component to accept and pass the callback
+const DateButton = ({ cardId, boardId, onDateUpdate }) => {
   const [showModal, setShowModal] = useState(false);
 
   const openModal = () => {
@@ -265,6 +271,7 @@ const DateButton = ({ cardId }) => {
   };
 
   const role = localStorage.getItem("role");
+
   return (
     <div>
       {(role === "Admin" || role === "HOD") && (
@@ -274,7 +281,14 @@ const DateButton = ({ cardId }) => {
         </Button>
       )}
 
-      {showModal && <DateModal closeModal={closeModal} cardId={cardId} />}
+      {showModal && (
+        <DateModal
+          closeModal={closeModal}
+          cardId={cardId}
+          boardId={boardId}
+          onDateUpdate={onDateUpdate}
+        />
+      )}
       <ToastContainer />
     </div>
   );

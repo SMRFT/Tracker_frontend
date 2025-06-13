@@ -109,22 +109,6 @@ const CommentDate = styled.small`
   margin-left: 10px;
 `;
 
-const EditText = styled.span`
-  color: blue;
-  cursor: pointer;
-  text-decoration: underline;
-  margin-left: 10px;
-  font-size: 0.9rem;
-`;
-
-const DeleteText = styled.span`
-  color: red;
-  cursor: pointer;
-  text-decoration: underline;
-  margin-left: 10px;
-  font-size: 0.9rem;
-`;
-
 const ActionIcons = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -150,82 +134,31 @@ const ActionIcon = styled.div`
   }
 `;
 
-// Custom Toast Container styling
-const StyledToastContainer = styled(ToastContainer)`
-  .Toastify__toast {
-    border-radius: 8px;
-    padding: 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  }
-
-  .Toastify__toast-body {
-    display: flex;
-    align-items: center;
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .Toastify__toast--success {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-  }
-
-  .Toastify__toast--error {
-    background: linear-gradient(135deg, #dc3545, #ff6b6b);
-    color: white;
-  }
-
-  .Toastify__toast--info {
-    background: linear-gradient(135deg, #0dcaf0, #0d6efd);
-    color: white;
-  }
-
-  .Toastify__toast--warning {
-    background: linear-gradient(135deg, #ffc107, #fd7e14);
-    color: white;
-  }
-
-  .Toastify__progress-bar {
-    height: 4px;
-    opacity: 0.7;
-  }
-
-  .Toastify__close-button {
-    color: rgba(255, 255, 255, 0.7);
-    opacity: 0.7;
-    &:hover {
-      opacity: 1;
-    }
-  }
+const EditInput = styled.input`
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 8px;
 `;
 
-// Custom toast message components
-const ToastMessage = styled.div`
+const EditActions = styled.div`
   display: flex;
-  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
 `;
 
-const ToastIcon = styled.div`
-  margin-right: 12px;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
+const EditButton = styled(Button)`
+  padding: 6px 12px;
+  font-size: 12px;
 `;
 
-const ToastContent = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const ToastTitle = styled.div`
-  font-weight: 600;
-  margin-bottom: 4px;
-`;
-
-const ToastDescription = styled.div`
-  font-weight: 400;
-  opacity: 0.9;
+const CancelButton = styled(EditButton)`
+  background-color: #95a5a6;
+  &:hover {
+    background-color: #7f8c8d;
+  }
 `;
 
 const Comment = ({ cardId, cardName, boardName, boardId }) => {
@@ -247,61 +180,38 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     }
   }, []);
 
-  // Configure toast options
-  const toastConfig = {
-    position: "bottom-right",
-    autoClose: 3000,
-    hideProgressBar: false,
-    closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
+  // Simplified toast functions to avoid complex custom components
+  const showSuccessToast = (message) => {
+    toast.success(message, {
+      position: "bottom-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
   };
 
-  // Custom toast notification functions
-  const successToast = (title, message) => {
-    toast.success(
-      <ToastMessage>
-        <ToastIcon>
-          <FaCheck />
-        </ToastIcon>
-        <ToastContent>
-          <ToastTitle>{title}</ToastTitle>
-          <ToastDescription>{message}</ToastDescription>
-        </ToastContent>
-      </ToastMessage>,
-      toastConfig
-    );
+  const showErrorToast = (message) => {
+    toast.error(message, {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
   };
 
-  const errorToast = (title, message) => {
-    toast.error(
-      <ToastMessage>
-        <ToastIcon>
-          <FaExclamationTriangle />
-        </ToastIcon>
-        <ToastContent>
-          <ToastTitle>{title}</ToastTitle>
-          <ToastDescription>{message}</ToastDescription>
-        </ToastContent>
-      </ToastMessage>,
-      toastConfig
-    );
-  };
-
-  const infoToast = (title, message) => {
-    toast.info(
-      <ToastMessage>
-        <ToastIcon>
-          <FaInfoCircle />
-        </ToastIcon>
-        <ToastContent>
-          <ToastTitle>{title}</ToastTitle>
-          <ToastDescription>{message}</ToastDescription>
-        </ToastContent>
-      </ToastMessage>,
-      toastConfig
-    );
+  const showInfoToast = (message) => {
+    toast.info(message, {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
   };
 
   const fetchComments = async () => {
@@ -329,8 +239,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
         setComments([]);
         if (result.status !== 404) {
           // Don't show error for no comments found
-          errorToast(
-            "Network Error",
+          showErrorToast(
             result.error || "Failed to load comments. Please try again later."
           );
         }
@@ -338,10 +247,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     } catch (error) {
       console.error("Error fetching comments:", error);
       setComments([]);
-      errorToast(
-        "Network Error",
-        "Failed to load comments. Please try again later."
-      );
+      showErrorToast("Failed to load comments. Please try again later.");
     }
   };
 
@@ -362,7 +268,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
 
     if (!commentText) {
       console.log("Comment text is empty");
-      errorToast("Empty Comment", "Comment cannot be empty!");
+      showErrorToast("Comment cannot be empty!");
       return;
     }
 
@@ -374,16 +280,13 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     console.log("- employeeName:", employeeName, typeof employeeName);
 
     if (!cardId || !boardId) {
-      errorToast("Missing Information", "Card ID or Board ID is missing!");
+      showErrorToast("Card ID or Board ID is missing!");
       console.error("Missing cardId or boardId:", { cardId, boardId });
       return;
     }
 
     if (!employeeId || !employeeName) {
-      errorToast(
-        "Authentication Error",
-        "Employee information not found. Please log in again."
-      );
+      showErrorToast("Employee information not found. Please log in again.");
       console.error("Missing employee info:", { employeeId, employeeName });
       return;
     }
@@ -423,10 +326,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
 
       if (result.success) {
         console.log("API call successful");
-        successToast(
-          "Comment Added",
-          "Your comment has been posted successfully"
-        );
+        showSuccessToast("Your comment has been posted successfully");
 
         // Clear the input and refresh comments
         if (activityInputRef.current) {
@@ -442,26 +342,18 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
 
         // Handle different error types
         if (result.status === 401) {
-          errorToast(
-            "Authentication Error",
-            "Session expired. Please log in again."
-          );
+          showErrorToast("Session expired. Please log in again.");
         } else if (result.status === 400) {
-          errorToast(
-            "Validation Error",
-            result.error || "Invalid data sent to server."
-          );
+          showErrorToast(result.error || "Invalid data sent to server.");
         } else {
-          errorToast(
-            "Save Failed",
+          showErrorToast(
             result.error || "Failed to save comment. Please try again."
           );
         }
       }
     } catch (error) {
       console.error("Error saving comment:", error);
-      errorToast(
-        "Network Error",
+      showErrorToast(
         "Failed to connect to the server. Please check your connection."
       );
     } finally {
@@ -485,28 +377,26 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
       );
 
       if (result.success) {
-        errorToast(
-          "Comment Deleted",
-          "The comment has been removed successfully"
-        );
+        showSuccessToast("The comment has been removed successfully");
         fetchComments();
       } else {
         console.error("Delete failed:", result.error);
-        errorToast(
-          "Deletion Failed",
-          result.error || "Unable to delete the comment"
-        );
+        showErrorToast(result.error || "Unable to delete the comment");
       }
     } catch (error) {
       console.error("Error deleting comment:", error);
-      errorToast(
-        "Network Error",
+      showErrorToast(
         "Failed to connect to the server. Please try again later."
       );
     }
   };
 
   const handleEditComment = async (originalCommentText) => {
+    if (!editCommentText.trim()) {
+      showErrorToast("Comment cannot be empty!");
+      return;
+    }
+
     try {
       const payload = {
         cardId: String(cardId),
@@ -522,32 +412,45 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
       );
 
       if (result.success) {
-        infoToast(
-          "Comment Updated",
-          "Your changes have been saved successfully"
-        );
+        showInfoToast("Your changes have been saved successfully");
         fetchComments();
         setEditingCommentIndex(null);
+        setEditCommentText("");
       } else {
         console.error("Edit failed:", result.error);
-        errorToast(
-          "Update Failed",
-          result.error || "Unable to edit the comment"
-        );
+        showErrorToast(result.error || "Unable to edit the comment");
       }
     } catch (error) {
       console.error("Error editing comment:", error);
-      errorToast(
-        "Network Error",
+      showErrorToast(
         "Failed to connect to the server. Please try again later."
       );
     }
+  };
+
+  const startEditing = (index, commentText) => {
+    setEditingCommentIndex(index);
+    setEditCommentText(commentText);
+  };
+
+  const cancelEditing = () => {
+    setEditingCommentIndex(null);
+    setEditCommentText("");
   };
 
   // Add Enter key handler for better UX
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && e.ctrlKey) {
       handleSaveActivity();
+    }
+  };
+
+  const handleEditKeyPress = (e, originalCommentText) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleEditComment(originalCommentText);
+    } else if (e.key === "Escape") {
+      cancelEditing();
     }
   };
 
@@ -578,17 +481,35 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
       <CommentsSection>
         {comments.length > 0 ? (
           comments.map((comment, index) => (
-            <CommentItem key={index}>
+            <CommentItem key={`${comment.date}-${comment.time}-${index}`}>
               <Avatar>
                 <FaUserCircle />
               </Avatar>
               <CommentContent>
                 {editingCommentIndex === index ? (
-                  <input
-                    type="text"
-                    value={editCommentText}
-                    onChange={(e) => setEditCommentText(e.target.value)}
-                  />
+                  <>
+                    <EditInput
+                      type="text"
+                      value={editCommentText}
+                      onChange={(e) => setEditCommentText(e.target.value)}
+                      onKeyDown={(e) =>
+                        handleEditKeyPress(e, comment.commenttext)
+                      }
+                      autoFocus
+                      placeholder="Edit your comment..."
+                    />
+                    <EditActions>
+                      <EditButton
+                        onClick={() => handleEditComment(comment.commenttext)}
+                        disabled={!editCommentText.trim()}
+                      >
+                        Save
+                      </EditButton>
+                      <CancelButton onClick={cancelEditing}>
+                        Cancel
+                      </CancelButton>
+                    </EditActions>
+                  </>
                 ) : (
                   <>
                     <p>
@@ -600,30 +521,22 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
                       </CommentDate>
                     </p>
                     <CommentText>{comment.commenttext}</CommentText>
+                    <ActionIcons>
+                      <ActionIcon
+                        onClick={() => startEditing(index, comment.commenttext)}
+                        title="Edit comment"
+                      >
+                        <FaEdit />
+                      </ActionIcon>
+                      <ActionIcon
+                        className="delete-icon"
+                        onClick={() => handleDeleteComment(comment.commenttext)}
+                        title="Delete comment"
+                      >
+                        <FaTrashAlt />
+                      </ActionIcon>
+                    </ActionIcons>
                   </>
-                )}
-                <ActionIcons>
-                  <ActionIcon
-                    onClick={() => {
-                      setEditingCommentIndex(index);
-                      setEditCommentText(comment.commenttext);
-                    }}
-                  >
-                    <FaEdit />
-                  </ActionIcon>
-                  <ActionIcon
-                    className="delete-icon"
-                    onClick={() => handleDeleteComment(comment.commenttext)}
-                  >
-                    <FaTrashAlt />
-                  </ActionIcon>
-                </ActionIcons>
-                {editingCommentIndex === index && (
-                  <Button
-                    onClick={() => handleEditComment(comment.commenttext)}
-                  >
-                    Save
-                  </Button>
                 )}
               </CommentContent>
             </CommentItem>
@@ -632,7 +545,18 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
           <p>No comments available.</p>
         )}
       </CommentsSection>
-      <StyledToastContainer />
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </div>
   );
 };

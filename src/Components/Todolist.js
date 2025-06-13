@@ -34,6 +34,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [members, setMembers] = useState([]);
   const [cardMembers, setCardMembers] = useState([]);
+  const [cardAdded, setCardAdded] = useState(false);
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
 
   const ItemType = {
@@ -104,10 +105,11 @@ const DragAndDropCards = ({ boards, setBoards }) => {
 
     const handleRemoveCard = async (cardId) => {
       console.log("Deleting card with ID:", cardId);
+      const userRole = localStorage.getItem("role");
 
       try {
         const result = await apiRequest(
-          `${Trackerbaseurl}cards/${cardId}/`,
+          `${Trackerbaseurl}cards/${cardId}/${boardId}/${userRole}/`,
           "DELETE"
         );
 
@@ -308,26 +310,47 @@ const DragAndDropCards = ({ boards, setBoards }) => {
 
   // Handle saving the edited card name
   const handleEditCardName = async () => {
+    const userRole = localStorage.getItem("role");
     try {
       const result = await apiRequest(
-        `${Trackerbaseurl}cards/${modalContent.cardId}/`,
+        `${Trackerbaseurl}cards/${modalContent.cardId}/${boardId}/${userRole}/`,
         "PATCH",
         { cardName: editedCardName }
       );
 
       if (result.success) {
-        // Update the card name in the columns
-        const updatedColumns = { ...columns };
-        const updatedCards = updatedColumns[modalContent.boardName].map(
-          (card) =>
-            card.cardId === modalContent.cardId
-              ? { ...card, cardName: editedCardName }
-              : card
+        console.log("columns:", columns);
+        console.log("modalContent.boardName:", modalContent.boardName);
+        console.log(
+          "updatedColumns[modalContent.boardName]:",
+          columns[modalContent.boardName]
         );
-        setColumns({
-          ...updatedColumns,
-          [modalContent.boardName]: updatedCards,
-        });
+
+        // Add safety check
+        if (
+          columns &&
+          modalContent.boardName &&
+          columns[modalContent.boardName]
+        ) {
+          // Update the card name in the columns
+          const updatedColumns = { ...columns };
+          const updatedCards = updatedColumns[modalContent.boardName].map(
+            (card) =>
+              card.cardId === modalContent.cardId
+                ? { ...card, cardName: editedCardName }
+                : card
+          );
+          setColumns({
+            ...updatedColumns,
+            [modalContent.boardName]: updatedCards,
+          });
+        } else {
+          console.log("Skipping local state update due to missing data");
+        }
+
+        console.log("About to call fetchCardsWithMembers");
+        await fetchCardsWithMembers(boardId);
+        console.log("fetchCardsWithMembers completed");
       } else {
         console.error("Error updating card name:", result.error);
       }
@@ -335,7 +358,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
       console.error("Error updating card name:", error);
     }
   };
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [cardId, setCardId] = useState("");
   const [cardName, setCardName] = useState("");
@@ -414,7 +436,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   };
 
   useEffect(() => {
-    fetchCardsWithMembers(boardId, userRole);
+    fetchCardsWithMembers(boardId);
   }, [boardId, userRole]);
 
   const moveCard = async (fromIndex, fromColumnId, toIndex, toColumnId) => {
@@ -430,10 +452,10 @@ const DragAndDropCards = ({ boards, setBoards }) => {
     }
     updatedColumns[toColumnId].splice(toIndex, 0, movedCard);
     setColumns(updatedColumns);
-
+    const userRole = localStorage.getItem("role");
     try {
       const result = await apiRequest(
-        `${Trackerbaseurl}cards/${movedCard.cardId}/`,
+        `${Trackerbaseurl}cards/${movedCard.cardId}/${boardId}/${userRole}/`,
         "PATCH",
         { columnId: toColumnId }
       );
@@ -448,7 +470,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
 
   const addCard = async (columnId, text) => {
     const newCard = {
-      cardId,
       cardName: text || `Task ${Date.now()}`,
       boardId,
       columnId,
@@ -457,9 +478,11 @@ const DragAndDropCards = ({ boards, setBoards }) => {
       boardName,
     };
     const userRole = localStorage.getItem("role");
+
     try {
+      // Fix: Include boardId in the URL to match your URL pattern
       const result = await apiRequest(
-        `${Trackerbaseurl}cards/${userRole}/`,
+        `${Trackerbaseurl}cards/${boardId}/${userRole}/`, // Now matches your URL pattern
         "POST",
         newCard
       );
@@ -478,6 +501,9 @@ const DragAndDropCards = ({ boards, setBoards }) => {
           cardName: data.cardName,
         });
         setColumns(updatedColumns);
+
+        // Trigger useEffect to fetch updated cards with members
+        setCardAdded(true);
       } else {
         console.error("Error adding card:", result.error);
       }
@@ -485,6 +511,13 @@ const DragAndDropCards = ({ boards, setBoards }) => {
       console.error("Error saving card:", error);
     }
   };
+
+  useEffect(() => {
+    if (cardAdded) {
+      fetchCardsWithMembers(boardId);
+      setCardAdded(false); // Reset the flag
+    }
+  }, [cardAdded]);
 
   const openModal = (cardName, cardId, boardName) => {
     // Find the selected card by cardId
@@ -513,26 +546,33 @@ const DragAndDropCards = ({ boards, setBoards }) => {
     setIsOpen(true);
   };
 
-  useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        const result = await apiRequest(
-          `${Trackerbaseurl}add_member_to_card/?cardId=${cardId}&boardId=${boardId}&cardName=${cardName}`
-        );
+  const fetchMembers = async (targetCardId, targetBoardId, targetCardName) => {
+    try {
+      const result = await apiRequest(
+        `${Trackerbaseurl}add_member_to_card/?cardId=${targetCardId}&boardId=${targetBoardId}&cardName=${targetCardName}`
+      );
 
-        if (result.success) {
-          console.log("Fetched members:", result.data);
-          setMembers(result.data);
-        } else {
-          console.error("Error fetching members:", result.error);
-        }
-      } catch (error) {
-        console.error("Error fetching members:", error);
+      if (result.success) {
+        console.log("Fetched members:", result.data);
+        setMembers(result.data);
+
+        // Also update the cardMembers state for the specific card
+        setCardMembers((prev) => ({
+          ...prev,
+          [targetCardId]: result.data,
+        }));
+      } else {
+        console.error("Error fetching members:", result.error);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching members:", error);
+    }
+  };
 
+  // Update the useEffect that calls fetchMembers
+  useEffect(() => {
     if (cardId && boardId && cardName) {
-      fetchMembers();
+      fetchMembers(cardId, boardId, cardName);
     }
   }, [cardId, boardId, cardName]);
 
@@ -889,11 +929,15 @@ const DragAndDropCards = ({ boards, setBoards }) => {
                     cardId={cardId}
                     boardId={boardId}
                     cardName={cardName}
+                    onMemberUpdate={() =>
+                      fetchMembers(cardId, boardId, cardName)
+                    }
                   />
                   <DateComponent
                     cardId={cardId}
                     boardId={boardId}
                     employeeId={employeeId}
+                    onDateUpdate={() => fetchCardsWithMembers(boardId)}
                   />
                   <ToastContainer />
                 </div>
@@ -1118,10 +1162,10 @@ const styles = {
   },
   calendarContainer: {
     position: "fixed",
-    top: 50,
-    left: 260,
+    top: 90,
+    left: 300,
     width: "80vw",
-    height: "90vh",
+    height: "80vh",
     backgroundColor: "#fff",
     border: "none",
     borderRadius: "15px",
