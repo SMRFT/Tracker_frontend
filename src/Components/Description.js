@@ -417,7 +417,8 @@ const Description = ({
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const [isEditing, setEditing] = useState(false);
-  const [employeeName, setEmployeeName] = useState("Demo User");
+  const [employeeName, setEmployeeName] = useState();
+  const [role, setRole] = useState();
   const [imageArray, setImageArray] = useState([]);
   const imagesFetched = useRef(new Set());
 
@@ -427,9 +428,16 @@ const Description = ({
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
 
+  const hasAdminAccess = () => {
+    return role === "Admin" || role === "HOD";
+  };
+
   useEffect(() => {
-    const name = localStorage.getItem("employeeName") || "Demo User";
+    const name = localStorage.getItem("employeeName");
+    const role = localStorage.getItem("role");
+
     setEmployeeName(name);
+    setRole(role);
   }, []);
 
   // Function to show toast notification
@@ -834,149 +842,168 @@ const Description = ({
         </SectionHeader>
 
         <SectionContent>
+          {(role === "Admin" || role === "HOD") && (
+            <DescriptionInputContainer>
+              <SectionContent>
+                <Section>
+                  {isEditing ? (
+                    <>
+                      <DescriptionInput
+                        contentEditable
+                        ref={descriptionRef}
+                        dangerouslySetInnerHTML={{ __html: description }}
+                      />
+
+                      <Actions>
+                        <div>
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            style={{ display: "none" }}
+                          />
+                          <input
+                            type="file"
+                            ref={imageInputRef}
+                            onChange={handleImageChange}
+                            accept="image/*"
+                            style={{ display: "none" }}
+                          />
+                          {file && (
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: colors.lightText,
+                              }}
+                            >
+                              Selected file: {file.name}
+                            </div>
+                          )}
+                          {image && (
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: colors.lightText,
+                              }}
+                            >
+                              Selected image: {image.name}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <SecondaryButton
+                            onClick={() => {
+                              setEditing(false);
+                              setFile(null);
+                              setImage(null);
+                              showToast("Edit cancelled", "info");
+                            }}
+                          >
+                            Cancel
+                          </SecondaryButton>
+                          <PrimaryButton onClick={handleSave}>
+                            Save
+                          </PrimaryButton>
+                        </div>
+                      </Actions>
+                    </>
+                  ) : (
+                    <>
+                      {description ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: "16px",
+                          }}
+                        >
+                          <DescriptionView>{description}</DescriptionView>
+                          <ActionIcon
+                            onClick={() => {
+                              setEditing(true);
+                              showToast("Editing description", "info");
+                            }}
+                            title="Edit Description"
+                          >
+                            <FaEdit />
+                          </ActionIcon>
+                        </div>
+                      ) : (
+                        <div style={{ padding: "16px" }}>
+                          <AddDescriptionButton
+                            onClick={() => {
+                              setEditing(true);
+                              showToast("Adding new description", "info");
+                            }}
+                          >
+                            Add description
+                          </AddDescriptionButton>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </Section>
+              </SectionContent>
+            </DescriptionInputContainer>
+          )}
           <DescriptionInputContainer>
-            {isEditing ? (
-              <>
-                <Toolbar>
-                  <ToolbarButton onClick={toggleDropdown} title="Text Format">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      Aa <RiArrowDropDownLine />
-                    </div>
-                    {isDropdownOpen && (
-                      <Dropdown>
-                        <DropdownItem onClick={() => applyHeading("p")}>
-                          Normal text <span>Ctrl+Alt+0</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h1")}>
-                          Heading 1 <span>Ctrl+Alt+1</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h2")}>
-                          Heading 2 <span>Ctrl+Alt+2</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h3")}>
-                          Heading 3 <span>Ctrl+Alt+3</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h4")}>
-                          Heading 4 <span>Ctrl+Alt+4</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h5")}>
-                          Heading 5 <span>Ctrl+Alt+5</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h6")}>
-                          Heading 6 <span>Ctrl+Alt+6</span>
-                        </DropdownItem>
-                      </Dropdown>
-                    )}
-                  </ToolbarButton>
-                  <ToolbarButton
-                    onClick={() => applyFormat("bold")}
-                    title="Bold"
-                  >
-                    <FaBold />
-                  </ToolbarButton>
-                  <ToolbarButton
-                    onClick={() => applyFormat("italic")}
-                    title="Italic"
-                  >
-                    <FaItalic />
-                  </ToolbarButton>
-                  <ToolbarButton onClick={handleFileAttach} title="Attach File">
-                    <FaLink />
-                  </ToolbarButton>
-                  <ToolbarButton
-                    onClick={handleImageAttach}
-                    title="Attach Image"
-                  >
-                    <FaImage />
-                  </ToolbarButton>
-                </Toolbar>
-
-                <DescriptionInput
-                  contentEditable
-                  ref={descriptionRef}
-                  dangerouslySetInnerHTML={{ __html: description }}
-                />
-
-                <Actions>
-                  <div>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      style={{ display: "none" }}
-                    />
-                    <input
-                      type="file"
-                      ref={imageInputRef}
-                      onChange={handleImageChange}
-                      accept="image/*"
-                      style={{ display: "none" }}
-                    />
-                    {file && (
-                      <div
-                        style={{ fontSize: "12px", color: colors.lightText }}
-                      >
-                        Selected file: {file.name}
-                      </div>
-                    )}
-                    {image && (
-                      <div
-                        style={{ fontSize: "12px", color: colors.lightText }}
-                      >
-                        Selected image: {image.name}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <SecondaryButton
-                      onClick={() => {
-                        setEditing(false);
-                        setFile(null);
-                        setImage(null);
-                        showToast("Edit cancelled", "info");
-                      }}
-                    >
-                      Cancel
-                    </SecondaryButton>
-                    <PrimaryButton onClick={handleSave}>Save</PrimaryButton>
-                  </div>
-                </Actions>
-              </>
-            ) : (
-              <>
-                {description ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      padding: "16px",
-                    }}
-                  >
-                    <DescriptionView>{description}</DescriptionView>
-                    <ActionIcon
-                      onClick={() => {
-                        setEditing(true);
-                        showToast("Editing description", "info");
-                      }}
-                      title="Edit Description"
-                    >
-                      <FaEdit />
-                    </ActionIcon>
-                  </div>
+            <SectionContent>
+              <Section>
+                {isEditing ? (
+                  // Only show editing interface for Admin/HOD
+                  role === "Admin" || role === "HOD" ? (
+                    <>
+                      <DescriptionInput
+                        contentEditable
+                        ref={descriptionRef}
+                        dangerouslySetInnerHTML={{ __html: description }}
+                      />
+                      {/* ... rest of editing interface */}
+                    </>
+                  ) : null
                 ) : (
-                  <div style={{ padding: "16px" }}>
-                    <AddDescriptionButton
-                      onClick={() => {
-                        setEditing(true);
-                        showToast("Adding new description", "info");
-                      }}
-                    >
-                      Add description
-                    </AddDescriptionButton>
-                  </div>
+                  <>
+                    {description ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: "16px",
+                        }}
+                      >
+                        <DescriptionView>{description}</DescriptionView>
+                        {/* Only show edit button for Admin/HOD */}
+                        {(role === "Admin" || role === "HOD") && (
+                          <ActionIcon
+                            onClick={() => {
+                              setEditing(true);
+                              showToast("Editing description", "info");
+                            }}
+                            title="Edit Description"
+                          >
+                            <FaEdit />
+                          </ActionIcon>
+                        )}
+                      </div>
+                    ) : (
+                      // Only show "Add description" for Admin/HOD
+                      (role === "Admin" || role === "HOD") && (
+                        <div style={{ padding: "16px" }}>
+                          <AddDescriptionButton
+                            onClick={() => {
+                              setEditing(true);
+                              showToast("Adding new description", "info");
+                            }}
+                          >
+                            Add description
+                          </AddDescriptionButton>
+                        </div>
+                      )
+                    )}
+                  </>
                 )}
-              </>
-            )}
+              </Section>
+            </SectionContent>
           </DescriptionInputContainer>
         </SectionContent>
       </Section>

@@ -255,41 +255,46 @@ const DragAndDropCards = ({ boards, setBoards }) => {
             </div>
           </div>
         ))}
-        {showAddCardButton && (
-          <div style={styles.addCardContainer}>
-            {isAddingCard ? (
-              <>
-                <input
-                  type="text"
-                  placeholder="Enter a name for this card..."
-                  value={inputValue}
-                  onChange={handleInputChange}
-                  style={styles.input}
-                />
-                <div style={styles.addCardActions}>
-                  <button onClick={handleAddCard} style={styles.addCardButton}>
-                    Add card
-                  </button>
-                  <div>
+        {showAddCardButton &&
+          (localStorage.getItem("role") === "Admin" ||
+            localStorage.getItem("role") === "HOD") && (
+            <div style={styles.addCardContainer}>
+              {isAddingCard ? (
+                <>
+                  <input
+                    type="text"
+                    placeholder="Enter a name for this card..."
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                  />
+                  <div style={styles.addCardActions}>
                     <button
-                      onClick={() => setIsAddingCard(false)}
-                      style={styles.cancelButton}
+                      onClick={handleAddCard}
+                      style={styles.addCardButton}
                     >
-                      ×
+                      Add card
                     </button>
+                    <div>
+                      <button
+                        onClick={() => setIsAddingCard(false)}
+                        style={styles.cancelButton}
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </>
-            ) : (
-              <button
-                onClick={() => setIsAddingCard(true)}
-                style={styles.addInitialCardButton}
-              >
-                + Add a card
-              </button>
-            )}
-          </div>
-        )}
+                </>
+              ) : (
+                <button
+                  onClick={() => setIsAddingCard(true)}
+                  style={styles.addInitialCardButton}
+                >
+                  + Add a card
+                </button>
+              )}
+            </div>
+          )}
       </div>
     );
   };

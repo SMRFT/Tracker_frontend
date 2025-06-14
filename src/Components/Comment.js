@@ -180,6 +180,17 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     }
   }, []);
 
+  // Function to check if current user can edit/delete a comment
+  const canModifyComment = (comment) => {
+    // Check if the comment belongs to the current logged-in employee
+    // This can be done by comparing employee ID or employee name
+    // Using employeeId for more secure comparison
+    return (
+      String(comment.empid) === String(employeeId) ||
+      comment.empname === employeeName
+    );
+  };
+
   // Simplified toast functions to avoid complex custom components
   const showSuccessToast = (message) => {
     toast.success(message, {
@@ -521,21 +532,28 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
                       </CommentDate>
                     </p>
                     <CommentText>{comment.commenttext}</CommentText>
-                    <ActionIcons>
-                      <ActionIcon
-                        onClick={() => startEditing(index, comment.commenttext)}
-                        title="Edit comment"
-                      >
-                        <FaEdit />
-                      </ActionIcon>
-                      <ActionIcon
-                        className="delete-icon"
-                        onClick={() => handleDeleteComment(comment.commenttext)}
-                        title="Delete comment"
-                      >
-                        <FaTrashAlt />
-                      </ActionIcon>
-                    </ActionIcons>
+                    {/* Only show action icons if the current user can modify this comment */}
+                    {canModifyComment(comment) && (
+                      <ActionIcons>
+                        <ActionIcon
+                          onClick={() =>
+                            startEditing(index, comment.commenttext)
+                          }
+                          title="Edit comment"
+                        >
+                          <FaEdit />
+                        </ActionIcon>
+                        <ActionIcon
+                          className="delete-icon"
+                          onClick={() =>
+                            handleDeleteComment(comment.commenttext)
+                          }
+                          title="Delete comment"
+                        >
+                          <FaTrashAlt />
+                        </ActionIcon>
+                      </ActionIcons>
+                    )}
                   </>
                 )}
               </CommentContent>
