@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import { FaTimes, FaSearch, FaPlus } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import Sidebar from './Sidebar';
+import React, { useState, useEffect } from "react";
+import styled from "styled-components";
+import { FaTimes, FaSearch, FaPlus } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import Sidebar from "./Sidebar";
+import apiRequest from "./apiRequest"; // Import the API helper
 
 // Modern styled components with more subtle shadows, rounded corners, and cleaner spacing
 const BoardContainer = styled.div`
@@ -63,7 +64,7 @@ const SortFilter = styled.div`
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     cursor: pointer;
     transition: all 0.2s;
-    
+
     &:focus {
       outline: none;
       box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
@@ -75,7 +76,7 @@ const SortFilter = styled.div`
   }
 
   &::after {
-    content: '▼';
+    content: "▼";
     position: absolute;
     right: 1rem;
     top: 50%;
@@ -94,7 +95,7 @@ const SearchContainer = styled.div`
   padding: 0.5rem 1rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: all 0.2s;
-  
+
   &:focus-within {
     box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
   }
@@ -112,7 +113,7 @@ const SearchInput = styled.input`
   width: 16rem;
   font-size: 0.875rem;
   color: #4a5568;
-  
+
   &::placeholder {
     color: #a0aec0;
   }
@@ -126,7 +127,8 @@ const BoardsSection = styled.section`
 
 const BoardCard = styled.div`
   height: 140px;
-  background: ${(props) => props.bgColor || 'linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)'};
+  background: ${(props) =>
+    props.bgColor || "linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)"};
   display: flex;
   justify-content: center;
   align-items: center;
@@ -138,20 +140,24 @@ const BoardCard = styled.div`
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  
+
   &:hover {
     transform: translateY(-3px);
     box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
   }
-  
+
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.3) 100%);
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 60%,
+      rgba(0, 0, 0, 0.3) 100%
+    );
     pointer-events: none;
   }
 `;
@@ -176,7 +182,7 @@ const CreateNewBoardCard = styled.div`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   border: 2px dashed #e2e8f0;
-  
+
   &:hover {
     background: #f8fafc;
     transform: translateY(-3px);
@@ -217,10 +223,16 @@ const Dialog = styled.div`
   position: relative;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   animation: fadeIn 0.3s ease;
-  
+
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 `;
 
@@ -240,7 +252,7 @@ const DialogInput = styled.input`
   border: 1px solid #e2e8f0;
   font-size: 0.875rem;
   transition: all 0.2s;
-  
+
   &:focus {
     outline: none;
     border-color: #4299e1;
@@ -257,13 +269,15 @@ const GradientPickerContainer = styled.div`
 
 const GradientOption = styled.div`
   aspect-ratio: 1;
-  border: ${props => props.selected ? '2px solid #4299e1' : '2px solid transparent'};
+  border: ${(props) =>
+    props.selected ? "2px solid #4299e1" : "2px solid transparent"};
   cursor: pointer;
-  background: ${props => props.gradient};
+  background: ${(props) => props.gradient};
   border-radius: 0.5rem;
   transition: all 0.2s;
-  box-shadow: ${props => props.selected ? '0 0 0 2px rgba(66, 153, 225, 0.3)' : 'none'};
-  
+  box-shadow: ${(props) =>
+    props.selected ? "0 0 0 2px rgba(66, 153, 225, 0.3)" : "none"};
+
   &:hover {
     transform: scale(1.05);
   }
@@ -282,7 +296,7 @@ const Button = styled.button`
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &:focus {
     outline: none;
   }
@@ -292,7 +306,7 @@ const CancelButton = styled(Button)`
   background: white;
   color: #4a5568;
   border: 1px solid #e2e8f0;
-  
+
   &:hover {
     background: #f8fafc;
   }
@@ -302,13 +316,18 @@ const CreateButton = styled(Button)`
   background: #4299e1;
   color: white;
   border: none;
-  
+
   &:hover {
     background: #3182ce;
   }
-  
+
   &:active {
     background: #2b6cb0;
+  }
+
+  &:disabled {
+    background: #a0aec0;
+    cursor: not-allowed;
   }
 `;
 
@@ -319,119 +338,184 @@ const CloseIcon = styled(FaTimes)`
   cursor: pointer;
   color: #cbd5e0;
   transition: all 0.2s;
-  
+
   &:hover {
     color: #4a5568;
   }
 `;
 
-const SuccessMessage = styled.div`
-  color: #38a169;
-  font-weight: 500;
-  font-size: 0.875rem;
+const MessageContainer = styled.div`
   margin-top: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: 500;
+  font-size: 0.875rem;
+`;
+
+const SuccessMessage = styled(MessageContainer)`
+  color: #38a169;
+`;
+
+const ErrorMessage = styled(MessageContainer)`
+  color: #e53e3e;
+`;
+
+const LoadingSpinner = styled.div`
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #4299e1;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
 `;
 
 const Board = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [boardName, setBoardName] = useState('');
-  const [boardColor, setBoardColor] = useState('linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)');
+  const [boardName, setBoardName] = useState("");
+  const [boardColor, setBoardColor] = useState(
+    "linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)"
+  );
   const [boards, setBoards] = useState([]);
-  const [sortOrder, setSortOrder] = useState('A-Z');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState("A-Z");
+  const [searchQuery, setSearchQuery] = useState("");
   const [employeeId, setEmployeeId] = useState(null);
   const [employeeName, setEmployeeName] = useState(null);
-  const [success, setSuccess] = useState('');
-  const [role, setRole] = useState('');
-  const [boardId, setBoardId] = useState(''); // Added to match original code
-const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+  const [message, setMessage] = useState({ type: "", text: "" });
+  const [role, setRole] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   const navigate = useNavigate();
-  
+
   const gradients = [
-    { id: 1, value: 'linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)' },
-    { id: 2, value: 'linear-gradient(135deg, #159957 0%, #155799 100%)' },
-    { id: 3, value: 'linear-gradient(135deg, #616161 0%, #9bc5c3 100%)' },
-    { id: 4, value: 'linear-gradient(135deg, #2b5876 0%, #4e4376 100%)' },
-    { id: 5, value: 'linear-gradient(135deg, #3c1053 0%, #ad5389 100%)' },
-    { id: 6, value: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)' },
-    { id: 7, value: 'linear-gradient(135deg, #4389A2 0%, #5C258D 100%)' },
-    { id: 8, value: 'linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%)' },
+    { id: 1, value: "linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)" },
+    { id: 2, value: "linear-gradient(135deg, #159957 0%, #155799 100%)" },
+    { id: 3, value: "linear-gradient(135deg, #616161 0%, #9bc5c3 100%)" },
+    { id: 4, value: "linear-gradient(135deg, #2b5876 0%, #4e4376 100%)" },
+    { id: 5, value: "linear-gradient(135deg, #3c1053 0%, #ad5389 100%)" },
+    { id: 6, value: "linear-gradient(135deg, #f12711 0%, #f5af19 100%)" },
+    { id: 7, value: "linear-gradient(135deg, #4389A2 0%, #5C258D 100%)" },
+    { id: 8, value: "linear-gradient(135deg, #36D1DC 0%, #5B86E5 100%)" },
   ];
 
   useEffect(() => {
-    const id = localStorage.getItem('employeeId');
-    const name = localStorage.getItem('employeeName');
-    const userRole = localStorage.getItem('role');
-    
-    if (id && name) {
+    const id = localStorage.getItem("employeeId");
+    const name = localStorage.getItem("employeeName");
+    const role = localStorage.getItem("role");
+
+    if (id && name && role) {
       setEmployeeId(id);
       setEmployeeName(name);
-      setRole(userRole);
+      setRole(role);
     }
   }, []);
 
   const fetchBoards = async () => {
-    if (!employeeId) return;
+    setIsLoading(true);
     try {
-      const response = await fetch(`${Trackerbaseurl}get-boards/?employeeId=${employeeId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setBoards(Array.isArray(data) ? data : []);
+      const role = localStorage.getItem("role");
+
+      const result = await apiRequest(
+        `${Trackerbaseurl}get-boards/${role}/`, // FIXED: path param, not query
+        "GET"
+      );
+
+      if (result.success) {
+        setBoards(Array.isArray(result.data) ? result.data : []);
+        setMessage({ type: "", text: "" });
       } else {
-        console.error('Failed to fetch boards');
+        console.error("Failed to fetch boards:", result.error);
+        setMessage({ type: "error", text: result.error });
+        setBoards([]);
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error fetching boards:", error);
+      setMessage({ type: "error", text: "Failed to load boards" });
+      setBoards([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBoards();
-  }, [employeeId]);
+    if (employeeId && role) {
+      fetchBoards();
+    }
+  }, [employeeId, role]);
 
   const openDialog = () => {
     setIsDialogOpen(true);
-    setSuccess('');
+    setMessage({ type: "", text: "" });
   };
 
   const closeDialog = () => {
     setIsDialogOpen(false);
-    setBoardName('');
-    setBoardColor('linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)');
+    setBoardName("");
+    setBoardColor("linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)");
+    setMessage({ type: "", text: "" });
   };
 
   const handleCreateBoard = async () => {
-    if (boardName.trim()) {
-      const newBoard = { boardName, boardColor, employeeId, employeeName, boardId };
-      try {
-        const response = await fetch(`${Trackerbaseurl}boards/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newBoard),
+    if (!boardName.trim()) {
+      setMessage({ type: "error", text: "Board name cannot be empty" });
+      return;
+    }
+
+    setIsCreating(true);
+    setMessage({ type: "", text: "" });
+
+    try {
+      const newBoard = {
+        boardName: boardName.trim(),
+        boardColor,
+      };
+
+      const result = await apiRequest(
+        `${Trackerbaseurl}boards/`,
+        "POST",
+        newBoard
+      );
+
+      console.log("API Result:", result); // Debug log
+
+      // Check if the request was successful
+      if (result.success || (result.data && result.data.message)) {
+        const successMessage =
+          result.data?.message ||
+          result.message ||
+          "Board created successfully!";
+        setMessage({ type: "success", text: successMessage });
+        setBoardName("");
+        setBoardColor("linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)");
+
+        await fetchBoards();
+
+        setTimeout(() => {
+          closeDialog();
+        }, 1500);
+      } else {
+        setMessage({
+          type: "error",
+          text: result.error || result.message || "Failed to create board",
         });
-        
-        if (response.ok) {
-          setSuccess('Board created successfully!');
-          setBoardName('');
-          setBoardColor('linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)');
-          
-          await fetchBoards();
-          setTimeout(() => {
-            closeDialog();
-            setSuccess('');
-          }, 1500);
-        } else {
-          const error = await response.json();
-          setSuccess(`Failed to create board: ${error.message || 'Unknown error'}`);
-        }
-      } catch (error) {
-        setSuccess(`Error creating board: ${error.message}`);
       }
-    } else {
-      setSuccess('Board name cannot be empty');
+    } catch (error) {
+      console.error("Error creating board:", error);
+      setMessage({ type: "error", text: "Error creating board" });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -444,28 +528,34 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   };
 
   const getFilteredAndSortedBoards = () => {
-    let filteredBoards = boards.filter((board) =>
-      board.boardName && board.boardName.toLowerCase().includes(searchQuery.toLowerCase())
+    let filteredBoards = boards.filter(
+      (board) =>
+        board.boardName &&
+        board.boardName.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    
-    if (sortOrder === 'A-Z') {
-      filteredBoards = filteredBoards.sort((a, b) => (a.boardName || '').localeCompare(b.boardName || ''));
-    } else if (sortOrder === 'Z-A') {
-      filteredBoards = filteredBoards.sort((a, b) => (b.boardName || '').localeCompare(a.boardName || ''));
+
+    if (sortOrder === "A-Z") {
+      filteredBoards = filteredBoards.sort((a, b) =>
+        (a.boardName || "").localeCompare(b.boardName || "")
+      );
+    } else if (sortOrder === "Z-A") {
+      filteredBoards = filteredBoards.sort((a, b) =>
+        (b.boardName || "").localeCompare(a.boardName || "")
+      );
     }
 
     return filteredBoards;
   };
 
   const handleBoardClick = (board) => {
-    navigate('/Todolist', {
+    navigate("/Todolist", {
       state: {
         boardId: board.boardId,
         boardColor: board.boardColor,
         employeeId: employeeId,
         employeeName: board.employeeName,
-        boardName: board.boardName
-      }
+        boardName: board.boardName,
+      },
     });
   };
 
@@ -495,26 +585,45 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
             </SearchContainer>
           </HeaderBottom>
         </MainHeader>
-        
+
         <BoardsSection>
-          {getFilteredAndSortedBoards().map((board) => (
-            <BoardCard
-              key={board.boardId}
-              bgColor={board.boardColor}
-              onClick={() => handleBoardClick(board)}
+          {isLoading ? (
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                textAlign: "center",
+                padding: "2rem",
+              }}
             >
-              <BoardTitle>{board.boardName}</BoardTitle>
-            </BoardCard>
-          ))}
-          
-          {(role === 'Admin' || role === 'HOD') && (
-            <CreateNewBoardCard onClick={openDialog}>
-              <PlusIcon />
-              <CreateText>Create New Board</CreateText>
-            </CreateNewBoardCard>
+              <LoadingSpinner style={{ margin: "0 auto" }} />
+              <div>Loading boards...</div>
+            </div>
+          ) : (
+            <>
+              {getFilteredAndSortedBoards().map((board) => (
+                <BoardCard
+                  key={board.boardId}
+                  bgColor={board.boardColor}
+                  onClick={() => handleBoardClick(board)}
+                >
+                  <BoardTitle>{board.boardName}</BoardTitle>
+                </BoardCard>
+              ))}
+
+              {(role === "Admin" || role === "HOD") && (
+                <CreateNewBoardCard onClick={openDialog}>
+                  <PlusIcon />
+                  <CreateText>Create New Board</CreateText>
+                </CreateNewBoardCard>
+              )}
+            </>
           )}
         </BoardsSection>
-        
+
+        {message.type === "error" && !isDialogOpen && (
+          <ErrorMessage>{message.text}</ErrorMessage>
+        )}
+
         {isDialogOpen && (
           <DialogOverlay>
             <Dialog>
@@ -525,6 +634,7 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
                 placeholder="Enter board name"
                 value={boardName}
                 onChange={(e) => setBoardName(e.target.value)}
+                disabled={isCreating}
               />
               <GradientPickerContainer>
                 {gradients.map((gradient) => (
@@ -532,15 +642,28 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
                     key={gradient.id}
                     gradient={gradient.value}
                     selected={boardColor === gradient.value}
-                    onClick={() => setBoardColor(gradient.value)}
+                    onClick={() => !isCreating && setBoardColor(gradient.value)}
                   />
                 ))}
               </GradientPickerContainer>
               <ButtonContainer>
-                <CancelButton onClick={closeDialog}>Cancel</CancelButton>
-                <CreateButton onClick={handleCreateBoard}>Create Board</CreateButton>
+                <CancelButton onClick={closeDialog} disabled={isCreating}>
+                  Cancel
+                </CancelButton>
+                <CreateButton
+                  onClick={handleCreateBoard}
+                  disabled={isCreating || !boardName.trim()}
+                >
+                  {isCreating && <LoadingSpinner />}
+                  {isCreating ? "Creating..." : "Create Board"}
+                </CreateButton>
               </ButtonContainer>
-              {success && <SuccessMessage>{success}</SuccessMessage>}
+              {message.text &&
+                (message.type === "success" ? (
+                  <SuccessMessage>{message.text}</SuccessMessage>
+                ) : (
+                  <ErrorMessage>{message.text}</ErrorMessage>
+                ))}
             </Dialog>
           </DialogOverlay>
         )}

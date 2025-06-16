@@ -1,10 +1,19 @@
 import React, { useState, useRef, useEffect } from "react";
-import axios from 'axios';
 import styled from "styled-components";
-import { FaTimes, FaEdit, FaBold, FaItalic, FaLink, FaImage, FaDownload, FaTrash } from 'react-icons/fa';
+import {
+  FaTimes,
+  FaEdit,
+  FaBold,
+  FaItalic,
+  FaLink,
+  FaImage,
+  FaDownload,
+  FaTrash,
+} from "react-icons/fa";
 import { RiArrowDropDownLine } from "react-icons/ri";
 import { GrTextAlignFull, GrAttachment } from "react-icons/gr";
 import { BsFiletypeDocx } from "react-icons/bs";
+import apiRequest from "./apiRequest";
 
 // Modern UI Colors
 const colors = {
@@ -18,12 +27,13 @@ const colors = {
   success: "#2ecc71",
   danger: "#e74c3c",
   warning: "#f39c12",
-  inputBg: "#f1f3f5"
+  inputBg: "#f1f3f5",
 };
 
 // Container Components
 const Container = styled.div`
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, sans-serif;
   color: ${colors.text};
 `;
 
@@ -71,7 +81,7 @@ const Button = styled.button`
 const PrimaryButton = styled(Button)`
   background-color: ${colors.primary};
   color: white;
-  
+
   &:hover {
     background-color: ${colors.primaryHover};
   }
@@ -80,7 +90,7 @@ const PrimaryButton = styled(Button)`
 const SecondaryButton = styled(Button)`
   background-color: transparent;
   color: ${colors.text};
-  
+
   &:hover {
     background-color: ${colors.border};
   }
@@ -98,7 +108,7 @@ const IconButton = styled.button`
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background-color: ${colors.border};
     color: ${colors.text};
@@ -109,7 +119,7 @@ const ActionIcon = styled(IconButton)`
   margin-left: 8px;
   font-size: 1rem;
   color: ${colors.primary};
-  
+
   &:hover {
     color: ${colors.primaryHover};
     background-color: rgba(67, 97, 238, 0.1);
@@ -150,11 +160,11 @@ const DropdownItem = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  
+
   &:hover {
     background-color: ${colors.background};
   }
-  
+
   span {
     color: ${colors.lightText};
     font-size: 12px;
@@ -176,25 +186,44 @@ const DescriptionInput = styled.div`
   font-family: inherit;
   overflow-y: auto;
   white-space: pre-wrap;
-  
+
   &:focus {
     outline: none;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     margin-top: 12px;
     margin-bottom: 12px;
     font-weight: 600;
   }
-  
-  h1 { font-size: 1.8rem; }
-  h2 { font-size: 1.5rem; }
-  h3 { font-size: 1.3rem; }
-  h4 { font-size: 1.1rem; }
-  h5 { font-size: 1rem; }
-  h6 { font-size: 0.9rem; }
-  
-  strong { font-weight: 600; }
+
+  h1 {
+    font-size: 1.8rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+  }
+  h3 {
+    font-size: 1.3rem;
+  }
+  h4 {
+    font-size: 1.1rem;
+  }
+  h5 {
+    font-size: 1rem;
+  }
+  h6 {
+    font-size: 0.9rem;
+  }
+
+  strong {
+    font-weight: 600;
+  }
 `;
 
 const DescriptionView = styled.div`
@@ -202,19 +231,36 @@ const DescriptionView = styled.div`
   font-size: 14px;
   line-height: 1.6;
   color: ${colors.text};
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     margin-top: 12px;
     margin-bottom: 12px;
     font-weight: 600;
   }
-  
-  h1 { font-size: 1.8rem; }
-  h2 { font-size: 1.5rem; }
-  h3 { font-size: 1.3rem; }
-  h4 { font-size: 1.1rem; }
-  h5 { font-size: 1rem; }
-  h6 { font-size: 0.9rem; }
+
+  h1 {
+    font-size: 1.8rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+  }
+  h3 {
+    font-size: 1.3rem;
+  }
+  h4 {
+    font-size: 1.1rem;
+  }
+  h5 {
+    font-size: 1rem;
+  }
+  h6 {
+    font-size: 0.9rem;
+  }
 `;
 
 const Actions = styled.div`
@@ -236,7 +282,7 @@ const AddDescriptionButton = styled.button`
   width: 100%;
   font-size: 14px;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background-color: rgba(67, 97, 238, 0.05);
     border-color: ${colors.primary};
@@ -256,7 +302,7 @@ const AttachmentItem = styled.div`
   border-radius: 8px;
   margin-bottom: 12px;
   transition: all 0.2s ease;
-  
+
   &:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
@@ -307,17 +353,21 @@ const Toast = styled.div`
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background-color: ${props => 
-    props.type === 'success' ? colors.success : 
-    props.type === 'error' ? colors.danger : 
-    props.type === 'warning' ? colors.warning : colors.primary};
+  background-color: ${(props) =>
+    props.type === "success"
+      ? colors.success
+      : props.type === "error"
+      ? colors.danger
+      : props.type === "warning"
+      ? colors.warning
+      : colors.primary};
   color: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 300px;
   max-width: 450px;
   animation: slideIn 0.3s ease-out forwards;
-  
+
   @keyframes slideIn {
     from {
       transform: translateX(100%);
@@ -343,55 +393,65 @@ const CloseToast = styled.button`
   color: white;
   opacity: 0.7;
   cursor: pointer;
-  
+
   &:hover {
     opacity: 1;
   }
 `;
 
 // Main Component
-const Description = ({ cardId, cardName, boardName, boardId }) => {
+const Description = ({
+  cardId = 14,
+  cardName = "Tracker",
+  boardName = "IT",
+  boardId = 1,
+}) => {
   const [isDropdownOpen, setDropdownOpen] = useState(false);
-  const [description, setDescription] = useState(null);
+  const [description, setDescription] = useState("");
   const [file, setFile] = useState(null);
   const [image, setImage] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filesLoading, setFilesLoading] = useState(true);
   const descriptionRef = useRef(null);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const [isEditing, setEditing] = useState(false);
-  const [employeeId, setEmployeeId] = useState(null);
-  const [employeeName, setEmployeeName] = useState(null);
+  const [employeeName, setEmployeeName] = useState();
+  const [role, setRole] = useState();
   const [imageArray, setImageArray] = useState([]);
   const imagesFetched = useRef(new Set());
-const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
+  // Mock base URL for demonstration
+  const Trackerbaseurl = "http://127.0.0.1:2700/_b_a_c_k_e_n_d/Tracker/";
+
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
 
+  const hasAdminAccess = () => {
+    return role === "Admin" || role === "HOD";
+  };
+
   useEffect(() => {
-    const id = localStorage.getItem('employeeId');
-    const name = localStorage.getItem('employeeName');
-    if (id && name) {
-      setEmployeeId(id);
-      setEmployeeName(name);
-    }
+    const name = localStorage.getItem("employeeName");
+    const role = localStorage.getItem("role");
+
+    setEmployeeName(name);
+    setRole(role);
   }, []);
 
   // Function to show toast notification
-  const showToast = (message, type = 'success', duration = 3000) => {
+  const showToast = (message, type = "success", duration = 3000) => {
     const id = Date.now();
-    setToasts(prevToasts => [...prevToasts, { id, message, type }]);
-    
-    // Auto remove toast after duration
+    setToasts((prevToasts) => [...prevToasts, { id, message, type }]);
+
     setTimeout(() => {
-      setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
+      setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
     }, duration);
   };
 
-  // Function to manually remove a toast
   const removeToast = (id) => {
-    setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
+    setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
   };
 
   const toggleDropdown = () => {
@@ -430,9 +490,9 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
 
       if (
         formatElement &&
-        range.startContainer.parentNode.tagName.toLowerCase() === formatElement.tagName.toLowerCase()
+        range.startContainer.parentNode.tagName.toLowerCase() ===
+          formatElement.tagName.toLowerCase()
       ) {
-        // If already formatted, remove the format by replacing the node with its contents
         const parentNode = range.startContainer.parentNode;
         const fragment = document.createDocumentFragment();
         while (parentNode.firstChild) {
@@ -462,7 +522,10 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
     const selectedFile = event.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
-      showToast(`File '${selectedFile.name}' selected and ready to upload`, 'info');
+      showToast(
+        `File '${selectedFile.name}' selected and ready to upload`,
+        "info"
+      );
     }
   };
 
@@ -470,160 +533,208 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
     const selectedImage = event.target.files[0];
     if (selectedImage) {
       setImage(selectedImage);
-      showToast(`Image '${selectedImage.name}' selected and ready to upload`, 'info');
+      showToast(
+        `Image '${selectedImage.name}' selected and ready to upload`,
+        "info"
+      );
     }
   };
 
   const handleSaveDescription = async () => {
     const text = descriptionRef.current.textContent;
-  
+
     try {
-      const response = await fetch(`${Trackerbaseurl}save-description/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      // ✅ CORRECT: Use your apiRequest helper properly
+      const response = await apiRequest(
+        `${Trackerbaseurl}save-description/`,
+        "POST", // method as second parameter
+        {
+          // data as third parameter
           cardId,
           boardId,
           cardName,
           boardName,
           description: text,
-        }),
-      });
-  
-      const data = await response.json();
-      setEditing(false);
-      setDescription(text);
-      showToast("Description saved successfully", "success");
-      console.log("Description saved successfully:", data);
+        }
+      );
+
+      // ✅ CORRECT: Handle the response from your apiRequest helper
+      if (response.success) {
+        setEditing(false);
+        setDescription(text);
+        showToast("Description saved successfully", "success");
+        console.log("Description saved successfully:", response.data);
+      } else {
+        console.error("Error saving description:", response.error);
+        showToast(
+          response.error || "Failed to save description. Please try again.",
+          "error"
+        );
+      }
     } catch (error) {
       console.error("Error saving description:", error);
       showToast("Failed to save description. Please try again.", "error");
     }
   };
 
+  // ✅ ALSO FIX: Your fetchDescription function has similar issues
   const fetchDescription = async () => {
+    setLoading(true);
     try {
-      const response = await fetch(
+      const response = await apiRequest(
         `${Trackerbaseurl}save-description/?cardId=${cardId}&boardId=${boardId}`,
-        {
-          method: "GET",
-        }
+        "GET"
       );
-  
-      const data = await response.json();
-      if (response.ok) {
-        console.log("Description fetched successfully:", data);
-        setDescription(data.description);
+
+      if (response.success) {
+        console.log("Description fetched successfully:", response.data);
+
+        // Handle the response properly - the description should be in response.data.description
+        if (response.data && response.data.description) {
+          setDescription(response.data.description);
+          showToast("Description loaded successfully", "success");
+        } else {
+          // No description found
+          setDescription("");
+          console.log("No description found for this card");
+        }
       } else {
-        console.error("Error fetching description:", data.error);
-        showToast("Failed to load description", "error");
+        console.error("Error fetching description:", response.error);
+        setDescription("");
+        showToast(response.error || "Failed to load description", "error");
       }
     } catch (error) {
       console.error("Error fetching description:", error);
+      setDescription("");
       showToast("Failed to load description", "error");
-    }
-  };
-  
-  useEffect(() => {
-    if (descriptionRef.current) {
-      descriptionRef.current.textContent = description;
-    }
-  }, [description]);
-
-  // Function to fetch the files
-  const fetchFiles = async () => {
-    try {
-      const response = await fetch(`${Trackerbaseurl}get-file/${boardId}/${cardId}/`);
-      const data = await response.json();
-      
-      if (response.ok) {
-        console.log("Fetched files:", data);
-        
-        // Filter out duplicates before setting the state
-        const uniqueFiles = data.filter(file => 
-          !files.some(existingFile => existingFile.filename === file.filename)
-        );
-        
-        setFiles(prevFiles => [
-          ...prevFiles,
-          ...uniqueFiles
-        ]);
-        
-        if (uniqueFiles.length > 0) {
-          showToast(`Loaded ${uniqueFiles.length} attachment(s)`, "info");
-        }
-      } else {
-        console.error('Error fetching files:', data.error);
-        showToast("Failed to load attachments", "error");
-      }
-    } catch (error) {
-      console.error('Error fetching files:', error);
-      showToast("Failed to load attachments", "error");
     } finally {
       setLoading(false);
     }
   };
-  
-  // Function to fetch and store image blobs
+
+  // Update the content editable div when description changes
+  useEffect(() => {
+    if (descriptionRef.current && description !== null) {
+      descriptionRef.current.innerHTML = description || "";
+    }
+  }, [description, isEditing]);
+
+  // Fixed fetchFiles function
+  const fetchFiles = async () => {
+    setFilesLoading(true);
+    try {
+      // ✅ CORRECT: Use apiRequest properly
+      const response = await apiRequest(
+        `${Trackerbaseurl}get-file/${boardId}/${cardId}/`,
+        "GET"
+      );
+
+      // ✅ CORRECT: Check response.success instead of response.ok
+      if (response.success) {
+        console.log("Fetched files:", response.data);
+
+        // ✅ CORRECT: Use response.data instead of await response.json()
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          const uniqueFiles = response.data.filter(
+            (file) =>
+              !files.some(
+                (existingFile) => existingFile.filename === file.filename
+              )
+          );
+
+          setFiles(uniqueFiles);
+          showToast(`Loaded ${uniqueFiles.length} attachment(s)`, "info");
+        } else {
+          setFiles([]);
+          console.log("No files found for this card");
+        }
+      } else {
+        console.error("Error fetching files:", response.error);
+        setFiles([]);
+        showToast(response.error || "Failed to load attachments", "error");
+      }
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      setFiles([]);
+      showToast("Failed to load attachments", "error");
+    } finally {
+      setFilesLoading(false);
+    }
+  };
+
   const fetchAndStoreImage = async (file) => {
     if (!file || !file.filename) {
       console.error("Invalid file object or missing filename:", file);
       return;
     }
-  
+
     const filename = file.filename.trim();
     if (imagesFetched.current.has(filename)) return;
-  
+
     try {
-      const imageResponse = await axios.get(`${Trackerbaseurl}get-files/?filename=${encodeURIComponent(filename)}`, {
-        responseType: 'blob',
-      });
-  
-      const fileType = imageResponse.headers['content-type'];
-  
-      setImageArray(prevArray => [
-        ...prevArray.filter(image => image.filename !== filename),
+      // ✅ CORRECT: For file downloads, you might need to handle this differently
+      // Your apiRequest helper expects JSON, but file downloads return binary data
+      const imageResponse = await fetch(
+        `${Trackerbaseurl}get-files/?filename=${encodeURIComponent(filename)}`,
         {
-          src: URL.createObjectURL(imageResponse.data),
-          filename: filename,
-          type: fileType,
-          employeeName: file.employeeName,
-          uploadDate: file.uploadDate
+          method: "GET",
+          headers: {
+            Authorization: localStorage.getItem("access_token"),
+          },
         }
-      ]);
-  
-      imagesFetched.current.add(filename);
-  
+      );
+
+      if (imageResponse.ok) {
+        const blob = await imageResponse.blob();
+        const fileType =
+          imageResponse.headers.get("content-type") ||
+          "application/octet-stream";
+
+        setImageArray((prevArray) => [
+          ...prevArray.filter((image) => image.filename !== filename),
+          {
+            src: URL.createObjectURL(blob),
+            filename: filename,
+            type: fileType,
+            employeeName: file.employeeName,
+            uploadDate: file.uploadDate,
+          },
+        ]);
+
+        imagesFetched.current.add(filename);
+      } else {
+        throw new Error(
+          `HTTP ${imageResponse.status}: ${imageResponse.statusText}`
+        );
+      }
     } catch (error) {
       console.error(`Error fetching image for ${filename}:`, error);
       showToast(`Failed to load attachment: ${filename}`, "error");
     }
   };
-  
-  // Fetch images once files are loaded
+
   useEffect(() => {
     if (files.length > 0) {
-      files.forEach(file => fetchAndStoreImage(file));
+      files.forEach((file) => fetchAndStoreImage(file));
+    } else {
+      setImageArray([]);
+      imagesFetched.current.clear();
     }
   }, [files]);
-  
-  // Fetch files when the component mounts
+
   useEffect(() => {
     fetchFiles();
-  }, []);
-  
-  // Function to handle file download
+  }, [cardId, boardId]);
+
   const handleDownload = (filename) => {
-    window.open(`${Trackerbaseurl}get-files/?filename=${filename}`, '_blank');
+    window.open(`${Trackerbaseurl}get-files/?filename=${filename}`, "_blank");
     showToast(`Downloading ${filename}`, "info");
   };
 
   const handleSaveFilesImages = async () => {
     const formData = new FormData();
     let uploadedItems = [];
-  
+
     if (file) {
       formData.append("file", file);
       uploadedItems.push(`file '${file.name}'`);
@@ -632,51 +743,70 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
       formData.append("image", image);
       uploadedItems.push(`image '${image.name}'`);
     }
-    
+
     if (uploadedItems.length === 0) return;
-  
+
     formData.append("cardId", cardId);
     formData.append("cardName", cardName);
     formData.append("boardId", boardId);
-    formData.append("employeeId", employeeId);
     formData.append("employeeName", employeeName);
-  
+
     try {
+      // ✅ CORRECT: For file uploads, use fetch directly since FormData needs special handling
       const response = await fetch(`${Trackerbaseurl}upload-content/`, {
         method: "POST",
+        headers: {
+          Authorization: localStorage.getItem("access_token"),
+          // Don't set Content-Type for FormData - let browser set it with boundary
+        },
         body: formData,
       });
-  
-      const data = await response.json();
-      console.log("Files, images, and card details uploaded successfully:", data);
-      showToast(`Successfully uploaded ${uploadedItems.join(" and ")}`, "success");
-      
-      // Clear the file and image state
-      setFile(null);
-      setImage(null);
-      
-      // Refresh the file list
-      fetchFiles();
-  
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(
+          "Files, images, and card details uploaded successfully:",
+          data
+        );
+        showToast(
+          `Successfully uploaded ${uploadedItems.join(" and ")}`,
+          "success"
+        );
+
+        setFile(null);
+        setImage(null);
+        await fetchFiles();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `HTTP ${response.status}: ${response.statusText}`
+        );
+      }
     } catch (error) {
       console.error("Error uploading files and images:", error);
       showToast("Failed to upload attachments. Please try again.", "error");
     }
   };
-  
-  const handleSave = () => {
-    handleSaveDescription();
+  const handleSave = async () => {
+    await handleSaveDescription();
     if (file || image) {
-      handleSaveFilesImages();
+      await handleSaveFilesImages();
     }
   };
 
-  // Function to handle file deletion
   const handleDeleteFile = async (filename) => {
     try {
-      await axios.delete(`${Trackerbaseurl}delete-file/${boardId}/${cardId}/${filename}/`);
-      setFiles(prevFiles => prevFiles.filter(file => file.filename !== filename));
-      setImageArray(prevImages => prevImages.filter(image => image.filename !== filename));
+      await apiRequest(
+        `${Trackerbaseurl}delete-file/${boardId}/${cardId}/${filename}/`,
+        "DELETE" // Pass method as string, not object
+      );
+      setFiles((prevFiles) =>
+        prevFiles.filter((file) => file.filename !== filename)
+      );
+      setImageArray((prevImages) =>
+        prevImages.filter((image) => image.filename !== filename)
+      );
+      imagesFetched.current.delete(filename);
       showToast(`Successfully deleted ${filename}`, "success");
       console.log(`File ${filename} deleted successfully.`);
     } catch (error) {
@@ -684,7 +814,8 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
       showToast(`Failed to delete ${filename}`, "error");
     }
   };
-  
+
+  // Fetch description on component mount
   useEffect(() => {
     fetchDescription();
   }, [cardId, boardId]);
@@ -702,127 +833,177 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
           </Toast>
         ))}
       </ToastContainer>
-      
+
       <Section>
         <SectionHeader>
           <SectionTitle>
             <GrTextAlignFull /> Description
           </SectionTitle>
         </SectionHeader>
-        
+
         <SectionContent>
+          {(role === "Admin" || role === "HOD") && (
+            <DescriptionInputContainer>
+              <SectionContent>
+                <Section>
+                  {isEditing ? (
+                    <>
+                      <DescriptionInput
+                        contentEditable
+                        ref={descriptionRef}
+                        dangerouslySetInnerHTML={{ __html: description }}
+                      />
+
+                      <Actions>
+                        <div>
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            style={{ display: "none" }}
+                          />
+                          <input
+                            type="file"
+                            ref={imageInputRef}
+                            onChange={handleImageChange}
+                            accept="image/*"
+                            style={{ display: "none" }}
+                          />
+                          {file && (
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: colors.lightText,
+                              }}
+                            >
+                              Selected file: {file.name}
+                            </div>
+                          )}
+                          {image && (
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: colors.lightText,
+                              }}
+                            >
+                              Selected image: {image.name}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <SecondaryButton
+                            onClick={() => {
+                              setEditing(false);
+                              setFile(null);
+                              setImage(null);
+                              showToast("Edit cancelled", "info");
+                            }}
+                          >
+                            Cancel
+                          </SecondaryButton>
+                          <PrimaryButton onClick={handleSave}>
+                            Save
+                          </PrimaryButton>
+                        </div>
+                      </Actions>
+                    </>
+                  ) : (
+                    <>
+                      {description ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: "16px",
+                          }}
+                        >
+                          <DescriptionView>{description}</DescriptionView>
+                          <ActionIcon
+                            onClick={() => {
+                              setEditing(true);
+                              showToast("Editing description", "info");
+                            }}
+                            title="Edit Description"
+                          >
+                            <FaEdit />
+                          </ActionIcon>
+                        </div>
+                      ) : (
+                        <div style={{ padding: "16px" }}>
+                          <AddDescriptionButton
+                            onClick={() => {
+                              setEditing(true);
+                              showToast("Adding new description", "info");
+                            }}
+                          >
+                            Add description
+                          </AddDescriptionButton>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </Section>
+              </SectionContent>
+            </DescriptionInputContainer>
+          )}
           <DescriptionInputContainer>
-            {isEditing ? (
-              <>
-                <Toolbar>
-                  <ToolbarButton onClick={toggleDropdown} title="Text Format">
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      Aa <RiArrowDropDownLine />
-                    </div>
-                    {isDropdownOpen && (
-                      <Dropdown>
-                        <DropdownItem onClick={() => applyHeading("p")}>
-                          Normal text <span>Ctrl+Alt+0</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h1")}>
-                          Heading 1 <span>Ctrl+Alt+1</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h2")}>
-                          Heading 2 <span>Ctrl+Alt+2</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h3")}>
-                          Heading 3 <span>Ctrl+Alt+3</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h4")}>
-                          Heading 4 <span>Ctrl+Alt+4</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h5")}>
-                          Heading 5 <span>Ctrl+Alt+5</span>
-                        </DropdownItem>
-                        <DropdownItem onClick={() => applyHeading("h6")}>
-                          Heading 6 <span>Ctrl+Alt+6</span>
-                        </DropdownItem>
-                      </Dropdown>
-                    )}
-                  </ToolbarButton>
-                  <ToolbarButton onClick={() => applyFormat("bold")} title="Bold">
-                    <FaBold />
-                  </ToolbarButton>
-                  <ToolbarButton onClick={() => applyFormat("italic")} title="Italic">
-                    <FaItalic />
-                  </ToolbarButton>
-                  <ToolbarButton onClick={handleFileAttach} title="Attach File">
-                    <FaLink />
-                  </ToolbarButton>
-                  <ToolbarButton onClick={handleImageAttach} title="Attach Image">
-                    <FaImage />
-                  </ToolbarButton>
-                </Toolbar>
-                
-                <DescriptionInput
-                  contentEditable
-                  ref={descriptionRef}
-                  dangerouslySetInnerHTML={{ __html: description }}
-                />
-                
-                <Actions>
-                  <div>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      style={{ display: "none" }}
-                    />
-                    <input
-                      type="file"
-                      ref={imageInputRef}
-                      onChange={handleImageChange}
-                      accept="image/*"
-                      style={{ display: "none" }}
-                    />
-                    {file && <div style={{ fontSize: '12px', color: colors.lightText }}>Selected file: {file.name}</div>}
-                    {image && <div style={{ fontSize: '12px', color: colors.lightText }}>Selected image: {image.name}</div>}
-                  </div>
-                  <div>
-                    <SecondaryButton onClick={() => {
-                      setEditing(false);
-                      setFile(null);
-                      setImage(null);
-                      showToast("Edit cancelled", "info");
-                    }}>
-                      Cancel
-                    </SecondaryButton>
-                    <PrimaryButton onClick={handleSave}>Save</PrimaryButton>
-                  </div>
-                </Actions>
-              </>
-            ) : (
-              <>
-                {description ? (
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "16px" }}>
-                    <DescriptionView>{description}</DescriptionView>
-                    <ActionIcon 
-                      onClick={() => {
-                        setEditing(true);
-                        showToast("Editing description", "info");
-                      }} 
-                      title="Edit Description"
-                    >
-                      <FaEdit />
-                    </ActionIcon>
-                  </div>
+            <SectionContent>
+              <Section>
+                {isEditing ? (
+                  // Only show editing interface for Admin/HOD
+                  role === "Admin" || role === "HOD" ? (
+                    <>
+                      <DescriptionInput
+                        contentEditable
+                        ref={descriptionRef}
+                        dangerouslySetInnerHTML={{ __html: description }}
+                      />
+                      {/* ... rest of editing interface */}
+                    </>
+                  ) : null
                 ) : (
-                  <div style={{ padding: "16px" }}>
-                    <AddDescriptionButton onClick={() => {
-                      setEditing(true);
-                      showToast("Adding new description", "info");
-                    }}>
-                      Add description
-                    </AddDescriptionButton>
-                  </div>
+                  <>
+                    {description ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: "16px",
+                        }}
+                      >
+                        <DescriptionView>{description}</DescriptionView>
+                        {/* Only show edit button for Admin/HOD */}
+                        {(role === "Admin" || role === "HOD") && (
+                          <ActionIcon
+                            onClick={() => {
+                              setEditing(true);
+                              showToast("Editing description", "info");
+                            }}
+                            title="Edit Description"
+                          >
+                            <FaEdit />
+                          </ActionIcon>
+                        )}
+                      </div>
+                    ) : (
+                      // Only show "Add description" for Admin/HOD
+                      (role === "Admin" || role === "HOD") && (
+                        <div style={{ padding: "16px" }}>
+                          <AddDescriptionButton
+                            onClick={() => {
+                              setEditing(true);
+                              showToast("Adding new description", "info");
+                            }}
+                          >
+                            Add description
+                          </AddDescriptionButton>
+                        </div>
+                      )
+                    )}
+                  </>
                 )}
-              </>
-            )}
+              </Section>
+            </SectionContent>
           </DescriptionInputContainer>
         </SectionContent>
       </Section>
@@ -834,7 +1015,7 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
               <GrAttachment /> Attachments
             </SectionTitle>
           </SectionHeader>
-          
+
           <SectionContent>
             {loading ? (
               <LoadingSpinner>Loading attachments...</LoadingSpinner>
@@ -843,29 +1024,41 @@ const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
                 {imageArray.map((image, index) => (
                   <AttachmentItem key={index}>
                     <AttachmentPreview>
-                      {image.type.startsWith('image/') ? (
+                      {image.type.startsWith("image/") ? (
                         <img
                           src={image.src}
                           alt={image.filename}
-                          style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }}
+                          style={{
+                            width: "60px",
+                            height: "60px",
+                            objectFit: "cover",
+                            borderRadius: "4px",
+                          }}
                         />
-                      ) : image.filename.endsWith('.docx') ? (
-                        <BsFiletypeDocx style={{ fontSize: '3rem', color: '#4285F4' }} />
+                      ) : image.filename.endsWith(".docx") ? (
+                        <BsFiletypeDocx
+                          style={{ fontSize: "3rem", color: "#4285F4" }}
+                        />
                       ) : (
-                        <GrAttachment style={{ fontSize: '2rem', color: colors.lightText }} />
+                        <GrAttachment
+                          style={{ fontSize: "2rem", color: colors.lightText }}
+                        />
                       )}
                     </AttachmentPreview>
-                    
+
                     <AttachmentInfo>
                       <AttachmentFileName>{image.filename}</AttachmentFileName>
                       <AttachmentMeta>
-                        Uploaded by: {image.employeeName} • {new Date(image.uploadDate).toLocaleString()}
+                        Uploaded by: {image.employeeName} •{" "}
+                        {new Date(image.uploadDate).toLocaleString()}
                       </AttachmentMeta>
                       <AttachmentActions>
-                        <SecondaryButton onClick={() => handleDownload(image.filename)}>
+                        <SecondaryButton
+                          onClick={() => handleDownload(image.filename)}
+                        >
                           <FaDownload size={12} /> Download
                         </SecondaryButton>
-                        <SecondaryButton 
+                        <SecondaryButton
                           onClick={() => handleDeleteFile(image.filename)}
                           style={{ color: colors.danger }}
                         >
