@@ -14,7 +14,7 @@ console.log("REDIRECT_URL:", REDIRECT_URL);
 // --- Function to set token for local development ---
 function setforlocaldev() {
   const dev_token =
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJTSDAwNyIsImVtYWlsIjoic2l2YXN1bmRhcmlzbXJmdEBnbWFpbC5jb20iLCJuYW1lIjoiZGV2aSIsImFsbG93ZWQtYWN0aW9ucyI6WyJTVC1QLUNNVC1SIiwiU1QtUC1TTk8tUlciLCJTRC1QLUxELVIiLCJTRC1QLVNWRC1SIiwiU1QtUC1OVEYtUiIsIlNULUFQSS1BTUMtUlciLCJTRC1QLVJBLVJXIiwiU0QtUC1PRC1SIiwiU0QtUC1DVC1SIiwiU0QtUC1NSVMtUiIsIlNULVAtVERMLVJXIiwiU1QtUC1ERVMtUlciLCJTRC1QLUlOVi1SIiwiR0wtUC1FUE0tUlciLCJTVC1BUEktQ1JELVJXIiwiU1QtQVBJLUVNUC1SIiwiU0QtUC1CQkEtUlciLCJTVC1QLUNNVC1SVyIsIlNULVRPRE8tQURNSU4iLCJTVC1QLVRETC1SIiwiU0QtUC1SRC1SIiwiU1QtQVBJLUJSRC1SVyIsIlNULVAtREVTLVIiLCJTVC1QLU5URi1SVyIsIlNELVAtUkQtUlciLCJTVC1QLUJSRC1SIl0sImFsbG93ZWQtZGF0YSI6WyJTSEIwMDMiLCJTSEIwMDEiXSwiaXNzIjoiaHR0cHM6Ly9sYWIuc2hpbm92YS5pbi8iLCJpYXQiOjE3NDk4NzE4NzgsImV4cCI6MTc0OTk1ODI3OCwianRpIjoiMjY4MzMxZDgtMTdmNS00MjBiLTkxZDQtZTQ2Nzg4N2RlMTIyIn0.M2TF4cRyAeqTavo5jbDZiZuwM6Z8DdcaqBtSzsvwUXFlho8AN0IKqZpck4JLjQasj30QJQQflZh7KAAMGUzsrs5ub-SYmH44Apc3_b-Ye1T0tcyOJjPsAnTVAlKUC8w2YT6nk4a4sBAKYHFwN2c4G4kTSNJD6NBMucQK7f7-8SRv3DWpFiML40tLAblCOc4pw8Y7rD8ibHUNiZ0ulp4bQxeD3o9Dq-XmfjYmWsYhaNiK-zv1rdhDtmMeaRb53iWYo8Sp3fs81KgofWNHlxShbCb8cihV3TuJddleRwcRUnCimdapklL1F7JF8nAflLsIEzihRpfig4DMhfViz8MZvg"; // Keep empty to force redirect in development
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiI1MDg4NiIsImVtYWlsIjoiY2hhbmRyYXNtcmZ0QGdtYWlsLmNvbSIsIm5hbWUiOiJDaGFuZHJhIiwiYWxsb3dlZC1hY3Rpb25zIjpbIkVSLVItRVJBIiwiR0wtUC1QLVJXIiwiRVItUC1EU0gtUiIsIlNULVAtTlRGLVIiLCJFUi1QLVBMLVIiLCJTSEktUC1UUkFJTi1SVyIsIlNULVAtQlJELVIiLCJHTC1QLUVQLVJXIiwiU1QtUi1IT0QiLCJTVC1QLUNNVC1SVyIsIlNULVAtQ01ULVIiLCJTVC1QLURFUy1SIiwiU1QtUC1TTk8tUlciLCJTVC1BUEktQlJELVJXIiwiU1QtUC1UREwtUlciLCJTVC1QLVRETC1SIiwiU0hJLVAtRVhQLVJXIiwiU1QtQVBJLUVNUC1SIiwiU0hJLVAtSU5DIiwiU1QtUC1OVEYtUlciLCJHTC1QLUVBRC1SVyIsIlNULUFQSS1BTUMtUlciLCJTVC1BUEktQ1JELVJXIiwiRVItUC1QQi1SIiwiU1QtUC1ERVMtUlciLCJHTC1QLUVMLVJXIl0sImFsbG93ZWQtZGF0YSI6WyJTSEIwMDEiXSwiaXNzIjoiaHR0cHM6Ly9sYWIuc2hpbm92YS5pbi8iLCJpYXQiOjE3NTEwMjA2NzEsImV4cCI6MTc1MTEwNzA3MSwianRpIjoiN2VkMmJhMmYtYTMzNC00YmNlLTg3ZWYtNjAwZDkzZjQwNDI0In0.ZPENx7oxAjCnu4b-rPiun8qXhARrIoL_2aBMmqcJm7GyYk07jWI6-kE0OWnEOwtOqbBZe-JECJHnsSMR6s9ytiavmA1ksy5ifr4IFJp0gVCrtRFHefWACPoatocoT_IyABVBvfiUXWFFtWyoDqu50tdx0cj32d8zcQeSHRXq_D1m08M-aBc1JJzqDZ9Ev8nJg_c0a8CN6G_mjXHquSHvyxrZ0Jshx7CnMi_GdMM9aYZ1cFfRJ_AbeaImRHPftNzNVa4uqpjSSZ32ONP1u7aeIblA8bju3i9rUrZju9YNwYrfIzsQ0JoHfIeuwkjVnpbv_xtebeX6gwO6Z66QUTMTlQ"; // Keep empty to force redirect in development
   console.log("🔧 Development token is empty - will redirect to login");
   return dev_token;
 }
@@ -55,11 +55,11 @@ function getUserRole(allowedActions) {
     return "Employee"; // Default role
   }
 
-  if (allowedActions.includes("ST-TODO-ADMIN")) {
+  if (allowedActions.includes("ST-R-A")) {
     return "Admin";
-  } else if (allowedActions.includes("ST-TODO-HOD")) {
+  } else if (allowedActions.includes("ST-R-HOD")) {
     return "HOD";
-  } else if (allowedActions.includes("ST-TODO-EMPLOYEE")) {
+  } else if (allowedActions.includes("ST-R-EMP")) {
     return "Employee";
   } else {
     return "Employee"; // Default role if none of the specific roles are found
