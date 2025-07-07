@@ -220,6 +220,7 @@ const Sidebar = ({ boards, setBoards }) => {
   const closeDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setSelectedBoard(null);
+    window.location.reload(); // Reload the page to reflect changes
   };
 
   const openEditModal = (board, index) => {
@@ -235,6 +236,7 @@ const Sidebar = ({ boards, setBoards }) => {
     setIsEditModalOpen(false);
     setSelectedBoard(null);
     setEditingBoardIndex(null);
+    window.location.reload(); // Reload the page to reflect changes
   };
 
   const saveEditedBoard = async (newTitle) => {
@@ -285,20 +287,23 @@ const Sidebar = ({ boards, setBoards }) => {
 
   const handleDeleteBoard = async () => {
     try {
-      // Use apiRequest instead of direct fetch
+      // Use apiRequest to soft delete the board
       const result = await apiRequest(
         `${Trackerbaseurl}boards/${selectedBoard.boardId}/`,
-        "DELETE"
-        // Remove the body parameter - backend will get employeeId from token
+        "PUT",
+        {
+          is_active: false, // Soft delete by setting is_active to false
+        }
       );
 
       if (result.success) {
+        // Remove the board from the displayed list (since we only show active boards)
         const updatedBoards = boards.filter(
           (board) => board.boardId !== selectedBoard.boardId
         );
-        setBoards(updatedBoards);
-        closeDeleteModal();
-        toast.warning("Board deleted successfully!"); // Success toast
+        setBoards(updatedBoards); // Update the boards state in App.js
+        closeEditModal();
+        toast.success("Board deleted successfully!"); // Success toast
       } else {
         console.error("Failed to delete board:", result.error);
         toast.error(

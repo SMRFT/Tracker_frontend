@@ -480,6 +480,7 @@ const Board = () => {
       const newBoard = {
         boardName: boardName.trim(),
         boardColor,
+        is_active: true,
       };
 
       const result = await apiRequest(

@@ -267,38 +267,24 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   }, [cardId, boardId]);
 
   const handleSaveActivity = async () => {
-    console.log("=== SAVE ACTIVITY DEBUG START ===");
-
     if (isSubmitting) {
-      console.log("Already submitting, returning early");
       return;
     }
 
     const commentText = activityInputRef.current?.value?.trim();
-    console.log("Comment Text:", commentText);
 
     if (!commentText) {
-      console.log("Comment text is empty");
       showErrorToast("Comment cannot be empty!");
       return;
     }
 
-    // Validate required props
-    console.log("Props validation:");
-    console.log("- cardId:", cardId, typeof cardId);
-    console.log("- boardId:", boardId, typeof boardId);
-    console.log("- employeeId:", employeeId, typeof employeeId);
-    console.log("- employeeName:", employeeName, typeof employeeName);
-
     if (!cardId || !boardId) {
       showErrorToast("Card ID or Board ID is missing!");
-      console.error("Missing cardId or boardId:", { cardId, boardId });
       return;
     }
 
     if (!employeeId || !employeeName) {
       showErrorToast("Employee information not found. Please log in again.");
-      console.error("Missing employee info:", { employeeId, employeeName });
       return;
     }
 
@@ -333,24 +319,15 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
         payload
       );
 
-      console.log("API Response received:", result);
-
       if (result.success) {
-        console.log("API call successful");
         showSuccessToast("Your comment has been posted successfully");
 
         // Clear the input and refresh comments
         if (activityInputRef.current) {
           activityInputRef.current.value = "";
-          console.log("Input cleared");
         }
-
-        console.log("Refreshing comments...");
         await fetchComments();
-        console.log("Comments refreshed");
       } else {
-        console.log("API call failed:", result.error);
-
         // Handle different error types
         if (result.status === 401) {
           showErrorToast("Session expired. Please log in again.");
@@ -363,13 +340,11 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
         }
       }
     } catch (error) {
-      console.error("Error saving comment:", error);
       showErrorToast(
         "Failed to connect to the server. Please check your connection."
       );
     } finally {
       setIsSubmitting(false);
-      console.log("=== SAVE ACTIVITY DEBUG END ===");
     }
   };
 
