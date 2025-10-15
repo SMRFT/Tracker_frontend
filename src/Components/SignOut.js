@@ -45,7 +45,7 @@ const SignOut = () => {
     localStorage.removeItem("employeeId");
     localStorage.removeItem("employeeName");
     localStorage.removeItem("role");
-    window.location.href = "https://loginshanmuga.netlify.app/";
+    window.location.href = "/login";
   };
 
   const openChangePasswordModal = () => {

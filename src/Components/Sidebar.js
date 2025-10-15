@@ -16,7 +16,7 @@ const SidebarContainer = styled.div`
   width: 290px;
   background-color: ${(props) =>
     props.bgColor ||
-    "linear-gradient(135deg, #ff9a9e, #fad0c4)"}; /* Use bgColor prop or fallback to white */
+    "linear-gradient(135deg, #ff9a9e, #fad0c4)"};
   padding: 20px;
   height: 100vh;
   position: fixed;
@@ -24,14 +24,27 @@ const SidebarContainer = styled.div`
   top: 0;
   left: 0;
   box-shadow: 1px 0 2px rgba(0, 0, 0, 0.5);
-  transition: transform 0.3s ease, background-color 0.3s ease; /* Add smooth transition */
+  transition: transform 0.3s ease, background-color 0.3s ease;
   z-index: 1000;
+
+  /* Enable vertical scrolling when content is too long */
+  overflow-y: auto;
+
+  /* Optional: hide ugly scrollbar on WebKit browsers */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 3px;
+  }
 
   @media (max-width: 768px) {
     transform: ${(props) =>
       props.isSidebarOpen ? "translateX(0)" : "translateX(-100%)"};
   }
 `;
+
 
 const SidebarNav = styled.nav`
   ul {
@@ -351,7 +364,28 @@ const Sidebar = ({ boards, setBoards }) => {
                 </StyledNavLink>
               </li>
             )}
+            {/* Add Task Deadlines link */}
+    <li>
+      <StyledNavLink
+        to="/deadlines"
+        className={({ isActive }) => (isActive ? "active" : "")}
+      >Task Deadlines
+        {/* <FontAwesomeIcon icon={faEllipsisV} style={{ marginRight: "10px" }} /> */}
+        
+      </StyledNavLink>
+    </li>
+    <li>
+  <StyledNavLink
+    to="/finished"
+    className={({ isActive }) => (isActive ? "active" : "")}
+  >
+    Finished Tasks
+  </StyledNavLink>
+</li>
+
+
           </ul>
+          
         </SidebarNav>
 
         <BoardsSection>
