@@ -16,19 +16,26 @@ import styled from "styled-components";
 import "./App.css";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./Components/apiRequest";
+import {
+  startAutoDeadlineCheck,
+  stopAutoDeadlineCheck,
+  manualDeadlineCheck,
+} from "./Components/autoDeadlineCheck";
+import { ToastContainer } from "react-toastify";
+import TaskDeadline from "./Components/TaskDeadline";
+import FinishedTask from "./Components/FinishedTask";
 
-const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
-const BASE_PATH = process.env.PUBLIC_URL;
+
+const Trackerbaseurl =
+  process.env.REACT_APP_BACKEND_TRACKER_BASE_URL ;
 
 const ContentContainer = styled.div`
   margin-left: ${({ sidebarVisible }) => (sidebarVisible ? "270px" : "0")};
   margin-top: 0px;
   transition: margin-left 0.3s ease;
-
   @media (max-width: 768px) {
     margin-left: ${({ sidebarVisible }) => (sidebarVisible ? "180px" : "0")};
   }
-
   @media (max-width: 480px) {
     margin-left: 0;
   }
@@ -37,11 +44,33 @@ const ContentContainer = styled.div`
 const AppContent = ({ boards, addBoard }) => {
   const location = useLocation();
   const sidebarVisible = !["/Register"].includes(location.pathname);
+  const [hasAdminPrivileges, setHasAdminPrivileges] = useState(false);
+
+  useEffect(() => {
+    const role = localStorage.getItem("role");
+    const hasAdminAccess = () => {
+      return role === "Admin";
+    };
+    setHasAdminPrivileges(hasAdminAccess());
+  }, []);  
 
   return (
-    <>
-      {sidebarVisible && <Sidebar boards={boards} setBoards={addBoard} />}
-      <ContentContainer sidebarVisible={sidebarVisible}>
+    
+     <>
+       {sidebarVisible && <Sidebar boards={boards} setBoards={addBoard} />}
+       <ContentContainer sidebarVisible={sidebarVisible}>
+       
+       {/* {hasAdminPrivileges && (
+           <div style={{ margin: "10px 95%" }}>
+             <button
+               onClick={() => manualDeadlineCheck()}
+               className="btn btn-warning"
+             >
+               📧
+             </button>
+          </div>
+ )}  */}
+      
         <Routes>
           <Route
             path="/"
@@ -51,13 +80,16 @@ const AppContent = ({ boards, addBoard }) => {
             path="/Board"
             element={<Board boards={boards} addBoard={addBoard} />}
           />
+          <Route path="/finished" element={<FinishedTask />} />
+          <Route path="/deadlines" element={<TaskDeadline />} />
           <Route path="/SignOut" element={<SignOut />} />
           <Route path="/Register" element={<Register />} />
           <Route path="/Todolist" element={<Todolist />} />
           <Route path="/Members" element={<Members />} />
+          
         </Routes>
       </ContentContainer>
-    </>
+    //</>
   );
 };
 
@@ -66,15 +98,15 @@ const App = () => {
   const [role, setRole] = useState("");
 
   useEffect(() => {
-    const role = localStorage.getItem("role");
-    if (role) {
-      setRole(role);
+    const savedRole = localStorage.getItem("role");
+    if (savedRole) {
+      setRole(savedRole);
     }
   }, []);
 
   const fetchBoards = async () => {
-    const role = localStorage.getItem("role");
-    const result = await apiRequest(`${Trackerbaseurl}get-boards/${role}/`);
+    const currentRole = localStorage.getItem("role");
+    const result = await apiRequest(`${Trackerbaseurl}get-boards/${currentRole}/`);
     if (result.success) {
       setBoards(Array.isArray(result.data) ? result.data : []);
     } else {
@@ -90,7 +122,9 @@ const App = () => {
     const token = localStorage.getItem("access_token");
     if (token) {
       fetchBoards();
+      startAutoDeadlineCheck(); // Automatic checks start here
     }
+    return () => stopAutoDeadlineCheck(); // Stop on component unmount
   }, []);
 
   const addBoard = (newBoard) => {
@@ -98,8 +132,14 @@ const App = () => {
   };
 
   return (
-    <Router basename={BASE_PATH}>
+    <Router basename={process.env.PUBLIC_URL}>
       <AppContent boards={boards} addBoard={addBoard} />
+      <ToastContainer 
+  autoClose={2000} 
+  closeOnClick 
+  closeButton 
+  hideProgressBar 
+/>
     </Router>
   );
 };

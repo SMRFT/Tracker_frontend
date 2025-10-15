@@ -14,10 +14,11 @@ import DateComponent from "./Dates"; //
 import Addmembers from "./Addmembers";
 import Description from "./Description";
 import Comment from "./Comment";
-import { format, parseISO } from "date-fns";
+import { isBefore, format, parseISO } from "date-fns";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest"; // Import the API helper
+
 
 const DragAndDropCards = ({ boards, setBoards }) => {
   const navigate = useNavigate();
@@ -541,6 +542,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
       boardId: boardId || null,
       startdate: defaultStartDate,
       enddate: defaultEndDate,
+      columnId: selectedCard.columnId || null,   // ✅ include column id  
     });
 
     // Initialize the edited card name with a fallback
@@ -639,6 +641,27 @@ const DragAndDropCards = ({ boards, setBoards }) => {
         console.error("Error fetching cards:", error);
       });
   };
+
+  const isOverdue = (endDate, columnId) => {
+  if (columnId === "done") return false;
+
+  const today = new Date();
+  const todayDateOnly = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+
+  const endDateOnly = new Date(
+    endDate.getFullYear(),
+    endDate.getMonth(),
+    endDate.getDate()
+  );
+
+  // Mark red only if today is AFTER end date (i.e., next day or later)
+  return todayDateOnly > endDateOnly;
+};
+
   return (
     <TodolistContainer style={{ background: boardColor }}>
       <DndProvider backend={HTML5Backend}>
@@ -882,22 +905,48 @@ const DragAndDropCards = ({ boards, setBoards }) => {
                           gap: "10px",
                         }}
                       >
-                        <div>
-                          <strong>Start Date: </strong>
-                          <span>
-                            {modalContent.startdate
-                              ? modalContent.startdate.toLocaleDateString()
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div>
-                          <strong>End Date: </strong>
-                          <span>
-                            {modalContent.enddate
-                              ? modalContent.enddate.toLocaleDateString()
-                              : "N/A"}
-                          </span>
-                        </div>
+<div>
+  <strong>Start Date: </strong>
+  <span
+    style={{
+      color:
+        modalContent.enddate &&
+        isOverdue(modalContent.enddate, modalContent.columnId)
+          ? "red"
+          : "inherit",
+      fontWeight:
+        modalContent.enddate &&
+        isOverdue(modalContent.enddate, modalContent.columnId)
+          ? "bold"
+          : "normal",
+    }}
+  >
+    {modalContent.startdate
+      ? modalContent.startdate.toLocaleDateString()
+      : "N/A"}
+  </span>
+</div>
+<div>
+  <strong>End Date: </strong>
+  <span
+    style={{
+      color:
+        modalContent.enddate &&
+        isOverdue(modalContent.enddate, modalContent.columnId)
+          ? "red"
+          : "inherit",
+      fontWeight:
+        modalContent.enddate &&
+        isOverdue(modalContent.enddate, modalContent.columnId)
+          ? "bold"
+          : "normal",
+    }}
+  >
+    {modalContent.enddate
+      ? modalContent.enddate.toLocaleDateString()
+      : "N/A"}
+  </span>
+</div>
                       </div>
                     </div>
                   </div>

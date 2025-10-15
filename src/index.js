@@ -13,7 +13,7 @@ console.log("REDIRECT_URL:", REDIRECT_URL);
 
 // --- Function to set token for local development ---
 function setforlocaldev() {
-  const dev_token = ""; // Keep empty to force redirect in development
+  const dev_token ="";
   console.log("🔧 Development token is empty - will redirect to login");
   return dev_token;
 }
@@ -26,7 +26,7 @@ function redirectToLogin() {
   } else {
     console.error("❌ REDIRECT_URL not configured");
     // Even if REDIRECT_URL is not configured, don't show error - just redirect to a fallback
-    window.location.href = "https://loginshanmuga.netlify.app/";
+    window.location.href = "/login";
   }
 }
 
@@ -159,3 +159,4 @@ function renderApp(userPayload) {
     redirectToLogin();
   }
 })();
+

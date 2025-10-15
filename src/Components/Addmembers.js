@@ -18,17 +18,19 @@ const ModalBackdrop = styled.div`
   align-items: center;
   z-index: 1000;
 `;
+
 const ModalContainer = styled.div`
   background-color: white;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  width: 400px;
+  width: 450px;
   max-width: 100%;
   max-height: 80vh;
   overflow-y: auto;
   z-index: 1001;
 `;
+
 const MembersContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -36,21 +38,35 @@ const MembersContainer = styled.div`
   padding: 20px;
   position: relative;
 `;
+
 const EmployeeCard = styled.div`
   background-color: #f0f0f0;
   color: black;
   border-radius: 8px;
   padding: 10px 20px;
   margin: 10px 0;
-  width: 300px;
+  width: 400px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 `;
+
+const EmployeeDetails = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
 const EmployeeName = styled.span`
   font-weight: bold;
   cursor: pointer;
 `;
+
+const DepartmentText = styled.span`
+  font-size: 0.9em;
+  color: #555;
+`;
+
 const IconButton = styled.button`
   background: none;
   border: none;
@@ -63,6 +79,7 @@ const IconButton = styled.button`
     opacity: 0.8;
   }
 `;
+
 const SearchBox = styled.input`
   padding: 8px;
   margin-bottom: 20px;
@@ -71,6 +88,7 @@ const SearchBox = styled.input`
   width: 100%;
   max-width: 300px;
 `;
+
 const CloseButton = styled.button`
   position: absolute;
   top: 10px;
@@ -83,13 +101,6 @@ const CloseButton = styled.button`
   &:hover {
     color: black;
   }
-`;
-const Message = styled.div`
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 4px;
-  color: ${(props) => (props.success ? "green" : "red")};
-  background-color: ${(props) => (props.success ? "#D4EDDA" : "#F8D7DA")};
 `;
 
 const Button = styled.button`
@@ -112,13 +123,12 @@ const Button = styled.button`
     background-color: #45a049;
   }
 `;
-const Addmembers = ({
-  cardId,
-  cardName,
-  boardId,
-  closeModal,
-  onMemberUpdate,
-}) => {
+
+const Addmembers = ({ cardId, 
+  cardName, 
+  boardId, 
+  closeModal, 
+  onMemberUpdate }) => {
   const [employees, setEmployees] = useState([]);
   const [addedMembers, setAddedMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -166,44 +176,34 @@ const Addmembers = ({
     fetchAddedMembers();
   }, [cardId, boardId, cardName]);
 
-  const handleSelect = async (employee) => {
-    setLoading(true);
-    try {
-      const result = await apiRequest(
-        `${Trackerbaseurl}add_member_to_card/`,
-        "POST",
-        {
-          cardId,
-          employeeId: employee.employeeId,
-          employeeName: employee.employeeName,
-        }
-      );
+const handleSelect = async (employee) => {
+  setLoading(true);
+  try {
+    const result = await apiRequest(`${Trackerbaseurl}add_member_to_card/`, "POST", {
+      cardId,
+      employeeId: employee.employeeId,
+      employeeName: employee.employeeName,
+      department: employee.department, // ✅ added department
+    });
 
-      if (!result.success) {
-        toast.error(result.error || "Error adding member.");
-      } else {
-        // Update local state
-        setAddedMembers([...addedMembers, employee]);
-        setEmployees(
-          employees.filter((emp) => emp.employeeId !== employee.employeeId)
-        );
+    if (!result.success) {
+      toast.error(result.error || "Error adding member.");
+    } else {
+      setAddedMembers([...addedMembers, employee]);
+      setEmployees(employees.filter((emp) => emp.employeeId !== employee.employeeId));
 
-        // Call the callback to update parent component
-        if (onMemberUpdate) {
-          onMemberUpdate();
-        }
+      if (onMemberUpdate) onMemberUpdate();
 
-        const successMessage =
-          result.data?.message || "Member added successfully!";
-        toast.success(successMessage);
-      }
-    } catch (error) {
-      console.error("Unexpected error:", error);
-      toast.error("Unexpected error occurred.");
-    } finally {
-      setLoading(false);
+      const successMessage = result.data?.message || "Member added successfully!";
+      toast.success(successMessage);
     }
-  };
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    toast.error("Unexpected error occurred.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleRemove = async (employee) => {
     try {
@@ -215,18 +215,10 @@ const Addmembers = ({
       if (!result.success) {
         toast.error(result.error || "Failed to remove member");
       } else {
-        // Update local state
-        setAddedMembers(
-          addedMembers.filter(
-            (member) => member.employeeId !== employee.employeeId
-          )
-        );
+        setAddedMembers(addedMembers.filter((m) => m.employeeId !== employee.employeeId));
         setEmployees([...employees, employee]);
 
-        // Call the callback to update parent component
-        if (onMemberUpdate) {
-          onMemberUpdate();
-        }
+        if (onMemberUpdate) onMemberUpdate();
 
         toast.warn("Member removed successfully!");
       }
@@ -242,7 +234,6 @@ const Addmembers = ({
       !addedMembers.some((member) => member.employeeId === employee.employeeId)
   );
 
-  // Rest of your component JSX remains the same...
   return (
     <ModalBackdrop>
       <ModalContainer>
@@ -258,60 +249,65 @@ const Addmembers = ({
             onChange={(e) => setSearchQuery(e.target.value)}
           />
 
-          {filteredEmployees.length > 0 ? (
-            filteredEmployees.map((employee) => (
-              <EmployeeCard key={employee.employeeId}>
-                <EmployeeName>{employee.employeeName}</EmployeeName>
-                <span>{employee.employeeId}</span>
-                <IconButton onClick={() => handleSelect(employee)}>
-                  <FaPlusCircle />
-                </IconButton>
-              </EmployeeCard>
-            ))
-          ) : (
-            <p>No employees found.</p>
-          )}
+{filteredEmployees.length > 0 ? (
+  filteredEmployees.map((employee) => (
+    <EmployeeCard key={employee.employeeId}>
+      <div style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ flex: 2, fontWeight: "bold" }}>{employee.employeeName}</div>
+        <div style={{ flex: 2, textAlign: "center", color: "#555" }}>{employee.department}</div>
+        <div style={{ flex: 1, textAlign: "center" }}>{employee.employeeId}</div>
+        <div style={{ flex: 0.5, textAlign: "center" }}>
+          <IconButton onClick={() => handleSelect(employee)}>
+            <FaPlusCircle />
+          </IconButton>
+        </div>
+      </div>
+    </EmployeeCard>
+  ))
+) : (
+  <p>No employees found.</p>
+)}
+
           <h2>Added Members</h2>
-          {addedMembers.length > 0 ? (
-            addedMembers.map((member) => (
-              <EmployeeCard key={member.employeeId}>
-                <EmployeeName>{member.employeeName}</EmployeeName>
-                <span>{member.employeeId}</span>
-                <IconButton delete onClick={() => handleRemove(member)}>
-                  <FaTrashAlt />
-                </IconButton>
-              </EmployeeCard>
-            ))
-          ) : (
-            <p>No members added yet.</p>
-          )}
+{addedMembers.length > 0 ? (
+  addedMembers.map((member) => (
+    <EmployeeCard key={member.employeeId}>
+      <div style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ flex: 2, fontWeight: "bold" }}>{member.employeeName}</div>
+        <div style={{ flex: 2, textAlign: "center", color: "#555" }}>{member.department}</div>
+        <div style={{ flex: 1, textAlign: "center" }}>{member.employeeId}</div>
+        <div style={{ flex: 0.5, textAlign: "center" }}>
+          <IconButton delete onClick={() => handleRemove(member)}>
+            <FaTrashAlt />
+          </IconButton>
+        </div>
+      </div>
+    </EmployeeCard>
+  ))
+) : (
+  <p>No members added yet.</p>
+)}
+
         </MembersContainer>
       </ModalContainer>
     </ModalBackdrop>
   );
 };
 
-// Updated Addmembersbutton component to pass the callback
-const Addmembersbutton = ({ cardId, boardId, cardName, onMemberUpdate }) => {
+const Addmembersbutton = ({ cardId, 
+  boardId, 
+  cardName, 
+  onMemberUpdate }) => {
   const [showModal, setShowModal] = useState(false);
-
-  const openModal = () => {
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-  };
-
+  const openModal = () => setShowModal(true);
+  const closeModal = () => setShowModal(false);
   const role = localStorage.getItem("role");
 
   return (
     <div>
       {(role === "Admin" || role === "HOD") && (
         <Button onClick={openModal}>
-          <MdOutlinePersonOutline
-            style={{ marginRight: "8px", fontSize: "1.2rem" }}
-          />
+          <MdOutlinePersonOutline style={{ marginRight: "8px", fontSize: "1.2rem" }} />
           Member
         </Button>
       )}
@@ -327,4 +323,5 @@ const Addmembersbutton = ({ cardId, boardId, cardName, onMemberUpdate }) => {
     </div>
   );
 };
+
 export default Addmembersbutton;
