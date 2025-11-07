@@ -474,6 +474,7 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
       startdate: defaultStartDate,
       enddate: defaultEndDate,
       columnId: selectedCard?.columnId || null,
+      created_by_name: selectedCard?.created_by_name || "System",
     });
 
     setEditedCardName(cardName || "");
@@ -785,6 +786,16 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
                         </DateItem>
                       </DatesWrapper>
                     </DatesSection>
+                                      
+<CreatedBySection>
+  <Label>Created By</Label>
+  <CreatedByText>
+    {modalContent.created_by_name
+      ? modalContent.created_by_name
+      : "Unknown"}
+  </CreatedByText>
+</CreatedBySection>
+
                   </MembersAndDates>
 
                   <Description
@@ -1388,6 +1399,28 @@ const MemberCircle = styled.div`
     width: 30px;
     height: 30px;
     font-size: 14px;
+  }
+`;
+
+const CreatedBySection = styled.div`
+  margin-bottom: 20px;
+
+  @media (max-width: 480px) {
+    margin-bottom: 15px;
+  }
+`;
+
+const CreatedByText = styled.p`
+  font-size: 15px;
+  color: #333;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+    padding: 6px 10px;
   }
 `;
 
