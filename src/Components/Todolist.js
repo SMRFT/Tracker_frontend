@@ -8,17 +8,16 @@ import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { FaCalendarAlt } from "react-icons/fa";
 import Notification from "./Notification";
-import { FaTimes, FaPlus } from "react-icons/fa"; // Close Icon
+import { FaTimes, FaPlus } from "react-icons/fa";
 import { FaRegCreditCard } from "react-icons/fa";
-import DateComponent from "./Dates"; //
+import DateComponent from "./Dates";
 import Addmembers from "./Addmembers";
 import Description from "./Description";
 import Comment from "./Comment";
 import { isBefore, format, parseISO } from "date-fns";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import apiRequest from "./apiRequest"; // Import the API helper
-
+import apiRequest from "./apiRequest";
 
 const DragAndDropCards = ({ boards, setBoards }) => {
   const navigate = useNavigate();
@@ -43,19 +42,28 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   };
   const localizer = momentLocalizer(moment);
 
-  const Card = ({ id, index, columnId, text, moveCard, openModal }) => {
-    const [, drag] = useDrag({
-      type: ItemType.CARD,
-      item: { id, index, columnId },
-    });
-    return (
-      <div ref={drag} style={styles.card} onClick={() => openModal(text)}>
-        <div style={styles.cardContent}>
-          <span>{text || "No Name"}</span>
+const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal }) => {
+  const [, drag] = useDrag({
+    type: ItemType.CARD,
+    item: { id, index, columnId },
+  });
+
+  return (
+    <div ref={drag} style={styles.card} onClick={() => openModal(text)}>
+      <div style={styles.cardContent}>
+        <div>
+          <strong>{text || "No Name"}</strong>
+          {createdByName && (
+            <p style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
+              Created by: {createdByName}
+            </p>
+          )}
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
+
 
   const Column = ({
     id,
@@ -76,16 +84,14 @@ const DragAndDropCards = ({ boards, setBoards }) => {
         const { id: cardId, index: fromIndex, columnId: fromColumnId } = item;
         const toIndex = cards.findIndex((card) => card.id === cardId);
         if (fromColumnId === id) {
-          // Moving within the same column
           if (toIndex !== -1 && fromIndex !== toIndex) {
             moveCard(fromIndex, id, toIndex, id);
-            item.index = toIndex; // Update item index to reflect new position
+            item.index = toIndex;
           }
         } else {
-          // Moving to a different column
-          const toIndex = cards.length; // Place at the end of the column
+          const toIndex = cards.length;
           moveCard(fromIndex, fromColumnId, toIndex, id);
-          item.columnId = id; // Update item columnId to reflect new column
+          item.columnId = id;
         }
       },
     });
@@ -122,7 +128,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
             position: "top-right",
           });
 
-          // Update state after successful deletion
           setColumns((prevColumns) => {
             const updatedCards = prevColumns[id].filter(
               (card) => card.cardId !== cardId
@@ -157,146 +162,80 @@ const DragAndDropCards = ({ boards, setBoards }) => {
     };
 
     return (
-      <div ref={drop} style={{ ...styles.column, backgroundColor }}>
-        <h3 style={styles.columnTitle}>{title}</h3>
+      <ColumnWrapper ref={drop} backgroundColor={backgroundColor}>
+        <ColumnTitle>{title}</ColumnTitle>
         {cards.map((card, index) => (
-          <div
-            key={card.cardId}
-            style={{
-              marginBottom: "15px",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-              background: "#fff",
-            }}
-          >
-            {/* Card and Remove Button in the Same Row */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <Card
-                id={card.cardId}
-                index={index}
-                columnId={id}
-                text={card.cardName}
-                moveCard={moveCard}
-                openModal={() => openModal(card.cardName, card.cardId)}
-              />
-              {/* Remove Button Right Next to Card */}
-              <button
-                onClick={() => handleRemoveCard(card.cardId)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "18px",
-                  cursor: "pointer",
-                  color: "#888",
-                  marginLeft: "8px",
-                }}
-              >
+          <CardContainer key={card.cardId}>
+            <CardRow>
+<Card
+  id={card.cardId}
+  index={index}
+  columnId={id}
+  text={card.cardName}
+  createdByName={card.created_by_name}  // 👈 new prop
+  moveCard={moveCard}
+  openModal={() => openModal(card.cardName, card.cardId)}
+/>
+              <RemoveButton onClick={() => handleRemoveCard(card.cardId)}>
                 ×
-              </button>
-            </div>
+              </RemoveButton>
+            </CardRow>
             <ToastContainer />
-            <div
-              style={{ display: "flex", marginTop: "5px", cursor: "pointer" }}
-            >
+            <MemberList>
               {cardMembers[card.cardId]?.length > 0 ? (
                 cardMembers[card.cardId].map((member, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      position: "relative",
-                      display: "inline-block",
-                      marginRight: "5px",
-                    }}
-                  >
+                  <MemberItem key={idx}>
                     {member.profilePicture ? (
-                      <img
+                      <MemberImage
                         src={member.profilePicture}
                         alt={member.employeeName}
-                        style={{
-                          borderRadius: "50%",
-                          border: "2px solid white",
-                          objectFit: "cover",
-                          cursor: "pointer",
-                        }}
                         title={member.employeeName}
                       />
                     ) : (
-                      <div
-                        style={{
-                          width: "30px",
-                          height: "30px",
-                          borderRadius: "50%",
-                          backgroundColor: getBackgroundColor(
-                            member.employeeName
-                          ),
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "14px",
-                          fontWeight: "bold",
-                          color: "#fff",
-                        }}
+                      <MemberInitial
+                        bgColor={getBackgroundColor(member.employeeName)}
                         title={member.employeeName}
                       >
                         {member.employeeName.charAt(0).toUpperCase()}
-                      </div>
+                      </MemberInitial>
                     )}
-                  </div>
+                  </MemberItem>
                 ))
               ) : (
-                <p style={{ fontSize: "12px", color: "#888" }}>No members</p>
+                <NoMembers>No members</NoMembers>
               )}
-            </div>
-          </div>
+            </MemberList>
+          </CardContainer>
         ))}
         {showAddCardButton &&
           (localStorage.getItem("role") === "Admin" ||
             localStorage.getItem("role") === "HOD") && (
-            <div style={styles.addCardContainer}>
+            <AddCardContainer>
               {isAddingCard ? (
                 <>
-                  <input
+                  <AddCardInput
                     type="text"
                     placeholder="Enter a name for this card..."
                     value={inputValue}
                     onChange={handleInputChange}
-                    style={styles.input}
                   />
-                  <div style={styles.addCardActions}>
-                    <button
-                      onClick={handleAddCard}
-                      style={styles.addCardButton}
-                    >
+                  <AddCardActions>
+                    <AddCardButton onClick={handleAddCard}>
                       Add card
-                    </button>
-                    <div>
-                      <button
-                        onClick={() => setIsAddingCard(false)}
-                        style={styles.cancelButton}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
+                    </AddCardButton>
+                    <CancelButton onClick={() => setIsAddingCard(false)}>
+                      ×
+                    </CancelButton>
+                  </AddCardActions>
                 </>
               ) : (
-                <button
-                  onClick={() => setIsAddingCard(true)}
-                  style={styles.addInitialCardButton}
-                >
+                <AddInitialCardButton onClick={() => setIsAddingCard(true)}>
                   + Add a card
-                </button>
+                </AddInitialCardButton>
               )}
-            </div>
+            </AddCardContainer>
           )}
-      </div>
+      </ColumnWrapper>
     );
   };
 
@@ -314,7 +253,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
     hold: [],
   });
 
-  // Handle saving the edited card name
   const handleEditCardName = async () => {
     const userRole = localStorage.getItem("role");
     try {
@@ -332,13 +270,11 @@ const DragAndDropCards = ({ boards, setBoards }) => {
           columns[modalContent.boardName]
         );
 
-        // Add safety check
         if (
           columns &&
           modalContent.boardName &&
           columns[modalContent.boardName]
         ) {
-          // Update the card name in the columns
           const updatedColumns = { ...columns };
           const updatedCards = updatedColumns[modalContent.boardName].map(
             (card) =>
@@ -364,6 +300,7 @@ const DragAndDropCards = ({ boards, setBoards }) => {
       console.error("Error updating card name:", error);
     }
   };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [cardId, setCardId] = useState("");
   const [cardName, setCardName] = useState("");
@@ -371,9 +308,9 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const [events, setEvents] = useState([]);
   const [cards, setCards] = useState([]);
   const [userRole, setRole] = useState("");
+
   useEffect(() => {
     const userRole = localStorage.getItem("role");
-
     if (userRole) {
       setRole(userRole);
     }
@@ -408,7 +345,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
       setColumns(updatedColumns);
       setCards(parsedData);
 
-      // Fetch members for each card
       const memberRequests = parsedData.map(async (card) => {
         const memberResult = await apiRequest(
           `${Trackerbaseurl}add_member_to_card/?cardId=${card.cardId}&boardId=${boardId}&cardName=${card.cardName}`
@@ -486,9 +422,8 @@ const DragAndDropCards = ({ boards, setBoards }) => {
     const userRole = localStorage.getItem("role");
 
     try {
-      // Fix: Include boardId in the URL to match your URL pattern
       const result = await apiRequest(
-        `${Trackerbaseurl}cards/${boardId}/${userRole}/`, // Now matches your URL pattern
+        `${Trackerbaseurl}cards/${boardId}/${userRole}/`,
         "POST",
         newCard
       );
@@ -497,7 +432,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
         const data = result.data;
         console.log("Card added:", data);
 
-        // Store cardId and cardName in localStorage
         localStorage.setItem("cardId", data.cardId);
         localStorage.setItem("cardName", data.cardName);
 
@@ -508,7 +442,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
         });
         setColumns(updatedColumns);
 
-        // Trigger useEffect to fetch updated cards with members
         setCardAdded(true);
       } else {
         console.error("Error adding card:", result.error);
@@ -521,15 +454,13 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   useEffect(() => {
     if (cardAdded) {
       fetchCardsWithMembers(boardId);
-      setCardAdded(false); // Reset the flag
+      setCardAdded(false);
     }
   }, [cardAdded]);
 
   const openModal = (cardName, cardId, boardName) => {
-    // Find the selected card by cardId
     const selectedCard = cards.find((card) => card.cardId === cardId);
 
-    // Prepare default values if no card data is found
     const defaultStartDate = selectedCard?.startdate || null;
     const defaultEndDate = selectedCard?.enddate || null;
 
@@ -542,13 +473,11 @@ const DragAndDropCards = ({ boards, setBoards }) => {
       boardId: boardId || null,
       startdate: defaultStartDate,
       enddate: defaultEndDate,
-      columnId: selectedCard.columnId || null,   // ✅ include column id  
+      columnId: selectedCard?.columnId || null,
+      created_by_name: selectedCard?.created_by_name || "System",
     });
 
-    // Initialize the edited card name with a fallback
     setEditedCardName(cardName || "");
-
-    // Open the modal
     setIsModalOpen(true);
     setIsOpen(true);
   };
@@ -563,7 +492,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
         console.log("Fetched members:", result.data);
         setMembers(result.data);
 
-        // Also update the cardMembers state for the specific card
         setCardMembers((prev) => ({
           ...prev,
           [targetCardId]: result.data,
@@ -576,7 +504,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
     }
   };
 
-  // Update the useEffect that calls fetchMembers
   useEffect(() => {
     if (cardId && boardId && cardName) {
       fetchMembers(cardId, boardId, cardName);
@@ -584,7 +511,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   }, [cardId, boardId, cardName]);
 
   const getBackgroundColor = (name) => {
-    // Generate a color based on the first letter of the name
     const colors = [
       "#FF9A9E",
       "#FFC93C",
@@ -601,7 +527,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const [employeeCards, setEmployeeCards] = useState([]);
   const [members1, setMembers1] = useState([]);
 
-  // Usage in your fetchEmployees function
   const fetchEmployees = async (boardId) => {
     try {
       const result = await apiRequest(`${Trackerbaseurl}employees/${boardId}/`);
@@ -610,7 +535,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
         setMembers1(result.data.employees);
       } else {
         console.error("Failed to fetch employees:", result.error);
-        // Handle the error appropriately in your UI
         if (result.rawResponse) {
           console.error("Server returned:", result.rawResponse);
         }
@@ -629,7 +553,6 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const fetchEmployeeCards = (employeeId, boardId) => {
     apiRequest(`${Trackerbaseurl}cards/${employeeId}/${boardId}/`)
       .then((response) => {
-        // For axios, the parsed data is in response.data
         const data = response.data;
         if (data.cards) {
           setEmployeeCards(data.cards);
@@ -643,98 +566,64 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   };
 
   const isOverdue = (endDate, columnId) => {
-  if (columnId === "done") return false;
+    if (columnId === "done") return false;
 
-  const today = new Date();
-  const todayDateOnly = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate()
-  );
+    const today = new Date();
+    const todayDateOnly = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
 
-  const endDateOnly = new Date(
-    endDate.getFullYear(),
-    endDate.getMonth(),
-    endDate.getDate()
-  );
+    const endDateOnly = new Date(
+      endDate.getFullYear(),
+      endDate.getMonth(),
+      endDate.getDate()
+    );
 
-  // Mark red only if today is AFTER end date (i.e., next day or later)
-  return todayDateOnly > endDateOnly;
-};
+    return todayDateOnly > endDateOnly;
+  };
 
   return (
     <TodolistContainer style={{ background: boardColor }}>
       <DndProvider backend={HTML5Backend}>
         <IconWrapper>
-          <div>
-            <div style={{ display: "flex", alignItems: "center" }}>
-              {members1.map((member) => (
-                <div
-                  key={member.employeeId}
-                  title={member.employeeName}
-                  onClick={() => {
-                    setSelectedEmployee(member);
-                    fetchEmployeeCards(member.employeeId, boardId); // Fetch cards on click
-                  }}
-                  style={{ cursor: "pointer" }}
-                >
-                  <img
-                    src={`https://ui-avatars.com/api/?name=${member.employeeName}&background=random`}
-                    alt={member.employeeName}
-                    style={{
-                      width: 30,
-                      height: 30,
-                      borderRadius: "50%",
-                      marginRight: 5,
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FaCalendarAlt
-              style={{
-                color: "white",
-                fontSize: "1.6rem",
-                float: "right",
-                marginRight: "60px",
-              }}
-              onClick={() => setIsCalendarVisible(!isCalendarVisible)}
-            />
-          </div>
-          <Notification employeeId={employeeId} />
-        </IconWrapper>
-
-        {/* Employee cards section placed outside IconWrapper */}
-        {selectedEmployee && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginTop: 10,
-            }}
-          >
-            <div
-              style={{
-                padding: 10,
-                background: "#333",
-                borderRadius: 5,
-                width: "300px",
-              }}
-            >
-              {/* Header with Close Button Inside */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
+          <EmployeeAvatars>
+            {members1.map((member) => (
+              <EmployeeAvatar
+                key={member.employeeId}
+                title={member.employeeName}
+                onClick={() => {
+                  setSelectedEmployee(member);
+                  fetchEmployeeCards(member.employeeId, boardId);
                 }}
               >
-                <h3 style={{ color: "white", margin: 0 }}>
-                  {selectedEmployee.employeeName}'s Cards
-                </h3>
+                <img
+                  src={`https://ui-avatars.com/api/?name=${member.employeeName}&background=random`}
+                  alt={member.employeeName}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "50%",
+                  }}
+                />
+              </EmployeeAvatar>
+            ))}
+          </EmployeeAvatars>
+
+          <IconGroup>
+            <CalendarIcon
+              onClick={() => setIsCalendarVisible(!isCalendarVisible)}
+            />
+            <Notification employeeId={employeeId} />
+          </IconGroup>
+        </IconWrapper>
+
+        {selectedEmployee && (
+          <EmployeeCardsWrapper>
+            <EmployeeCardsContainer>
+              <EmployeeCardsHeader>
+                <h3>{selectedEmployee.employeeName}'s Cards</h3>
                 <FaTimes
                   style={{
                     color: "white",
@@ -743,39 +632,36 @@ const DragAndDropCards = ({ boards, setBoards }) => {
                   }}
                   onClick={() => setSelectedEmployee(null)}
                 />
-              </div>
+              </EmployeeCardsHeader>
 
-              <ul style={{ listStyle: "none", padding: 0, marginTop: 10 }}>
+              <EmployeeCardsList>
                 {employeeCards.length > 0 ? (
                   employeeCards.map((card) => (
-                    <li
-                      key={card.cardId}
-                      style={{ color: "white", padding: "5px 0" }}
-                    >
+                    <EmployeeCardItem key={card.cardId}>
                       <strong>{card.cardName}</strong> (Board: {card.boardName})
-                    </li>
+                    </EmployeeCardItem>
                   ))
                 ) : (
-                  <li style={{ color: "white" }}>No cards found</li>
+                  <EmployeeCardItem>No cards found</EmployeeCardItem>
                 )}
-              </ul>
-            </div>
-          </div>
+              </EmployeeCardsList>
+            </EmployeeCardsContainer>
+          </EmployeeCardsWrapper>
         )}
 
         {isCalendarVisible && (
-          <div style={styles.calendarContainer}>
+          <CalendarContainer>
             <Calendar
               localizer={localizer}
               events={events}
               startAccessor="start"
               endAccessor="end"
-              style={styles.calendar}
+              style={{ height: "100%", width: "100%" }}
             />
-          </div>
+          </CalendarContainer>
         )}
 
-        <div style={styles.board}>
+        <Board>
           <Column
             id="do"
             title="Do"
@@ -818,31 +704,17 @@ const DragAndDropCards = ({ boards, setBoards }) => {
             setColumns={setColumns}
             backgroundColor="#F1F2F4"
           />
-        </div>
+        </Board>
+
         {isOpen && (
           <ModalOverlay>
             <ModalContainer>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                }}
-              >
-                {/* Left Section */}
-                <div style={{ flex: "1", marginRight: "20px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    <FaRegCreditCard
-                      style={{ fontSize: "1.2rem", marginRight: "10px" }}
-                    />
+              <ModalContent>
+                <ModalLeft>
+                  <CardNameSection>
+                    <FaRegCreditCard style={{ fontSize: "1.2rem", marginRight: "10px" }} />
                     {isEditing ? (
-                      <input
+                      <CardNameInput
                         type="text"
                         value={editedCardName}
                         onChange={(e) => setEditedCardName(e.target.value)}
@@ -858,100 +730,74 @@ const DragAndDropCards = ({ boards, setBoards }) => {
                         }}
                       />
                     ) : (
-                      <span
-                        style={{ cursor: "pointer", fontSize: "1.5rem" }}
-                        onClick={() => setIsEditing(true)}
-                      >
+                      <CardNameText onClick={() => setIsEditing(true)}>
                         {editedCardName}
-                      </span>
+                      </CardNameText>
                     )}
-                  </div>
+                  </CardNameSection>
 
-                  {/* Members and Dates Wrapper */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: "20px",
-                    }}
-                  >
-                    {/* Members */}
-                    <div style={{ flex: 1, marginRight: "20px" }}>
+                  <MembersAndDates>
+                    <MembersSection>
                       <Label>Members</Label>
-                      <Container>
+                      <MembersContainer>
                         {members.length > 0 ? (
-                          members.map((member) => (
+                          members.map((member, idx) => (
                             <MemberCircle
+                              key={idx}
                               bgColor={getBackgroundColor(member.employeeName)}
                             >
-                              {member.employeeName.charAt(0)}{" "}
+                              {member.employeeName.charAt(0)}
                             </MemberCircle>
                           ))
                         ) : (
                           <p>No members found.</p>
                         )}
-                      </Container>
-                    </div>
+                      </MembersContainer>
+                    </MembersSection>
 
-                    {/* Dates */}
-                    <div style={{ flex: 1 }}>
+                    <DatesSection>
                       <Label>Due Date</Label>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          whiteSpace: "nowrap",
-                          gap: "10px",
-                        }}
-                      >
-<div>
-  <strong>Start Date: </strong>
-  <span
-    style={{
-      color:
-        modalContent.enddate &&
-        isOverdue(modalContent.enddate, modalContent.columnId)
-          ? "red"
-          : "inherit",
-      fontWeight:
-        modalContent.enddate &&
-        isOverdue(modalContent.enddate, modalContent.columnId)
-          ? "bold"
-          : "normal",
-    }}
-  >
-    {modalContent.startdate
-      ? modalContent.startdate.toLocaleDateString()
-      : "N/A"}
-  </span>
-</div>
-<div>
-  <strong>End Date: </strong>
-  <span
-    style={{
-      color:
-        modalContent.enddate &&
-        isOverdue(modalContent.enddate, modalContent.columnId)
-          ? "red"
-          : "inherit",
-      fontWeight:
-        modalContent.enddate &&
-        isOverdue(modalContent.enddate, modalContent.columnId)
-          ? "bold"
-          : "normal",
-    }}
-  >
-    {modalContent.enddate
-      ? modalContent.enddate.toLocaleDateString()
-      : "N/A"}
-  </span>
-</div>
-                      </div>
-                    </div>
-                  </div>
+                      <DatesWrapper>
+                        <DateItem>
+                          <strong>Start: </strong>
+                          <DateValue
+                            isOverdue={
+                              modalContent.enddate &&
+                              isOverdue(modalContent.enddate, modalContent.columnId)
+                            }
+                          >
+                            {modalContent.startdate
+                              ? modalContent.startdate.toLocaleDateString()
+                              : "N/A"}
+                          </DateValue>
+                        </DateItem>
+                        <DateItem>
+                          <strong>End: </strong>
+                          <DateValue
+                            isOverdue={
+                              modalContent.enddate &&
+                              isOverdue(modalContent.enddate, modalContent.columnId)
+                            }
+                          >
+                            {modalContent.enddate
+                              ? modalContent.enddate.toLocaleDateString()
+                              : "N/A"}
+                          </DateValue>
+                        </DateItem>
+                      </DatesWrapper>
+                    </DatesSection>
+                                      
+<CreatedBySection>
+  <Label>Created By</Label>
+  <CreatedByText>
+    {modalContent.created_by_name
+      ? modalContent.created_by_name
+      : "Unknown"}
+  </CreatedByText>
+</CreatedBySection>
 
-                  {/* Description */}
+                  </MembersAndDates>
+
                   <Description
                     boardId={boardId}
                     boardName={boardName}
@@ -959,33 +805,19 @@ const DragAndDropCards = ({ boards, setBoards }) => {
                     cardName={cardName}
                   />
 
-                  {/* Comments */}
                   <Comment
                     boardId={boardId}
                     boardName={boardName}
                     cardId={cardId}
                   />
-                </div>
+                </ModalLeft>
 
-                {/* Right Section */}
-                <div
-                  style={{
-                    flex: "0.3",
-                    marginRight: "20px",
-                    marginTop: "20px",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "flex-start",
-                  }}
-                >
-                  {/* Add Members and Date Components */}
+                <ModalRight>
                   <Addmembers
                     cardId={cardId}
                     boardId={boardId}
                     cardName={cardName}
-                    onMemberUpdate={() =>
-                      fetchMembers(cardId, boardId, cardName)
-                    }
+                    onMemberUpdate={() => fetchMembers(cardId, boardId, cardName)}
                   />
                   <DateComponent
                     cardId={cardId}
@@ -994,8 +826,8 @@ const DragAndDropCards = ({ boards, setBoards }) => {
                     onDateUpdate={() => fetchCardsWithMembers(boardId)}
                   />
                   <ToastContainer />
-                </div>
-              </div>
+                </ModalRight>
+              </ModalContent>
 
               <CloseIcon onClick={closeModal}>
                 <FaTimes />
@@ -1008,103 +840,68 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   );
 };
 
+// Styled Components
 const TodolistContainer = styled.div`
   background-color: ${(props) => props.bgColor || "#FFFFFF"};
   min-height: 100vh;
   padding: 20px;
+
+  @media (max-width: 768px) {
+    padding: 10px;
+  }
 `;
 
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-`;
-const ModalContainer = styled.div`
-  background-color: #f0f1f4;
-  width: 55%;
-  padding: 20px;
-  position: relative;
-  max-height: 80vh; /* Adjust this based on your needs */
-  overflow-y: auto; /* Enables scrolling when content exceeds max-height */
-  scrollbar-width: thin;
-  boxshadow: "0px 4px 6px rgba(0, 0, 0, 0.1)";
-  border-radius: 15px;
-`;
-const CloseIcon = styled.div`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 24px;
-  cursor: pointer;
-  color: Red;
-`;
-
-const Label = styled.label`
-  flex-shrink: 0;
-  width: 100px; /* Adjust this value as per your requirement */
-  font-size: 16px;
-  color: black;
-  border: single;
-`;
-
-const Container = styled.div`
-  color: black;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-`;
 const IconWrapper = styled.div`
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   background-color: rgba(255, 255, 255, 0.2);
   padding: 10px 15px;
   border-radius: 10px;
   gap: 12px;
-  margin-right: 20px;
+  margin-bottom: 20px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 8px;
+    gap: 10px;
+  }
+`;
+
+const EmployeeAvatars = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
 
   @media (max-width: 768px) {
     justify-content: center;
-    margin-right: 0;
-    padding: 8px;
-    gap: 8px;
   }
 `;
 
-const MemberList = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+const EmployeeAvatar = styled.div`
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  transition: transform 0.2s;
 
-  @media (max-width: 768px) {
-    gap: 3px;
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  @media (max-width: 480px) {
+    width: 25px;
+    height: 25px;
   }
 `;
 
-const MemberCircle = styled.div`
-  width: 35px;
-  height: 35px;
-  background-color: ${(props) => props.bgColor || "#4a90e2"};
-  color: white;
-  font-weight: bold;
-  font-size: 16px;
+const IconGroup = styled.div`
   display: flex;
-  justify-content: center;
   align-items: center;
-  border-radius: 50%;
-  text-transform: uppercase;
+  gap: 15px;
 
   @media (max-width: 768px) {
-    width: 30px;
-    height: 30px;
-    font-size: 14px;
+    gap: 10px;
   }
 `;
 
@@ -1123,110 +920,570 @@ const CalendarIcon = styled(FaCalendarAlt)`
   }
 `;
 
+const EmployeeCardsWrapper = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+
+  @media (max-width: 768px) {
+    justify-content: center;
+  }
+`;
+
+const EmployeeCardsContainer = styled.div`
+  padding: 15px;
+  background: #333;
+  border-radius: 10px;
+  width: 300px;
+  max-width: 100%;
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 10px;
+  }
+`;
+
+const EmployeeCardsHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+
+  h3 {
+    color: white;
+    margin: 0;
+    font-size: 1rem;
+
+    @media (max-width: 480px) {
+      font-size: 0.9rem;
+    }
+  }
+`;
+
+const EmployeeCardsList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const EmployeeCardItem = styled.li`
+  color: white;
+  padding: 8px 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.85rem;
+    padding: 6px 0;
+  }
+`;
+
+const CalendarContainer = styled.div`
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80vw;
+  height: 80vh;
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  overflow: hidden;
+  padding: 10px;
+
+  @media (max-width: 768px) {
+    width: 95vw;
+    height: 70vh;
+    top: 80px;
+    padding: 5px;
+  }
+
+  @media (max-width: 480px) {
+    width: 98vw;
+    height: 65vh;
+    top: 70px;
+  }
+`;
+
+const Board = styled.div`
+  display: flex;
+  justify-content: space-around;
+  padding: 20px;
+  gap: 15px;
+  overflow-x: auto;
+
+  @media (max-width: 1024px) {
+    padding: 15px;
+    gap: 10px;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 10px;
+  }
+`;
+
+const ColumnWrapper = styled.div`
+  width: 250px;
+  min-width: 250px;
+  padding: 10px;
+  border-radius: 8px;
+  min-height: 400px;
+  background-color: ${(props) => props.backgroundColor || "#F1F2F4"};
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 1024px) {
+    width: 220px;
+    min-width: 220px;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    min-width: unset;
+    min-height: auto;
+    margin-bottom: 15px;
+  }
+`;
+
+const ColumnTitle = styled.h3`
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  color: #333;
+
+  @media (max-width: 480px) {
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+`;
+
+const CardContainer = styled.div`
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+
+  @media (max-width: 480px) {
+    padding: 8px;
+    margin-bottom: 12px;
+  }
+`;
+
+const CardRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+const RemoveButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #888;
+  padding: 0;
+  min-width: 20px;
+  flex-shrink: 0;
+
+  &:hover {
+    color: #ff0000;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 18px;
+  }
+`;
+
+const MemberList = styled.div`
+  display: flex;
+  margin-top: 8px;
+  cursor: pointer;
+  flex-wrap: wrap;
+  gap: 5px;
+`;
+
+const MemberItem = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
+const MemberImage = styled.img`
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid white;
+  object-fit: cover;
+  cursor: pointer;
+
+  @media (max-width: 480px) {
+    width: 25px;
+    height: 25px;
+  }
+`;
+
+const MemberInitial = styled.div`
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: ${(props) => props.bgColor || "#4a90e2"};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+
+  @media (max-width: 480px) {
+    width: 25px;
+    height: 25px;
+    font-size: 12px;
+  }
+`;
+
+const NoMembers = styled.p`
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+`;
+
+const AddCardContainer = styled.div`
+  margin-top: 10px;
+`;
+
+const AddCardInput = styled.input`
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+
+  @media (max-width: 480px) {
+    padding: 6px;
+    font-size: 13px;
+  }
+`;
+
+const AddCardActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const AddCardButton = styled.button`
+  padding: 8px 15px;
+  background-color: #5cb85c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+
+  &:hover {
+    background-color: #4cae4c;
+  }
+
+  @media (max-width: 480px) {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+`;
+
+const AddInitialCardButton = styled.button`
+  width: 100%;
+  padding: 8px;
+  background-color: #5cb85c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+
+  &:hover {
+    background-color: #4cae4c;
+  }
+
+  @media (max-width: 480px) {
+    padding: 6px;
+    font-size: 13px;
+  }
+`;
+
+const CancelButton = styled.button`
+  background: transparent;
+  border: none;
+  color: red;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    color: darkred;
+  }
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+
+  @media (max-width: 768px) {
+    padding: 10px;
+  }
+`;
+
+const ModalContainer = styled.div`
+  background-color: #f0f1f4;
+  width: 90%;
+  max-width: 900px;
+  padding: 20px;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 15px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    width: 95%;
+    padding: 15px;
+    max-height: 85vh;
+  }
+
+  @media (max-width: 480px) {
+    width: 98%;
+    padding: 10px;
+    border-radius: 10px;
+  }
+`;
+
+const ModalContent = styled.div`
+  display: flex;
+  gap: 20px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 15px;
+  }
+`;
+
+const ModalLeft = styled.div`
+  flex: 1;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const ModalRight = styled.div`
+  flex: 0 0 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+
+  @media (max-width: 768px) {
+    flex: unset;
+    width: 100%;
+  }
+`;
+
+const CardNameSection = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  @media (max-width: 480px) {
+    margin-bottom: 10px;
+  }
+`;
+
+const CardNameInput = styled.input`
+  flex: 1;
+  font-size: 1.5rem;
+  padding: 5px;
+  border: 2px solid #4a90e2;
+  border-radius: 4px;
+
+  @media (max-width: 768px) {
+    font-size: 1.3rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+    width: 100%;
+  }
+`;
+
+const CardNameText = styled.span`
+  cursor: pointer;
+  font-size: 1.5rem;
+  font-weight: 500;
+
+  @media (max-width: 768px) {
+    font-size: 1.3rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+  }
+`;
+
+const MembersAndDates = styled.div`
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 15px;
+  }
+`;
+
+const MembersSection = styled.div`
+  flex: 1;
+`;
+
+const DatesSection = styled.div`
+  flex: 1;
+`;
+
+const Label = styled.label`
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
+`;
+
+const MembersContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+
+const MemberCircle = styled.div`
+  width: 35px;
+  height: 35px;
+  background-color: ${(props) => props.bgColor || "#4a90e2"};
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  text-transform: uppercase;
+
+  @media (max-width: 480px) {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+`;
+
+const CreatedBySection = styled.div`
+  margin-bottom: 20px;
+
+  @media (max-width: 480px) {
+    margin-bottom: 15px;
+  }
+`;
+
+const CreatedByText = styled.p`
+  font-size: 15px;
+  color: #333;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+`;
+
+const DatesWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  @media (max-width: 480px) {
+    gap: 6px;
+  }
+`;
+
+const DateItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+  }
+`;
+
+const DateValue = styled.span`
+  color: ${(props) => (props.isOverdue ? "red" : "inherit")};
+  font-weight: ${(props) => (props.isOverdue ? "bold" : "normal")};
+`;
+
+const CloseIcon = styled.div`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 24px;
+  cursor: pointer;
+  color: red;
+  z-index: 10;
+
+  &:hover {
+    color: darkred;
+  }
+
+  @media (max-width: 480px) {
+    top: 8px;
+    right: 8px;
+    font-size: 20px;
+  }
+`;
+
 const styles = {
-  board: {
-    display: "flex",
-    justifyContent: "space-around",
-    padding: "20px",
-    marginTop: "80px",
-  },
-  column: {
-    width: "250px",
-    padding: "10px",
-    borderRadius: "5px",
-    minHeight: "400px",
-    boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-    gap: "10px",
-  },
-  columnTitle: {
-    textAlign: "center",
-    marginBottom: "10px",
-  },
   card: {
     backgroundColor: "#fff",
     borderRadius: "5px",
     padding: "10px",
-    marginBottom: "10px",
-    textAlign: "left", // Align text to the left
+    textAlign: "left",
     boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
     cursor: "pointer",
-    width: "200px",
+    flex: 1,
   },
   cardContent: {
-    display: "flex", // Flexbox to align text and icon
-    justifyContent: "space-between", // Space between text and icon
-    alignItems: "center", // Vertically align items
-  },
-  penIcon: {
-    color: "#6C757D", // Grey color for the pen icon
-    cursor: "pointer",
-    marginLeft: "10px", // Add space between text and icon
-  },
-  cardContainer: {
     display: "flex",
-    alignItems: "center",
     justifyContent: "space-between",
-  },
-  removeCardButton: {
-    backgroundColor: "transparent",
-    border: "none",
-    color: "red",
-    fontSize: "18px",
-    cursor: "pointer",
-  },
-  addCardContainer: {
-    display: "flex",
     alignItems: "center",
-    whiteSpace: "nowrap",
-  },
-  addCardActions: {
-    display: "flex",
-    alignItems: "center",
-    marginLeft: "10px", // Adjust space between button and icon
-  },
-  input: {
-    padding: "5px",
-    width: "50%",
-    marginBottom: "5px",
-    marginRight: "15px",
-  },
-  addCardButton: {
-    padding: "5px 10px",
-    backgroundColor: "#5CB85C",
-    color: "#fff",
-    border: "none",
-    borderRadius: "3px",
-    cursor: "pointer",
-    marginBottom: "5px",
-  },
-  addInitialCardButton: {
-    padding: "5px 10px",
-    backgroundColor: "#5CB85C",
-    color: "#fff",
-    border: "none",
-    borderRadius: "3px",
-    cursor: "pointer",
-  },
-  cancelButton: {
-    backgroundColor: "transparent",
-    border: "none",
-    color: "red",
-    fontSize: "18px",
-    cursor: "pointer",
-  },
-  calendarContainer: {
-    position: "fixed",
-    top: 90,
-    left: 300,
-    width: "80vw",
-    height: "80vh",
-    backgroundColor: "#fff",
-    border: "none",
-    borderRadius: "15px",
-    boxShadow: "none",
-    zIndex: 10, // Lower z-index to keep it below the modal
-    overflow: "hidden", // Prevent scrollbars if needed
-    padding: "10px",
   },
 };
 

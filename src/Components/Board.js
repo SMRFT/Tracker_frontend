@@ -601,15 +601,29 @@ const Board = () => {
             </div>
           ) : (
             <>
-              {getFilteredAndSortedBoards().map((board) => (
-                <BoardCard
-                  key={board.boardId}
-                  bgColor={board.boardColor}
-                  onClick={() => handleBoardClick(board)}
-                >
-                  <BoardTitle>{board.boardName}</BoardTitle>
-                </BoardCard>
-              ))}
+             {getFilteredAndSortedBoards().map((board) => (
+  <BoardCard
+    key={board.boardId}
+    bgColor={board.boardColor}
+    onClick={() => handleBoardClick(board)}
+  >
+    <div style={{ textAlign: "center", zIndex: 1 }}>
+      <BoardTitle>{board.boardName}</BoardTitle>
+      {board.created_by_name && (
+        <div
+          style={{
+            fontSize: "0.85rem",
+            marginTop: "0.4rem",
+            color: "rgba(255, 255, 255, 0.85)",
+            fontWeight: 400,
+          }}
+        >
+          Created by {board.created_by_name}
+        </div>
+      )}
+    </div>
+  </BoardCard>
+))}
 
               {(role === "Admin" || role === "HOD") && (
                 <CreateNewBoardCard onClick={openDialog}>
