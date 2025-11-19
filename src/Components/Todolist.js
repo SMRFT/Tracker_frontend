@@ -551,7 +551,7 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
   }, [boardId]);
 
   const fetchEmployeeCards = (employeeId, boardId) => {
-    apiRequest(`${Trackerbaseurl}cards/${employeeId}/${boardId}/`)
+    apiRequest(`${Trackerbaseurl}employeecards/${employeeId}/${boardId}/`)
       .then((response) => {
         const data = response.data;
         if (data.cards) {
