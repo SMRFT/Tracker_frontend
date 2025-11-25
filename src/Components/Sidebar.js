@@ -668,6 +668,17 @@ const Sidebar = ({ boards, setBoards }) => {
                 Finished Tasks
               </StyledNavLink>
             </li>
+            {(role === "Admin") && (
+            <li>
+              <StyledNavLink
+                isMobile={isMobileView}
+                to="/Deletedcards"
+                className={({ isActive }) => (isActive ? "active" : "")}
+              >
+                Deleted cards
+              </StyledNavLink>
+            </li>  
+            )}          
           </ul>
         </SidebarNav>
 

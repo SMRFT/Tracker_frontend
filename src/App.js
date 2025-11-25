@@ -24,7 +24,7 @@ import {
 import { ToastContainer } from "react-toastify";
 import TaskDeadline from "./Components/TaskDeadline";
 import FinishedTask from "./Components/FinishedTask";
-
+import Deletedcards from "./Components/Deletedcards";
 
 const Trackerbaseurl =
   process.env.REACT_APP_BACKEND_TRACKER_BASE_URL ;
@@ -86,6 +86,7 @@ const AppContent = ({ boards, addBoard }) => {
           <Route path="/Register" element={<Register />} />
           <Route path="/Todolist" element={<Todolist />} />
           <Route path="/Members" element={<Members />} />
+          <Route path="/Deletedcards" element={<Deletedcards />} />
           
         </Routes>
       </ContentContainer>
