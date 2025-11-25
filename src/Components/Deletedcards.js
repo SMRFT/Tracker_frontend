@@ -4,7 +4,7 @@ import apiRequest from "./apiRequest";
 
 const Container = styled.div`
   padding: 40px;
-  background: linear-gradient(135deg, rgba(248, 152, 157, 1) 0%, rgba(253, 128, 128, 1) 100%);
+  background: linear-gradient(135deg, hsla(356, 62%, 86%, 1.00) 0%, rgba(255, 161, 161, 1) 100%);
   min-height: 100vh;
 `;
 
@@ -79,7 +79,7 @@ const TableRow = styled.tr`
 const TableHeader = styled.th`
   padding: 20px 16px;
   text-align: left;
-  color: white;
+  color: black;
   font-weight: 600;
   font-size: 0.95rem;
   text-transform: uppercase;
@@ -380,7 +380,7 @@ export default function DeletedCards() {
       <ContentWrapper>
         <Header>
           <Title>
-            🗑️ Deleted Cards
+             Deleted Cards
           </Title>
           <Subtitle>View and manage all deleted task cards</Subtitle>
         </Header>
