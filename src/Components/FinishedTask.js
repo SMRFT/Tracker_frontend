@@ -948,6 +948,7 @@ const FinishedTask = () => {
 
       if (data.length === 0) {
         toast.info("No finished cards found for selected range", { autoClose: 2000 });
+        onclose();
       }
     } catch (error) {
       toast.error("Failed to fetch finished cards");

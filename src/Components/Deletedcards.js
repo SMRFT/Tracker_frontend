@@ -4,7 +4,7 @@ import apiRequest from "./apiRequest";
 
 const Container = styled.div`
   padding: 40px;
-  background: linear-gradient(135deg, hsla(356, 62%, 86%, 1.00) 0%, rgba(255, 161, 161, 1) 100%);
+  background: linear-gradient(135deg, hsla(0, 0%, 99%, 1.00) 0%, rgba(241, 241, 241, 1) 100%);
   min-height: 100vh;
 `;
 
@@ -15,22 +15,135 @@ const ContentWrapper = styled.div`
 
 const Header = styled.div`
   margin-bottom: 40px;
+  text-align: center;   
 `;
 
 const Title = styled.h1`
-  color: white;
+  color: black;
   font-size: 2.5rem;
   font-weight: 700;
   margin: 0 0 10px 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 15px;
 `;
 
 const Subtitle = styled.p`
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(19, 17, 17, 0.8);
   font-size: 1.1rem;
   margin: 0;
+`;
+
+const FilterCard = styled.div`
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(252, 145, 151, 0.2);
+`;
+
+const FilterRow = styled.div`
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  justify-content: center;
+  flex-wrap: wrap;
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const FilterLabel = styled.label`
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`;
+
+const DateInput = styled.input`
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  min-width: 180px;
+  background: #f8f9ff;
+  
+  &:focus {
+    outline: none;
+    border-color: #fc9197ff;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(252, 145, 151, 0.1);
+  }
+  
+  &::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: brightness(0.8);
+  }
+`;
+
+const FilterButton = styled.button`
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #ef777dff 0%, #ff6363ff 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(254, 119, 119, 0.3);
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(250, 110, 110, 0.4);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const ResetButton = styled.button`
+  padding: 12px 32px;
+  background: white;
+  color: #ff6363ff;
+  border: 2px solid #ff6363ff;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #fff0f0;
+    transform: translateY(-2px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const ResultCount = styled.div`
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1rem;
+  color: #666;
+  font-weight: 500;
+  
+  span {
+    color: #ff6363ff;
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
 `;
 
 const TableCard = styled.div`
@@ -64,7 +177,7 @@ const Table = styled.table`
 `;
 
 const TableHead = styled.thead`
-  background: linear-gradient(135deg, #ff8086ff 0%rgba(249, 100, 100, 1)79 100%);
+  background: linear-gradient(135deg, #ff8086ff 0%, rgba(249, 100, 100, 1) 100%);
 `;
 
 const TableRow = styled.tr`
@@ -84,6 +197,7 @@ const TableHeader = styled.th`
   font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #fcb1b5ff 0%, #fc9292ff 100%);
 `;
 
 const TableCell = styled.td`
@@ -310,14 +424,14 @@ const LoadingContainer = styled.div`
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  color: white;
+  color: #333;
   font-size: 1.2rem;
 `;
 
 const EmptyState = styled.div`
   text-align: center;
   padding: 60px 20px;
-  color: white;
+  color: #666;
   
   svg {
     width: 120px;
@@ -329,6 +443,7 @@ const EmptyState = styled.div`
   h3 {
     font-size: 1.5rem;
     margin: 0 0 10px 0;
+    color: #333;
   }
   
   p {
@@ -341,30 +456,96 @@ export default function DeletedCards() {
   const [deletedCards, setDeletedCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCard, setSelectedCard] = useState(null);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [filteredCards, setFilteredCards] = useState([]);
 
   useEffect(() => {
     loadDeletedCards();
+    setDefaultDates();
   }, []);
 
+  const setDefaultDates = () => {
+    const today = new Date();
+    
+    // Set to date as today
+    const end = today.toISOString().slice(0, 10);
+    
+    // Set from date as 30 days ago
+    const start = new Date(today);
+    start.setDate(start.getDate() - 30);
+    const startStr = start.toISOString().slice(0, 10);
+    
+    setFromDate(startStr);
+    setToDate(end);
+  };
+
   const loadDeletedCards = async () => {
-    const url =
-      process.env.REACT_APP_BACKEND_TRACKER_BASE_URL + "deleted_cards/";
+    try {
+      const url = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL + "deleted_cards/";
+      const response = await apiRequest(url, "GET");
 
-    const response = await apiRequest(url, "GET");
+      if (response.success) {
+        setDeletedCards(response.data);
+        setFilteredCards(response.data);
+      } else {
+        console.error("Failed to load deleted cards:", response.error);
+      }
+    } catch (error) {
+      console.error("Error loading deleted cards:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    if (response.success) {
-      setDeletedCards(response.data);
-    } else {
-      console.error("Failed to load deleted cards:", response.error);
+  const applyFilter = () => {
+    if (!fromDate || !toDate) {
+      alert("Please select both From and To dates");
+      return;
     }
 
-    setLoading(false);
+    const from = new Date(fromDate);
+    from.setHours(0, 0, 0, 0);
+    
+    const to = new Date(toDate);
+    to.setHours(23, 59, 59, 999);
+
+    if (from > to) {
+      alert("From Date cannot be later than To Date");
+      return;
+    }
+
+    const filtered = deletedCards.filter((card) => {
+      if (!card.lastmodified_date) return false;
+      const deletedDate = new Date(card.lastmodified_date);
+      return deletedDate >= from && deletedDate <= to;
+    });
+
+    setFilteredCards(filtered);
   };
+
+  const resetFilter = () => {
+    setDefaultDates();
+    setFilteredCards(deletedCards);
+  };
+
+  useEffect(() => {
+    if (deletedCards.length > 0 && fromDate && toDate) {
+      applyFilter();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromDate, toDate]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "—";
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "—";
+      const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+      return date.toLocaleDateString(undefined, options);
+    } catch (error) {
+      return "—";
+    }
   };
 
   if (loading) {
@@ -384,11 +565,45 @@ export default function DeletedCards() {
           </Title>
           <Subtitle>View and manage all deleted task cards</Subtitle>
         </Header>
+        
+        <FilterCard>
+          <FilterRow>
+            <FilterGroup>
+              <FilterLabel>📅 From Date</FilterLabel>
+              <DateInput
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+            </FilterGroup>
 
-        {deletedCards.length === 0 ? (
+            <FilterGroup>
+              <FilterLabel>📅 To Date</FilterLabel>
+              <DateInput
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+            </FilterGroup>
+
+            <FilterButton onClick={applyFilter}>
+              Apply Filter
+            </FilterButton>
+
+            <ResetButton onClick={resetFilter}>
+              Reset
+            </ResetButton>
+          </FilterRow>
+        </FilterCard>
+
+        <ResultCount>
+          Showing <span>{filteredCards.length}</span> of {deletedCards.length} deleted cards
+        </ResultCount>
+
+        {filteredCards.length === 0 ? (
           <EmptyState>
-            <h3>No Deleted Cards</h3>
-            <p>You haven't deleted any cards yet</p>
+            <h3>No Deleted Cards Found</h3>
+            <p>No cards were deleted in the selected date range</p>
           </EmptyState>
         ) : (
           <TableCard>
@@ -406,7 +621,7 @@ export default function DeletedCards() {
                   </tr>
                 </TableHead>
                 <tbody>
-                  {deletedCards.map((card) => (
+                  {filteredCards.map((card) => (
                     <TableRow key={card.cardId}>
                       <TableCell>
                         <strong>{card.cardName}</strong>

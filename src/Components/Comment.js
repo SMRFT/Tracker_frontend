@@ -5,18 +5,21 @@ import {
   FaUserCircle,
   FaEdit,
   FaTrashAlt,
-  FaCheck,
-  FaInfoCircle,
-  FaExclamationTriangle,
+  FaPaperclip,
+  FaFileAlt,
+  FaTimes,
+  FaDownload,
+  FaEye 
 } from "react-icons/fa";
 import "react-datepicker/dist/react-datepicker.css";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import apiRequest from "./apiRequest"; // Import your apiRequest helper
+import apiRequest from "./apiRequest";
 
-// All existing styled components remain the same...
+// --- Styled Components ---
 const Section = styled.div`
   margin: 20px 0;
+  position: relative;
 `;
 
 const SectionTitle = styled.div`
@@ -40,9 +43,15 @@ const ActivityInput = styled.textarea`
 
 const Actions = styled.div`
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   margin-top: 10px;
+`;
+
+const RightActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
 `;
 
 const Button = styled.button`
@@ -60,6 +69,50 @@ const Button = styled.button`
     background-color: #bdc3c7;
     cursor: not-allowed;
   }
+`;
+
+const AttachButton = styled.button`
+  background: none;
+  border: none;
+  color: #7f8c8d;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-radius: 50%;
+  &:hover {
+    background-color: #ecf0f1;
+    color: #3498db;
+  }
+`;
+
+const FilePreview = styled.div`
+  display: flex;
+  align-items: center;
+  background-color: #f1f2f6;
+  padding: 5px 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  width: fit-content;
+  max-width: 100%;
+`;
+
+const RemoveFileIcon = styled.span`
+  margin-left: 10px;
+  color: #e74c3c;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  &:hover {
+    color: #c0392b;
+  }
+`;
+
+const HiddenInput = styled.input`
+  display: none;
 `;
 
 const CommentsSection = styled.div`
@@ -93,9 +146,18 @@ const CommentContent = styled.div`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
-const CommentText = styled.p`
+const CommentText = styled.div`
   margin: 0;
   font-size: 1rem;
+  white-space: pre-wrap;
+
+  .mention-tag {
+    color: #2980b9;
+    font-weight: 600;
+    background-color: #ebf5fb;
+    padding: 0 4px;
+    border-radius: 4px;
+  }
 `;
 
 const CommentAuthor = styled.span`
@@ -161,15 +223,184 @@ const CancelButton = styled(EditButton)`
   }
 `;
 
+const AttachedFile = styled.div`
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+`;
+
+const ImageThumbnail = styled.img`
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  margin-bottom: 5px;
+`;
+
+const FileActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 5px;
+`;
+
+const ActionLink = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #3498db;
+  text-decoration: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+// --- Preview Modal Styles ---
+const PreviewOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+`;
+
+const PreviewContainer = styled.div`
+  background-color: white;
+  width: 90%;
+  height: 90%;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const PreviewHeader = styled.div`
+  padding: 10px 15px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+`;
+
+const PreviewBody = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #e9ecef;
+  overflow: auto;
+  padding: 10px;
+`;
+
+const ClosePreviewButton = styled.div`
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: #333;
+  &:hover { color: red; }
+`;
+
+const FullPreviewImage = styled.img`
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+`;
+
+const FullPreviewFrame = styled.iframe`
+  width: 100%;
+  height: 100%;
+  border: none;
+  background-color: white;
+`;
+
+// --- Mentions Dropdown Styles ---
+const MentionsList = styled.ul`
+  position: absolute;
+  top: 75px; 
+  left: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  width: 250px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  z-index: 100;
+`;
+
+const MentionItem = styled.li`
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  
+  &:hover {
+    background-color: #f1f2f6;
+  }
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const MemberInitial = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #3498db;
+  color: white;
+  font-size: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+`;
+
 const Comment = ({ cardId, cardName, boardName, boardId }) => {
   const [comments, setComments] = useState([]);
   const [editingCommentIndex, setEditingCommentIndex] = useState(null);
   const [editCommentText, setEditCommentText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  
+  const [commentText, setCommentText] = useState(""); 
+  const [boardMembers, setBoardMembers] = useState([]); 
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewData, setPreviewData] = useState({ url: null, type: null, name: "" });
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
   const activityInputRef = useRef(null);
+  const fileInputRef = useRef(null);
+
   const [employeeId, setEmployeeId] = useState(null);
   const [employeeName, setEmployeeName] = useState(null);
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
+  useEffect(() => {
+    if (!Trackerbaseurl) {
+      console.error("Warning: REACT_APP_BACKEND_TRACKER_BASE_URL is missing in .env!");
+    }
+  }, [Trackerbaseurl]);
 
   useEffect(() => {
     const id = localStorage.getItem("employeeId");
@@ -180,50 +411,32 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     }
   }, []);
 
-  // Function to check if current user can edit/delete a comment
+  useEffect(() => {
+    if (boardId) {
+      const fetchMembers = async () => {
+        try {
+          const result = await apiRequest(`${Trackerbaseurl}employees/${boardId}/`);
+          if (result.success && result.data?.employees) {
+            setBoardMembers(result.data.employees);
+          }
+        } catch (error) {
+          console.error("Error fetching board members:", error);
+        }
+      };
+      fetchMembers();
+    }
+  }, [boardId, Trackerbaseurl]);
+
   const canModifyComment = (comment) => {
-    // Check if the comment belongs to the current logged-in employee
-    // This can be done by comparing employee ID or employee name
-    // Using employeeId for more secure comparison
     return (
       String(comment.empid) === String(employeeId) ||
       comment.empname === employeeName
     );
   };
 
-  // Simplified toast functions to avoid complex custom components
-  const showSuccessToast = (message) => {
-    toast.success(message, {
-      position: "bottom-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
-  };
-
-  const showErrorToast = (message) => {
-    toast.error(message, {
-      position: "bottom-right",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
-  };
-
-  const showInfoToast = (message) => {
-    toast.info(message, {
-      position: "bottom-right",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
-  };
+  const showSuccessToast = (message) => toast.success(message);
+  const showErrorToast = (message) => toast.error(message);
+  const showInfoToast = (message) => toast.info(message);
 
   const fetchComments = async () => {
     try {
@@ -233,32 +446,20 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
         "GET"
       );
 
-      console.log("Fetch comments result:", result);
-
       if (result.success && result.data) {
-        // Handle different response structures
         if (result.data.comments && Array.isArray(result.data.comments)) {
           setComments(result.data.comments);
         } else if (Array.isArray(result.data)) {
           setComments(result.data);
         } else {
-          console.warn("Unexpected comments data structure:", result.data);
           setComments([]);
         }
       } else {
-        console.error("Failed to fetch comments:", result.error);
         setComments([]);
-        if (result.status !== 404) {
-          // Don't show error for no comments found
-          showErrorToast(
-            result.error || "Failed to load comments. Please try again later."
-          );
-        }
       }
     } catch (error) {
       console.error("Error fetching comments:", error);
       setComments([]);
-      showErrorToast("Failed to load comments. Please try again later.");
     }
   };
 
@@ -266,87 +467,192 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     fetchComments();
   }, [cardId, boardId]);
 
-  const handleSaveActivity = async () => {
-    if (isSubmitting) {
-      return;
-    }
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setCommentText(value);
 
-    const commentText = activityInputRef.current?.value?.trim();
-
-    if (!commentText) {
-      showErrorToast("Comment cannot be empty!");
-      return;
-    }
-
-    if (!cardId || !boardId) {
-      showErrorToast("Card ID or Board ID is missing!");
-      return;
-    }
-
-    if (!employeeId || !employeeName) {
-      showErrorToast("Employee information not found. Please log in again.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    console.log("Starting API request...");
-
-    try {
-      const currentDate = new Date();
-      const date = currentDate.toISOString().split("T")[0];
-      const time = currentDate.toTimeString().split(" ")[0];
-
-      const payload = {
-        text: commentText,
-        cardId: String(cardId),
-        boardId: String(boardId),
-        employeeId: String(employeeId),
-        employeeName: String(employeeName),
-        date,
-        time,
-      };
-
-      console.log(
-        "Final payload being sent:",
-        JSON.stringify(payload, null, 2)
-      );
-      console.log("API URL:", `${Trackerbaseurl}save_comment/`);
-
-      // Use apiRequest helper instead of fetch
-      const result = await apiRequest(
-        `${Trackerbaseurl}save_comment/`,
-        "POST",
-        payload
-      );
-
-      if (result.success) {
-        showSuccessToast("Your comment has been posted successfully");
-
-        // Clear the input and refresh comments
-        if (activityInputRef.current) {
-          activityInputRef.current.value = "";
-        }
-        await fetchComments();
-      } else {
-        // Handle different error types
-        if (result.status === 401) {
-          showErrorToast("Session expired. Please log in again.");
-        } else if (result.status === 400) {
-          showErrorToast(result.error || "Invalid data sent to server.");
-        } else {
-          showErrorToast(
-            result.error || "Failed to save comment. Please try again."
-          );
-        }
-      }
-    } catch (error) {
-      showErrorToast(
-        "Failed to connect to the server. Please check your connection."
-      );
-    } finally {
-      setIsSubmitting(false);
+    const match = value.match(/@(\w*)$/);
+    if (match) {
+        setMentionQuery(match[1].toLowerCase());
+        setShowMentions(true);
+    } else {
+        setShowMentions(false);
     }
   };
+
+  const handleSelectMember = (memberName) => {
+    const newText = commentText.replace(/@(\w*)$/, `@${memberName} `);
+    setCommentText(newText);
+    setShowMentions(false);
+    
+    if (activityInputRef.current) {
+        activityInputRef.current.focus();
+    }
+  };
+
+  const filteredMembers = boardMembers.filter(m => 
+    m.employeeName.toLowerCase().includes(mentionQuery)
+  );
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        showErrorToast("File is too large. Max size is 5MB.");
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handlePreview = async (e, fileUrl, fileName) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setIsPreviewLoading(true);
+    setShowPreviewModal(true); 
+
+    try {
+      const token = localStorage.getItem("token");
+      
+      const response = await fetch(fileUrl, {
+        method: 'GET',
+        headers: {
+           // UPDATED: Removed "Bearer" prefix
+            Authorization: token ,
+        },
+      });
+
+      if (!response.ok) throw new Error("Preview failed");
+
+      const blob = await response.blob();
+      const mimeType = blob.type || 'application/pdf';
+      const objectUrl = window.URL.createObjectURL(blob);
+
+      setPreviewData({
+        url: objectUrl,
+        type: mimeType,
+        name: fileName
+      });
+
+    } catch (error) {
+      console.error("Preview Error:", error);
+      showErrorToast("Failed to load preview.");
+      setShowPreviewModal(false);
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  const closePreview = () => {
+    setShowPreviewModal(false);
+    if (previewData.url) {
+      window.URL.revokeObjectURL(previewData.url); 
+    }
+    setPreviewData({ url: null, type: null, name: "" });
+  };
+
+  const handleDownload = async (e, fileUrl, fileName) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+        const token = localStorage.getItem("token"); 
+        
+        const response = await fetch(fileUrl, {
+            method: 'GET',
+            headers: {
+               // UPDATED: Removed "Bearer" prefix
+            Authorization: token ,
+
+            },
+        });
+
+        if (!response.ok) throw new Error("Download failed");
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName); 
+        document.body.appendChild(link);
+        link.click();
+        
+        link.parentNode.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+        console.error("Download Error:", error);
+        showErrorToast("Failed to download file. Please check connection.");
+    }
+  };
+  
+const handleSaveActivity = async () => {
+  if (isSubmitting) return;
+
+  if (!commentText.trim() && !selectedFile) {
+    showErrorToast("Please enter a comment or attach a file.");
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const currentDate = new Date();
+    const date = currentDate.toISOString().split("T")[0];
+    const time = currentDate.toTimeString().split(" ")[0];
+
+    const formData = new FormData();
+    formData.append("text", commentText.trim());
+    formData.append("cardId", String(cardId));
+    formData.append("boardId", String(boardId));
+    formData.append("employeeId", String(employeeId));
+    formData.append("employeeName", String(employeeName));
+    formData.append("date", date);
+    formData.append("time", time);
+
+    if (selectedFile) {
+      formData.append("file", selectedFile); // ✅ binary
+    }
+
+    const response = await fetch(
+      `${Trackerbaseurl}save_comment/`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: localStorage.getItem("access_token"),
+          // ❌ DO NOT SET Content-Type
+        },
+        body: formData,
+      }
+    );
+
+    const result = await response.json();
+
+    if (response.ok && result.success) {
+      showSuccessToast("Comment posted successfully");
+      removeSelectedFile();
+      setCommentText("");
+      await fetchComments();
+    } else {
+      showErrorToast(result.error || "Failed to save comment");
+    }
+
+  } catch (err) {
+    console.error(err);
+    showErrorToast("Server connection failed");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   const handleDeleteComment = async (commentText) => {
     try {
@@ -363,17 +669,13 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
       );
 
       if (result.success) {
-        showSuccessToast("The comment has been removed successfully");
+        showSuccessToast("Comment removed successfully");
         fetchComments();
       } else {
-        console.error("Delete failed:", result.error);
-        showErrorToast(result.error || "Unable to delete the comment");
+        showErrorToast(result.error || "Unable to delete");
       }
     } catch (error) {
-      console.error("Error deleting comment:", error);
-      showErrorToast(
-        "Failed to connect to the server. Please try again later."
-      );
+      showErrorToast("Connection failed.");
     }
   };
 
@@ -398,19 +700,15 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
       );
 
       if (result.success) {
-        showInfoToast("Your changes have been saved successfully");
+        showInfoToast("Changes saved");
         fetchComments();
         setEditingCommentIndex(null);
         setEditCommentText("");
       } else {
-        console.error("Edit failed:", result.error);
-        showErrorToast(result.error || "Unable to edit the comment");
+        showErrorToast(result.error || "Unable to edit");
       }
     } catch (error) {
-      console.error("Error editing comment:", error);
-      showErrorToast(
-        "Failed to connect to the server. Please try again later."
-      );
+      showErrorToast("Connection failed.");
     }
   };
 
@@ -424,131 +722,251 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     setEditCommentText("");
   };
 
-  // Add Enter key handler for better UX
   const handleKeyPress = (e) => {
+    if (showMentions) return;
+
     if (e.key === "Enter" && e.ctrlKey) {
       handleSaveActivity();
     }
   };
 
-  const handleEditKeyPress = (e, originalCommentText) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleEditComment(originalCommentText);
-    } else if (e.key === "Escape") {
-      cancelEditing();
-    }
+  const isImage = (filename) => {
+    if (!filename) return false;
+    return /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+  };
+
+  const joinUrl = (base, path) => {
+  if (!path) return "";
+
+  // Absolute URL → return as-is
+  if (path.startsWith("http")) return path;
+
+  const cleanBase = base.replace(/\/$/, "");
+  const cleanPath = path.replace(/^\//, "");
+
+  return `${cleanBase}/${cleanPath}`;
+};
+
+const getFileUrl = (comment) => {
+  if (!comment) return "";
+
+  // Preferred: GridFS file_id (BEST)
+  if (comment.file?.file_id) {
+    return `${Trackerbaseurl.replace(/\/$/, "")}/download_file/${comment.file.file_id}/`;
+  }
+
+  // Legacy stored file_url (strip /tracker/)
+  if (comment.file_url) {
+    let path = comment.file_url;
+
+    // 🔥 CRITICAL FIX
+    path = path.replace(/^\/?tracker\//i, "");
+
+    return `${Trackerbaseurl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+  }
+
+  return "";
+};
+
+  const renderCommentWithTags = (text) => {
+    if (!text) return null;
+    const parts = text.split(/(@\w+)/g);
+
+    return parts.map((part, i) => {
+        if (part.match(/^@\w+/)) {
+            return <span key={i} className="mention-tag">{part}</span>;
+        }
+        return part;
+    });
   };
 
   return (
     <div>
       <Section>
         <SectionTitle>
-          <RxActivityLog
-            style={{
-              fontSize: "1rem",
-              marginRight: "10px",
-              fontWeight: "bold",
-            }}
-          />
+          <RxActivityLog style={{ fontSize: "1rem", marginRight: "10px", fontWeight: "bold" }} />
           Activity
         </SectionTitle>
+        
         <ActivityInput
-          placeholder="Add a comment or activity... (Ctrl+Enter to submit)"
+          placeholder="Add a comment... Type '@' to tag a member (Ctrl+Enter to submit)"
           ref={activityInputRef}
+          value={commentText} 
+          onChange={handleInputChange} 
           onKeyDown={handleKeyPress}
         />
+
+        {showMentions && filteredMembers.length > 0 && (
+            <MentionsList>
+                {filteredMembers.map((member) => (
+                    <MentionItem 
+                        key={member.employeeId} 
+                        onClick={() => handleSelectMember(member.employeeName)}
+                    >
+                        <MemberInitial>{member.employeeName.charAt(0)}</MemberInitial>
+                        {member.employeeName}
+                    </MentionItem>
+                ))}
+            </MentionsList>
+        )}
+
+        {selectedFile && (
+          <FilePreview>
+            <FaFileAlt style={{ marginRight: "5px" }} />
+            {selectedFile.name}
+            <RemoveFileIcon onClick={removeSelectedFile} title="Remove file">
+              <FaTimes />
+            </RemoveFileIcon>
+          </FilePreview>
+        )}
+
         <Actions>
-          <Button onClick={handleSaveActivity} disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Comment"}
-          </Button>
+          <AttachButton 
+            onClick={() => fileInputRef.current.click()} 
+            title="Attach a file"
+          >
+            <FaPaperclip />
+          </AttachButton>
+          
+          <HiddenInput 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange}
+          />
+
+          <RightActions>
+            <Button onClick={handleSaveActivity} disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Comment"}
+            </Button>
+          </RightActions>
         </Actions>
       </Section>
+
       <CommentsSection>
         {comments.length > 0 ? (
-          comments.map((comment, index) => (
-            <CommentItem key={`${comment.date}-${comment.time}-${index}`}>
-              <Avatar>
-                <FaUserCircle />
-              </Avatar>
-              <CommentContent>
-                {editingCommentIndex === index ? (
-                  <>
-                    <EditInput
-                      type="text"
-                      value={editCommentText}
-                      onChange={(e) => setEditCommentText(e.target.value)}
-                      onKeyDown={(e) =>
-                        handleEditKeyPress(e, comment.commenttext)
-                      }
-                      autoFocus
-                      placeholder="Edit your comment..."
-                    />
-                    <EditActions>
-                      <EditButton
-                        onClick={() => handleEditComment(comment.commenttext)}
-                        disabled={!editCommentText.trim()}
-                      >
-                        Save
-                      </EditButton>
-                      <CancelButton onClick={cancelEditing}>
-                        Cancel
-                      </CancelButton>
-                    </EditActions>
-                  </>
-                ) : (
-                  <>
-                    <p>
-                      <CommentAuthor>
-                        {comment.empname || "Anonymous"}
-                      </CommentAuthor>
-                      <CommentDate>
-                        {comment.date} at {comment.time}
-                      </CommentDate>
-                    </p>
-                    <CommentText>{comment.commenttext}</CommentText>
-                    {/* Only show action icons if the current user can modify this comment */}
-                    {canModifyComment(comment) && (
-                      <ActionIcons>
-                        <ActionIcon
-                          onClick={() =>
-                            startEditing(index, comment.commenttext)
-                          }
-                          title="Edit comment"
+          comments.map((comment, index) => {
+            const fileUrl = getFileUrl(comment);
+            const fileName = comment.file_name || comment.filename || "downloaded_file";
+            return (
+              <CommentItem key={`${comment.date}-${comment.time}-${index}`}>
+                <Avatar>
+                  <FaUserCircle />
+                </Avatar>
+                <CommentContent>
+                  {editingCommentIndex === index ? (
+                    <>
+                      <EditInput
+                        type="text"
+                        value={editCommentText}
+                        onChange={(e) => setEditCommentText(e.target.value)}
+                        autoFocus
+                      />
+                      <EditActions>
+                        <EditButton
+                          onClick={() => handleEditComment(comment.commenttext)}
+                          disabled={!editCommentText.trim()}
                         >
-                          <FaEdit />
-                        </ActionIcon>
-                        <ActionIcon
-                          className="delete-icon"
-                          onClick={() =>
-                            handleDeleteComment(comment.commenttext)
-                          }
-                          title="Delete comment"
-                        >
-                          <FaTrashAlt />
-                        </ActionIcon>
-                      </ActionIcons>
-                    )}
-                  </>
-                )}
-              </CommentContent>
-            </CommentItem>
-          ))
+                          Save
+                        </EditButton>
+                        <CancelButton onClick={cancelEditing}>Cancel</CancelButton>
+                      </EditActions>
+                    </>
+                  ) : (
+                    <>
+                      <p>
+                        <CommentAuthor>{comment.empname || "Anonymous"}</CommentAuthor>
+                        <CommentDate>{comment.date} at {comment.time}</CommentDate>
+                      </p>
+                      
+                      <CommentText>{renderCommentWithTags(comment.commenttext)}</CommentText>
+
+                      {fileUrl && (comment.file_url || comment.file_id) && (
+                        <AttachedFile>
+                          <div style={{fontSize: '0.9rem', marginBottom: '5px', fontWeight: '500', color: '#555'}}>
+                             {fileName}
+                          </div>
+
+                          {isImage(fileName) && (
+                             <div 
+                                onClick={(e) => handlePreview(e, fileUrl, fileName)} 
+                                style={{cursor: 'pointer'}} 
+                                title="Click to Preview"
+                             >
+                                <ImageThumbnail src={fileUrl} alt="attachment" />
+                             </div>
+                          )}
+
+                          <FileActions>
+                            <ActionLink onClick={(e) => handlePreview(e, fileUrl, fileName)} title="Preview File">
+                               <FaEye /> Preview
+                            </ActionLink>
+                            <ActionLink onClick={(e) => handleDownload(e, fileUrl, fileName)} title="Download File">
+                               <FaDownload /> Download
+                            </ActionLink>
+                          </FileActions>
+                        </AttachedFile>
+                      )}
+
+                      {canModifyComment(comment) && (
+                        <ActionIcons>
+                          <ActionIcon
+                            onClick={() => startEditing(index, comment.commenttext)}
+                            title="Edit comment"
+                          >
+                            <FaEdit />
+                          </ActionIcon>
+                          <ActionIcon
+                            className="delete-icon"
+                            onClick={() => handleDeleteComment(comment.commenttext)}
+                            title="Delete comment"
+                          >
+                            <FaTrashAlt />
+                          </ActionIcon>
+                        </ActionIcons>
+                      )}
+                    </>
+                  )}
+                </CommentContent>
+              </CommentItem>
+            );
+          })
         ) : (
           <p>No comments available.</p>
         )}
       </CommentsSection>
+
+      {showPreviewModal && (
+        <PreviewOverlay onClick={closePreview}>
+          <PreviewContainer onClick={(e) => e.stopPropagation()}>
+            <PreviewHeader>
+                <span>{previewData.name || "File Preview"}</span>
+                <ClosePreviewButton onClick={closePreview}>
+                    <FaTimes />
+                </ClosePreviewButton>
+            </PreviewHeader>
+            
+            <PreviewBody>
+                {isPreviewLoading ? (
+                    <div style={{color: '#666', fontSize: '1.2rem'}}>Loading file...</div>
+                ) : (
+                    previewData.type && previewData.type.startsWith('image/') ? (
+                        <FullPreviewImage src={previewData.url} alt="Preview" />
+                    ) : (
+                        <FullPreviewFrame src={previewData.url} title="File Preview" />
+                    )
+                )}
+            </PreviewBody>
+          </PreviewContainer>
+        </PreviewOverlay>
+      )}
+
       <ToastContainer
         position="bottom-right"
         autoClose={5000}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
         pauseOnHover
-        theme="light"
       />
     </div>
   );
