@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Serve static files directly if they exist
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Redirect all other requests to index.html (for React Router)
+  RewriteRule ^ /tracker/index.html [L]
+</IfModule>
+
+# Force index.html as the directory index file
+DirectoryIndex index.html
+

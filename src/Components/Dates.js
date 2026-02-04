@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -8,7 +8,9 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest";
 
-// Styled Components (keeping all your existing styles)
+// ... [Keep all your existing styled components here: DateWrapper, Label, etc.] ...
+// (I have omitted them to save space, but keep them exactly as they were in your file)
+
 const DateWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -27,7 +29,7 @@ const DateTextContainer = styled.div`
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  background-color: #f3f4f6;
+  background-color: ${(props) => (props.disabled ? "#e0e0e0" : "#f3f4f6")}; // slightly darker if disabled
   border-radius: 8px;
   padding: 8px;
   margin-left: 8px;
@@ -35,14 +37,14 @@ const DateTextContainer = styled.div`
 `;
 
 const IconWrapper = styled.div`
-  cursor: pointer;
-  color: #4caf50;
+  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
+  color: ${(props) => (props.disabled ? "#9e9e9e" : "#4caf50")};
   font-size: 1.5rem;
   margin-right: 8px;
   transition: color 0.3s ease;
 
   &:hover {
-    color: #45a049;
+    color: ${(props) => (props.disabled ? "#9e9e9e" : "#45a049")};
   }
 `;
 
@@ -117,17 +119,22 @@ const ModalContainer = styled.div`
   }
 `;
 
-// Updated Date Modal Component to accept and use the callback
-const DateModal = ({ closeModal, cardId, boardId, onDateUpdate }) => {
-  const [startDate, setStartDate] = useState(null);
+// --- MODAL COMPONENT ---
+
+const DateModal = ({ closeModal, cardId, boardId, onDateUpdate, existingStartDate }) => {
+  // Initialize state with existingStartDate if present
+  const [startDate, setStartDate] = useState(existingStartDate || null);
   const [endDate, setEndDate] = useState(null);
+  
   const [isStartDatePickerOpen, setStartDatePickerOpen] = useState(false);
   const [isEndDatePickerOpen, setEndDatePickerOpen] = useState(false);
+  
   const location = useLocation();
-  const { employeeId } = location.state || {};
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
 
+  // 👇 LOGIC CHANGE: Prevent opening if date exists
   const toggleStartDatePicker = () => {
+    if (existingStartDate) return; 
     setStartDatePickerOpen(!isStartDatePickerOpen);
   };
 
@@ -179,20 +186,17 @@ const DateModal = ({ closeModal, cardId, boardId, onDateUpdate }) => {
       );
 
       if (response.success) {
-        // Show success toast
         toast.success(response.data?.message || "Date updated successfully!", {
           autoClose: 3000,
           position: "top-right",
         });
-
-        // Call the callback to update parent component
-        if (onDateUpdate) {
-          onDateUpdate();
+        
+      if (onDateUpdate) {
+          onDateUpdate(startDate, endDate); 
         }
 
         closeModal();
       } else {
-        // Handle different error scenarios
         if (response.status === 401) {
           toast.error("Session expired. Please log in again.");
         } else if (response.status === 400) {
@@ -214,17 +218,25 @@ const DateModal = ({ closeModal, cardId, boardId, onDateUpdate }) => {
           <FaTimes />
         </CloseIconButton>
         <h3 style={{ color: "#4caf50" }}>Select Dates</h3>
+        
+        {/* START DATE SECTION */}
         <DateWrapper>
           <Label>Start Date:</Label>
-          <IconWrapper onClick={toggleStartDatePicker}>
+          {/* 👇 Pass disabled prop for styling and check click */}
+          <IconWrapper 
+            onClick={toggleStartDatePicker} 
+            disabled={!!existingStartDate}
+            title={existingStartDate ? "Start date cannot be changed" : "Select start date"}
+          >
             <FaCalendarAlt />
           </IconWrapper>
-          <DateTextContainer>
+          <DateTextContainer disabled={!!existingStartDate}>
             <span>
               {startDate ? startDate.toLocaleDateString() : "Not selected"}
             </span>
           </DateTextContainer>
         </DateWrapper>
+
         {isStartDatePickerOpen && (
           <DatePicker
             selected={startDate}
@@ -232,6 +244,8 @@ const DateModal = ({ closeModal, cardId, boardId, onDateUpdate }) => {
             inline
           />
         )}
+
+        {/* END DATE SECTION */}
         <DateWrapper>
           <Label>End Date:</Label>
           <IconWrapper onClick={toggleEndDatePicker}>
@@ -243,6 +257,7 @@ const DateModal = ({ closeModal, cardId, boardId, onDateUpdate }) => {
             </span>
           </DateTextContainer>
         </DateWrapper>
+        
         {isEndDatePickerOpen && (
           <DatePicker
             selected={endDate}
@@ -251,6 +266,7 @@ const DateModal = ({ closeModal, cardId, boardId, onDateUpdate }) => {
             inline
           />
         )}
+        
         <Button onClick={handleSave}>Save</Button>
         <ToastContainer />
       </ModalContainer>
@@ -258,8 +274,9 @@ const DateModal = ({ closeModal, cardId, boardId, onDateUpdate }) => {
   );
 };
 
-// Updated Parent Component to accept and pass the callback
-const DateButton = ({ cardId, boardId, onDateUpdate }) => {
+// --- PARENT WRAPPER COMPONENT ---
+
+const DateButton = ({ cardId, boardId, onDateUpdate, existingStartDate }) => {
   const [showModal, setShowModal] = useState(false);
 
   const openModal = () => {
@@ -287,6 +304,8 @@ const DateButton = ({ cardId, boardId, onDateUpdate }) => {
           cardId={cardId}
           boardId={boardId}
           onDateUpdate={onDateUpdate}
+          // 👇 Pass the existing date down to the modal
+          existingStartDate={existingStartDate}
         />
       )}
       <ToastContainer />

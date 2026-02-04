@@ -42,29 +42,42 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   };
   const localizer = momentLocalizer(moment);
 
-const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal }) => {
-  const [, drag] = useDrag({
-    type: ItemType.CARD,
-    item: { id, index, columnId },
-  });
+const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, created_date }) => {
+    const [, drag] = useDrag({
+      type: ItemType.CARD,
+      item: { id, index, columnId },
+    });
 
-  return (
-    <div ref={drag} style={styles.card} onClick={() => openModal(text)}>
-      <div style={styles.cardContent}>
-        <div>
-          <strong>{text || "No Name"}</strong>
-          {createdByName && (
-            <p style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
-              Created by: {createdByName}
-            </p>
-          )}
+    // Helper to format date
+    const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        // Returns date in local format, e.g., "10/8/2025" or "08/10/2025" depending on locale
+        return date.toLocaleDateString(); 
+    };
+
+    return (
+      <div ref={drag} style={styles.card} onClick={() => openModal(text)}>
+        <div style={styles.cardContent}>
+          <div>
+            <strong>{text || "No Name"}</strong>
+            {createdByName && (
+              <p style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
+                Created by: {createdByName}
+                {created_date && (
+                    <>
+                        <br />
+                        Created Date: {formatDate(created_date)}
+                    </>
+                )}
+              </p>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
-
-
+    );
+  };
+  
   const Column = ({
     id,
     title,
@@ -167,15 +180,16 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
         {cards.map((card, index) => (
           <CardContainer key={card.cardId}>
             <CardRow>
-<Card
-  id={card.cardId}
-  index={index}
-  columnId={id}
-  text={card.cardName}
-  createdByName={card.created_by_name}  // 👈 new prop
-  moveCard={moveCard}
-  openModal={() => openModal(card.cardName, card.cardId)}
-/>
+              <Card
+                id={card.cardId}
+                index={index}
+                columnId={id}
+                text={card.cardName}
+                createdByName={card.created_by_name}  // 👈 new prop
+                created_date={card.created_date}
+                moveCard={moveCard}
+                openModal={() => openModal(card.cardName, card.cardId)}
+              />
               <RemoveButton onClick={() => handleRemoveCard(card.cardId)}>
                 ×
               </RemoveButton>
@@ -550,18 +564,38 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
     }
   }, [boardId]);
 
-  const fetchEmployeeCards = (employeeId, boardId) => {
-    apiRequest(`${Trackerbaseurl}cards/${employeeId}/${boardId}/`)
+const fetchEmployeeCards = (member, boardId, position) => {
+    const employeeId = member.employeeId;
+
+    apiRequest(`${Trackerbaseurl}employeecards/${employeeId}/${boardId}/`)
       .then((response) => {
         const data = response.data;
         if (data.cards) {
-          setEmployeeCards(data.cards);
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+          const filteredCards = data.cards.filter((card) => {
+            if (card.columnId !== "done") return true;
+            if (!card.lastmodified_date) return false;
+            return new Date(card.lastmodified_date) > oneWeekAgo;
+          });
+
+          if (filteredCards.length > 0) {
+            setEmployeeCards(filteredCards);
+            setAvatarPosition(position);
+            setSelectedEmployee(member); // <--- Popup opens here
+          } else {
+            setSelectedEmployee(null);
+            setEmployeeCards([]);
+            toast.info(`No active cards found for ${member.employeeName}`, { autoClose: 2000 });
+          }
         } else {
-          console.error("Failed to fetch cards:", data.error);
+            setSelectedEmployee(null);
         }
       })
       .catch((error) => {
         console.error("Error fetching cards:", error);
+        setSelectedEmployee(null);
       });
   };
 
@@ -583,32 +617,94 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
 
     return todayDateOnly > endDateOnly;
   };
+// Inside DragAndDropCards component
+
+const handleInstantDateUpdate = (newStartDate, newEndDate) => {
+    // 1. Update the Modal view instantly
+    setModalContent((prev) => ({
+      ...prev,
+      startdate: newStartDate,
+      enddate: newEndDate,
+    }));
+
+    // 2. Update the Board Columns (Cards) state instantly
+    setColumns((prevColumns) => {
+      const updatedColumns = { ...prevColumns };
+      
+      // We loop through columns to find and update the specific card
+      Object.keys(updatedColumns).forEach((colKey) => {
+        updatedColumns[colKey] = updatedColumns[colKey].map((card) => {
+          if (card.cardId === modalContent.cardId) {
+            return {
+              ...card,
+              startdate: newStartDate,
+              enddate: newEndDate,
+            };
+          }
+          return card;
+        });
+      });
+      return updatedColumns;
+    });
+
+    // 3. Update Calendar Events instantly
+    setEvents((prevEvents) => 
+      prevEvents.map((event) => {
+        // Assuming your event title matches card name or you map by ID
+        if (event.title === modalContent.cardName) { 
+           return { ...event, start: newStartDate, end: newEndDate };
+        }
+        return event;
+      })
+    );
+    
+    // 4. (Optional) Trigger background fetch to ensure perfect sync
+    // We do this *after* local update so UI is already fast
+    fetchCardsWithMembers(boardId); 
+};
+
+  const [avatarPosition, setAvatarPosition] = useState({ top: 0, left: 0 });
 
   return (
     <TodolistContainer style={{ background: boardColor }}>
       <DndProvider backend={HTML5Backend}>
         <IconWrapper>
-          <EmployeeAvatars>
-            {members1.map((member) => (
-              <EmployeeAvatar
-                key={member.employeeId}
-                title={member.employeeName}
-                onClick={() => {
-                  setSelectedEmployee(member);
-                  fetchEmployeeCards(member.employeeId, boardId);
-                }}
-              >
-                <img
-                  src={`https://ui-avatars.com/api/?name=${member.employeeName}&background=random`}
-                  alt={member.employeeName}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "50%",
+        <EmployeeAvatars>
+            {members1.map((member) => {
+              // 1. FILTER: If the employee has no name, do not display this avatar
+              if (!member.employeeName || member.employeeName.trim() === "") {
+                return null;
+              }
+
+              return (
+                <EmployeeAvatar
+                  key={member.employeeId}
+                  title={member.employeeName}
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    // 2. Calculate position
+                    const calculatedPosition = {
+                      top: rect.bottom + window.scrollY + 10,
+                      left: rect.left + window.scrollX,
+                    };
+                    
+                    // 3. FIX: Call fetch first (DO NOT set selectedEmployee here)
+                    // This ensures the popup only opens if cards are found
+                    fetchEmployeeCards(member, boardId, calculatedPosition);
                   }}
-                />
-              </EmployeeAvatar>
-            ))}
+                >
+                  <img
+                    src={`https://ui-avatars.com/api/?name=${member.employeeName}&background=random`}
+                    alt={member.employeeName}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "50%",
+                    }}
+                  />
+                </EmployeeAvatar>
+              );
+            })}
           </EmployeeAvatars>
 
           <IconGroup>
@@ -620,7 +716,10 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
         </IconWrapper>
 
         {selectedEmployee && (
-          <EmployeeCardsWrapper>
+          <EmployeeCardsWrapper
+            top={avatarPosition.top}
+            left={avatarPosition.left}
+          >
             <EmployeeCardsContainer>
               <EmployeeCardsHeader>
                 <h3>{selectedEmployee.employeeName}'s Cards</h3>
@@ -712,7 +811,9 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
               <ModalContent>
                 <ModalLeft>
                   <CardNameSection>
-                    <FaRegCreditCard style={{ fontSize: "1.2rem", marginRight: "10px" }} />
+                    <FaRegCreditCard
+                      style={{ fontSize: "1.2rem", marginRight: "10px" }}
+                    />
                     {isEditing ? (
                       <CardNameInput
                         type="text"
@@ -737,23 +838,50 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
                   </CardNameSection>
 
                   <MembersAndDates>
-                    <MembersSection>
-                      <Label>Members</Label>
-                      <MembersContainer>
-                        {members.length > 0 ? (
-                          members.map((member, idx) => (
-                            <MemberCircle
-                              key={idx}
-                              bgColor={getBackgroundColor(member.employeeName)}
-                            >
-                              {member.employeeName.charAt(0)}
-                            </MemberCircle>
-                          ))
-                        ) : (
-                          <p>No members found.</p>
-                        )}
-                      </MembersContainer>
-                    </MembersSection>
+<MembersSection>
+  <Label>Members</Label>
+  <MembersContainer>
+    {members.length > 0 ? (
+      members.map((member, idx) => {
+        // 1. Handle Image URL logic (Consistent with your board)
+        let imageUrl = member.profilePicture;
+        if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
+          const cleanPath = imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl;
+          imageUrl = `${Trackerbaseurl}${cleanPath}`;
+        }
+
+        return (
+          <React.Fragment key={idx}>
+            {imageUrl ? (
+              // 2. Display Image if available (with hover title)
+              <MemberImage
+                src={imageUrl}
+                alt={member.employeeName}
+                title={member.employeeName} // 👈 Displays name on hover
+                style={{ width: '35px', height: '35px' }} // Match modal size
+                onError={(e) => {
+                   e.target.style.display = 'none';
+                   // Fallback logic could go here if needed
+                }}
+              />
+            ) : (
+              // 3. Display Initials if no image (with hover title)
+              <MemberCircle
+                bgColor={getBackgroundColor(member.employeeName)}
+                title={member.employeeName} // 👈 Displays name on hover
+                style={{ cursor: "pointer" }}
+              >
+                {member.employeeName.charAt(0)}
+              </MemberCircle>
+            )}
+          </React.Fragment>
+        );
+      })
+    ) : (
+      <p>No members found.</p>
+    )}
+  </MembersContainer>
+</MembersSection>
 
                     <DatesSection>
                       <Label>Due Date</Label>
@@ -763,7 +891,10 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
                           <DateValue
                             isOverdue={
                               modalContent.enddate &&
-                              isOverdue(modalContent.enddate, modalContent.columnId)
+                              isOverdue(
+                                modalContent.enddate,
+                                modalContent.columnId
+                              )
                             }
                           >
                             {modalContent.startdate
@@ -776,7 +907,10 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
                           <DateValue
                             isOverdue={
                               modalContent.enddate &&
-                              isOverdue(modalContent.enddate, modalContent.columnId)
+                              isOverdue(
+                                modalContent.enddate,
+                                modalContent.columnId
+                              )
                             }
                           >
                             {modalContent.enddate
@@ -786,16 +920,15 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
                         </DateItem>
                       </DatesWrapper>
                     </DatesSection>
-                                      
-<CreatedBySection>
-  <Label>Created By</Label>
-  <CreatedByText>
-    {modalContent.created_by_name
-      ? modalContent.created_by_name
-      : "Unknown"}
-  </CreatedByText>
-</CreatedBySection>
 
+                    <CreatedBySection>
+                      <Label>Created By</Label>
+                      <CreatedByText>
+                        {modalContent.created_by_name
+                          ? modalContent.created_by_name
+                          : "Unknown"}
+                      </CreatedByText>
+                    </CreatedBySection>
                   </MembersAndDates>
 
                   <Description
@@ -817,13 +950,17 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal })
                     cardId={cardId}
                     boardId={boardId}
                     cardName={cardName}
-                    onMemberUpdate={() => fetchMembers(cardId, boardId, cardName)}
+                    onMemberUpdate={() =>
+                      fetchMembers(cardId, boardId, cardName)
+                    }
                   />
                   <DateComponent
                     cardId={cardId}
                     boardId={boardId}
                     employeeId={employeeId}
-                    onDateUpdate={() => fetchCardsWithMembers(boardId)}
+                    existingStartDate={modalContent.startdate}
+       
+                    onDateUpdate={handleInstantDateUpdate}
                   />
                   <ToastContainer />
                 </ModalRight>
@@ -910,38 +1047,35 @@ const CalendarIcon = styled(FaCalendarAlt)`
   font-size: 1.6rem;
   cursor: pointer;
   transition: transform 0.2s ease-in-out;
+  margin-right: 10px;
+  border-radius: 8px;
+
+  /* Default desktop/tablet size */
+  width: 30px;
+  height: 30px;
 
   &:hover {
     transform: scale(1.1);
   }
 
-  @media (max-width: 768px) {
-    font-size: 1.4rem;
-  }
-`;
-
-const EmployeeCardsWrapper = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 20px;
-
-  @media (max-width: 768px) {
-    justify-content: center;
-  }
-`;
-
-const EmployeeCardsContainer = styled.div`
-  padding: 15px;
-  background: #333;
-  border-radius: 10px;
-  width: 300px;
-  max-width: 100%;
-
+  /* -----------------------------------------
+     Mobile View (≤480px)
+     ----------------------------------------- */
   @media (max-width: 480px) {
-    width: 100%;
-    padding: 10px;
+    width: 40px;        /* Slightly larger for touch */
+    height: 40px;
+    font-size: 1.8rem;
+    margin-right: 0px;
+
+    padding: 6px;       /* Touch-friendly padding */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 12px; /* More rounded on mobile */
   }
 `;
+
 
 const EmployeeCardsHeader = styled.div`
   display: flex;
@@ -1452,8 +1586,8 @@ const DateValue = styled.span`
 
 const CloseIcon = styled.div`
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 2px;
+  right: 5px;
   font-size: 24px;
   cursor: pointer;
   color: red;
@@ -1468,6 +1602,33 @@ const CloseIcon = styled.div`
     right: 8px;
     font-size: 20px;
   }
+`;
+
+const EmployeeCardsWrapper = styled.div`
+  position: absolute;
+  top: ${(props) => props.top}px;
+  left: ${(props) => props.left}px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 15px;
+  border-radius: 8px;
+  width: 300px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+  @media (max-width: 768px) {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 350px;
+  }
+`;
+
+const EmployeeCardsContainer = styled.div`
+  width: 100%;
 `;
 
 const styles = {
