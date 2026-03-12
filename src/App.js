@@ -69,7 +69,7 @@ const AppContent = ({ boards, addBoard }) => {
                📧
              </button>
           </div>
- )}  */}
+ )}   */}
       
         <Routes>
           <Route
