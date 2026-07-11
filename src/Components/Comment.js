@@ -12,7 +12,7 @@ import {
   FaEye 
 } from "react-icons/fa";
 import "react-datepicker/dist/react-datepicker.css";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest";
 
@@ -654,12 +654,13 @@ const handleSaveActivity = async () => {
 };
 
 
-  const handleDeleteComment = async (commentText) => {
+  const handleDeleteComment = async (comment) => {
     try {
       const payload = {
         cardId: String(cardId),
         boardId: String(boardId),
-        commenttext: commentText,
+        commentId: comment.commentId,
+        commenttext: comment.commenttext,
       };
 
       const result = await apiRequest(
@@ -679,7 +680,7 @@ const handleSaveActivity = async () => {
     }
   };
 
-  const handleEditComment = async (originalCommentText) => {
+  const handleEditComment = async (comment) => {
     if (!editCommentText.trim()) {
       showErrorToast("Comment cannot be empty!");
       return;
@@ -689,7 +690,8 @@ const handleSaveActivity = async () => {
       const payload = {
         cardId: String(cardId),
         boardId: String(boardId),
-        originalCommentText,
+        commentId: comment.commentId,
+        originalCommentText: comment.commenttext,
         newCommentText: editCommentText,
       };
 
@@ -863,7 +865,7 @@ const getFileUrl = (comment) => {
                       />
                       <EditActions>
                         <EditButton
-                          onClick={() => handleEditComment(comment.commenttext)}
+                          onClick={() => handleEditComment(comment)}
                           disabled={!editCommentText.trim()}
                         >
                           Save
@@ -917,7 +919,7 @@ const getFileUrl = (comment) => {
                           </ActionIcon>
                           <ActionIcon
                             className="delete-icon"
-                            onClick={() => handleDeleteComment(comment.commenttext)}
+                            onClick={() => handleDeleteComment(comment)}
                             title="Delete comment"
                           >
                             <FaTrashAlt />
@@ -959,15 +961,6 @@ const getFileUrl = (comment) => {
           </PreviewContainer>
         </PreviewOverlay>
       )}
-
-      <ToastContainer
-        position="bottom-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        pauseOnHover
-      />
     </div>
   );
 };

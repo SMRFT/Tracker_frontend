@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { FaTimes, FaSearch, FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "./Sidebar";
 import apiRequest from "./apiRequest"; // Import the API helper
 
 // Modern styled components with more subtle shadows, rounded corners, and cleaner spacing
@@ -562,7 +561,6 @@ const Board = () => {
 
   return (
     <BoardContainer>
-      <Sidebar boards={boards} setBoards={setBoards} />
       <MainContent>
         <MainHeader>
           <HeaderTitle>Boards</HeaderTitle>
