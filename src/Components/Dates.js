@@ -4,7 +4,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaTimes, FaCalendarAlt } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest";
 
@@ -268,7 +268,6 @@ const DateModal = ({ closeModal, cardId, boardId, onDateUpdate, existingStartDat
         )}
         
         <Button onClick={handleSave}>Save</Button>
-        <ToastContainer />
       </ModalContainer>
     </ModalBackdrop>
   );
@@ -308,7 +307,6 @@ const DateButton = ({ cardId, boardId, onDateUpdate, existingStartDate }) => {
           existingStartDate={existingStartDate}
         />
       )}
-      <ToastContainer />
     </div>
   );
 };

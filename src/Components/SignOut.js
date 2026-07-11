@@ -4,7 +4,7 @@ import { VscAccount } from "react-icons/vsc";
 import { FiLogOut, FiKey, FiX } from "react-icons/fi";
 import { Tooltip } from "react-tooltip";
 import styled from "styled-components";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest";
 
@@ -190,18 +190,6 @@ const SignOut = () => {
           </ModalWrapper>
         </ModalOverlay>
       )}
-
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
     </SignOutWrapper>
   );
 };

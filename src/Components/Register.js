@@ -3,7 +3,7 @@ import styled, { keyframes } from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import { DEPARTMENTS } from "./constant";
 import Vector2 from "./Images/Login-vector2.jpg";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
   FaUser,
@@ -282,25 +282,6 @@ const FooterText = styled.p`
   color: #4a5568;
 `;
 
-// Custom toast styling
-const StyledToastContainer = styled(ToastContainer)`
-  .Toastify__toast {
-    border-radius: 8px;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  }
-
-  .Toastify__toast--success {
-    background: linear-gradient(135deg, #4caf50, #388e3c);
-  }
-
-  .Toastify__toast--error {
-    background: linear-gradient(135deg, #f44336, #d32f2f);
-  }
-
-  .Toastify__progress-bar {
-    background: rgba(255, 255, 255, 0.7);
-  }
-`;
 
 const PasswordRequirements = styled.ul`
   font-size: 0.8rem;
@@ -428,7 +409,6 @@ const Register = () => {
 
   return (
     <RegisterContainer>
-      <StyledToastContainer />
 
       <RegisterCard>
         <Title>Create Account</Title>

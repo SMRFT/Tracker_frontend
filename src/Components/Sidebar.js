@@ -8,7 +8,7 @@ import EditBoardModal from "./EditBoardModal";
 import SignOut from "./SignOut";
 import { MdOutlineSpaceDashboard } from "react-icons/md";
 import { PiUsersThreeDuotone } from "react-icons/pi";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest";
 
@@ -502,7 +502,6 @@ const Sidebar = ({ boards, setBoards }) => {
   const closeDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setSelectedBoard(null);
-    window.location.reload();
   };
 
   const openEditModal = (board, index) => {
@@ -518,7 +517,6 @@ const Sidebar = ({ boards, setBoards }) => {
     setIsEditModalOpen(false);
     setSelectedBoard(null);
     setEditingBoardIndex(null);
-    window.location.reload();
   };
 
   const saveEditedBoard = async (newTitle) => {
@@ -584,7 +582,7 @@ const Sidebar = ({ boards, setBoards }) => {
           (board) => board.boardId !== selectedBoard.boardId
         );
         setBoards(updatedBoards);
-        closeEditModal();
+        closeDeleteModal();
         toast.success("Board deleted successfully!", {
           position: isMobileView ? "top-center" : "top-right",
         });
@@ -768,7 +766,6 @@ const Sidebar = ({ boards, setBoards }) => {
           />
         )}
 
-        <ToastContainer />
       </SidebarContainer>
     </>
   );

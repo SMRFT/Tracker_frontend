@@ -15,7 +15,7 @@ import Addmembers from "./Addmembers";
 import Description from "./Description";
 import Comment from "./Comment";
 import { isBefore, format, parseISO } from "date-fns";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest";
 
@@ -194,7 +194,6 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
                 ×
               </RemoveButton>
             </CardRow>
-            <ToastContainer />
             <MemberList>
               {cardMembers[card.cardId]?.length > 0 ? (
                 cardMembers[card.cardId].map((member, idx) => (
@@ -359,21 +358,17 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
       setColumns(updatedColumns);
       setCards(parsedData);
 
-      const memberRequests = parsedData.map(async (card) => {
-        const memberResult = await apiRequest(
-          `${Trackerbaseurl}add_member_to_card/?cardId=${card.cardId}&boardId=${boardId}&cardName=${card.cardName}`
-        );
-        return {
-          cardId: card.cardId,
-          data: memberResult.success ? memberResult.data : [],
-        };
-      });
-
-      const memberResponses = await Promise.all(memberRequests);
-
       const membersData = {};
-      memberResponses.forEach(({ cardId, data }) => {
-        membersData[cardId] = data;
+      parsedData.forEach((card) => {
+        let members = [];
+        if (card.members) {
+          try {
+            members = typeof card.members === "string" ? JSON.parse(card.members) : card.members;
+          } catch (e) {
+            members = [];
+          }
+        }
+        membersData[card.cardId] = members;
       });
 
       setCardMembers(membersData);
@@ -962,7 +957,6 @@ const handleInstantDateUpdate = (newStartDate, newEndDate) => {
        
                     onDateUpdate={handleInstantDateUpdate}
                   />
-                  <ToastContainer />
                 </ModalRight>
               </ModalContent>
 

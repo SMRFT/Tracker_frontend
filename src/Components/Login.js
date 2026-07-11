@@ -5,7 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import axios from 'axios';
 import { FaEye, FaEyeSlash, FaUser, FaIdCard, FaLock } from 'react-icons/fa';
 import Vector1 from './Images/Login-vector1.jpg';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Animations
@@ -220,25 +220,7 @@ const ErrorMessage = styled.p`
   animation: ${fadeIn} 0.3s ease-in;
 `;
 
-// Custom toast styling
-const StyledToastContainer = styled(ToastContainer)`
-  .Toastify__toast {
-    border-radius: 8px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-  
-  .Toastify__toast--success {
-    background: linear-gradient(135deg, #4CAF50, #388E3C);
-  }
-  
-  .Toastify__toast--error {
-    background: linear-gradient(135deg, #F44336, #D32F2F);
-  }
-  
-  .Toastify__progress-bar {
-    background: rgba(255, 255, 255, 0.7);
-  }
-`;
+
 
 const LogIn = () => {
   const [employeeId, setEmployeeId] = useState('');
@@ -318,7 +300,6 @@ const LogIn = () => {
 
   return (
     <LoginWrapper>
-      <StyledToastContainer />
       
       <FormContainer>
         <Title>Welcome Back</Title>
