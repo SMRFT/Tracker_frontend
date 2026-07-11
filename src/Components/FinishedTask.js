@@ -1072,7 +1072,7 @@ const FinishedTask = () => {
             </tr>
           </thead>
           <tbody>
-            ${finishedCards
+            ${filteredCards
               .map(
                 (card) => `
               <tr>
@@ -1125,7 +1125,7 @@ const FinishedTask = () => {
   };
 
   const handleExportExcel = () => {
-    const exportData = finishedCards.map((card) => ({
+    const exportData = filteredCards.map((card) => ({
       Board: card.boardName || "—",
       Task: card.cardName || "—",
       Members: card.members?.length
