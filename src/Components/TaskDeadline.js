@@ -42,7 +42,10 @@ const Container = styled.div`
   margin: ${(props) => (props.isMobile ? "0" : "0 auto")};
   background: var(--bg-primary);
   border-radius: ${(props) => (props.isMobile ? "0" : "16px")};
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   animation: ${fadeIn} 0.6s ease-out;
 
   @media (max-width: 768px) {
@@ -52,9 +55,28 @@ const Container = styled.div`
   }
 `;
 
+const ScrollArea = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 1.5rem;
+  margin: 0 -0.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 99px;
+  }
+`;
+
 const Header = styled.div`
   text-align: center;
   margin-bottom: ${(props) => (props.isMobile ? "1.5rem" : "2rem")};
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
     margin-bottom: 1.5rem;
@@ -85,6 +107,7 @@ const SearchSection = styled.div`
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--border-subtle);
   flex-direction: ${(props) => (props.isMobile ? "column" : "row")};
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -280,6 +303,7 @@ const ActionSection = styled.div`
   justify-content: flex-end;
   flex-wrap: wrap;
   flex-direction: ${(props) => (props.isMobile ? "column" : "row")};
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -1250,6 +1274,7 @@ const TaskDeadline = () => {
         </ActionButton>
       </ActionSection>
 
+      <ScrollArea>
       {isLoading ? (
         <NoDataWrapper isMobile={isMobileView}>
           <NoDataMessage isMobile={isMobileView}>
@@ -1360,6 +1385,7 @@ const TaskDeadline = () => {
           </CardList>
         </TableWrapper>
       )}
+      </ScrollArea>
 
       {/* Modal for Card Details */}
       <Modal isOpen={!!selectedCard} isMobile={isMobileView} onClick={closeModal}>

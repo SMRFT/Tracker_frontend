@@ -20,7 +20,7 @@ const DateWrapper = styled.div`
 const Label = styled.label`
   width: 100px;
   font-size: 16px;
-  color: #4a4a4a;
+  color: var(--text-main);
   font-weight: bold;
 `;
 
@@ -29,7 +29,8 @@ const DateTextContainer = styled.div`
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  background-color: ${(props) => (props.disabled ? "#e0e0e0" : "#f3f4f6")}; // slightly darker if disabled
+  background-color: ${(props) => (props.disabled ? "var(--border-subtle)" : "var(--bg-primary)")};
+  color: var(--text-main);
   border-radius: 8px;
   padding: 8px;
   margin-left: 8px;
@@ -98,7 +99,8 @@ const ModalBackdrop = styled.div`
 `;
 
 const ModalContainer = styled.div`
-  background-color: #ffffff;
+  background-color: var(--bg-secondary);
+  color: var(--text-main);
   padding: 24px;
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);

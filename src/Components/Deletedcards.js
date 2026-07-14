@@ -5,17 +5,44 @@ import apiRequest from "./apiRequest";
 const Container = styled.div`
   padding: 40px;
   background: var(--bg-primary);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 `;
 
 const ContentWrapper = styled.div`
   max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+`;
+
+const ScrollArea = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 1.5rem;
+  margin: 0 -0.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 99px;
+  }
 `;
 
 const Header = styled.div`
   margin-bottom: 40px;
-  text-align: center;   
+  text-align: center;
+  flex-shrink: 0;
 `;
 
 const Title = styled.h1`
@@ -42,6 +69,7 @@ const FilterCard = styled.div`
   margin-bottom: 30px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 `;
 
 const FilterRow = styled.div`
@@ -209,7 +237,8 @@ const ResultCount = styled.div`
   font-size: 1rem;
   color: var(--text-muted);
   font-weight: 500;
-  
+  flex-shrink: 0;
+
   span {
     color: var(--primary-accent);
     font-weight: 700;
@@ -879,6 +908,7 @@ export default function DeletedCards() {
           Showing <span>{filteredCards.length}</span> of {deletedCards.length} deleted cards
         </ResultCount>
 
+        <ScrollArea>
         {filteredCards.length === 0 ? (
           <EmptyState>
             <h3>No Deleted Cards Found</h3>
@@ -929,6 +959,7 @@ export default function DeletedCards() {
             </TableWrapper>
           </TableCard>
         )}
+        </ScrollArea>
 
         {selectedCard && (
           <ModalOverlay onClick={() => setSelectedCard(null)}>

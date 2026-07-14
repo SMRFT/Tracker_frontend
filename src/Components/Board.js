@@ -1,24 +1,31 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
 import { FaTimes, FaSearch, FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import apiRequest from "./apiRequest"; // Import the API helper
 import { motion, AnimatePresence } from "framer-motion";
+import DialogOverlay from "./ui/Overlay";
+import LoadingSpinner from "./ui/Spinner";
 
 const BoardContainer = styled.div`
   display: flex;
   background-color: var(--bg-primary);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   font-family: 'Inter', sans-serif;
 `;
 
 const MainContent = styled.main`
   flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 2.5rem;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
-  
+  min-width: 0;
+
   @media (max-width: 768px) {
     padding: 1.5rem;
     margin-top: 50px; /* Account for mobile menu button */
@@ -27,6 +34,7 @@ const MainContent = styled.main`
 
 const MainHeader = styled.header`
   margin-bottom: 2.5rem;
+  flex-shrink: 0;
 `;
 
 const HeaderTop = styled.div`
@@ -146,7 +154,23 @@ const SearchInput = styled.input`
 const BoardsSection = styled.section`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  align-content: start;
   gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 1.5rem;
+  margin: 0 -0.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 99px;
+  }
 `;
 
 const BoardCard = styled(motion.div)`
@@ -258,20 +282,6 @@ const CreateText = styled.span`
   color: var(--text-main);
   font-weight: 600;
   font-size: 0.9rem;
-`;
-
-const DialogOverlay = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(8px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
 `;
 
 const Dialog = styled(motion.div)`
@@ -428,50 +438,33 @@ const ErrorMessage = styled(MessageContainer)`
   background: rgba(239, 68, 68, 0.08);
 `;
 
-const LoadingSpinner = styled.div`
-  border: 2px solid #e2e8f0;
-  border-top: 2px solid var(--primary-accent);
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  animation: spin 0.8s linear infinite;
-  margin-right: 0.5rem;
+const GRADIENTS = [
+  { id: 1, value: "linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)" },
+  { id: 2, value: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)" },
+  { id: 3, value: "linear-gradient(135deg, #10b981 0%, #059669 100%)" },
+  { id: 4, value: "linear-gradient(135deg, #f59e0b 0%, #e11d48 100%)" },
+  { id: 5, value: "linear-gradient(135deg, #3c1053 0%, #ad5389 100%)" },
+  { id: 6, value: "linear-gradient(135deg, #f12711 0%, #f5af19 100%)" },
+  { id: 7, value: "linear-gradient(135deg, #2e0854 0%, #9b51e0 100%)" },
+  { id: 8, value: "linear-gradient(135deg, #475569 0%, #0f172a 100%)" },
+];
 
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`;
-
-const Board = () => {
+const Board = ({ boards, refreshBoards, boardsLoading }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [boardName, setBoardName] = useState("");
   const [boardColor, setBoardColor] = useState(
     "linear-gradient(135deg, #6A11CB 0%, #2575FC 100%)"
   );
-  const [boards, setBoards] = useState([]);
   const [sortOrder, setSortOrder] = useState("A-Z");
   const [searchQuery, setSearchQuery] = useState("");
   const [employeeId, setEmployeeId] = useState(null);
   const [employeeName, setEmployeeName] = useState(null);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [role, setRole] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
   const navigate = useNavigate();
-
-  const gradients = [
-    { id: 1, value: "linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)" },
-    { id: 2, value: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)" },
-    { id: 3, value: "linear-gradient(135deg, #10b981 0%, #059669 100%)" },
-    { id: 4, value: "linear-gradient(135deg, #f59e0b 0%, #e11d48 100%)" },
-    { id: 5, value: "linear-gradient(135deg, #3c1053 0%, #ad5389 100%)" },
-    { id: 6, value: "linear-gradient(135deg, #f12711 0%, #f5af19 100%)" },
-    { id: 7, value: "linear-gradient(135deg, #2e0854 0%, #9b51e0 100%)" },
-    { id: 8, value: "linear-gradient(135deg, #475569 0%, #0f172a 100%)" },
-  ];
 
   useEffect(() => {
     const id = localStorage.getItem("employeeId");
@@ -484,39 +477,6 @@ const Board = () => {
       setRole(role);
     }
   }, []);
-
-  const fetchBoards = async () => {
-    setIsLoading(true);
-    try {
-      const role = localStorage.getItem("role");
-
-      const result = await apiRequest(
-        `${Trackerbaseurl}get-boards/${role}/`,
-        "GET"
-      );
-
-      if (result.success) {
-        setBoards(Array.isArray(result.data) ? result.data : []);
-        setMessage({ type: "", text: "" });
-      } else {
-        console.error("Failed to fetch boards:", result.error);
-        setMessage({ type: "error", text: result.error });
-        setBoards([]);
-      }
-    } catch (error) {
-      console.error("Error fetching boards:", error);
-      setMessage({ type: "error", text: "Failed to load boards" });
-      setBoards([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (employeeId && role) {
-      fetchBoards();
-    }
-  }, [employeeId, role]);
 
   const openDialog = () => {
     setIsDialogOpen(true);
@@ -561,7 +521,7 @@ const Board = () => {
         setBoardName("");
         setBoardColor("linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)");
 
-        await fetchBoards();
+        await refreshBoards();
 
         setTimeout(() => {
           closeDialog();
@@ -588,25 +548,25 @@ const Board = () => {
     setSearchQuery(e.target.value);
   };
 
-  const getFilteredAndSortedBoards = () => {
-    let filteredBoards = boards.filter(
+  const filteredAndSortedBoards = useMemo(() => {
+    const filteredBoards = boards.filter(
       (board) =>
         board.boardName &&
         board.boardName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     if (sortOrder === "A-Z") {
-      filteredBoards = filteredBoards.sort((a, b) =>
+      filteredBoards.sort((a, b) =>
         (a.boardName || "").localeCompare(b.boardName || "")
       );
     } else if (sortOrder === "Z-A") {
-      filteredBoards = filteredBoards.sort((a, b) =>
+      filteredBoards.sort((a, b) =>
         (b.boardName || "").localeCompare(a.boardName || "")
       );
     }
 
     return filteredBoards;
-  };
+  }, [boards, searchQuery, sortOrder]);
 
   const handleBoardClick = (board) => {
     navigate("/Todolist", {
@@ -649,7 +609,7 @@ const Board = () => {
         </MainHeader>
 
         <BoardsSection>
-          {isLoading ? (
+          {boardsLoading ? (
             <div
               style={{
                 gridColumn: "1 / -1",
@@ -662,7 +622,7 @@ const Board = () => {
             </div>
           ) : (
             <>
-              {getFilteredAndSortedBoards().map((board) => (
+              {filteredAndSortedBoards.map((board) => (
                 <BoardCard
                   key={board.boardId}
                   bgColor={board.boardColor}
@@ -724,7 +684,7 @@ const Board = () => {
                 
                 <PickerLabel>Choose a theme color</PickerLabel>
                 <GradientPickerContainer>
-                  {gradients.map((gradient) => (
+                  {GRADIENTS.map((gradient) => (
                     <GradientOption
                       key={gradient.id}
                       gradient={gradient.value}

@@ -48,7 +48,10 @@ const Container = styled.div`
   box-shadow: ${(props) =>
     props.isMobile ? "none" : "0 10px 30px rgba(0, 0, 0, 0.05)"};
   animation: ${fadeIn} 0.6s ease-out;
-  min-height: ${(props) => (props.isMobile ? "100vh" : "auto")};
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 
   @media (max-width: 768px) {
     padding: 1rem;
@@ -57,10 +60,29 @@ const Container = styled.div`
   }
 `;
 
+const ScrollArea = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 1.5rem;
+  margin: 0 -0.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 99px;
+  }
+`;
+
 const Header = styled.div`
   text-align: center;
   margin-bottom: ${(props) => (props.isMobile ? "1.5rem" : "2rem")};
   padding: ${(props) => (props.isMobile ? "0.5rem 0" : "0")};
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
     margin-bottom: 1.5rem;
@@ -93,6 +115,7 @@ const FilterSection = styled.div`
   position: relative;
   z-index: 50;
   flex-direction: ${(props) => (props.isMobile ? "column" : "row")};
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -170,6 +193,7 @@ const ActionSection = styled.div`
   justify-content: flex-end;
   flex-wrap: wrap;
   flex-direction: ${(props) => (props.isMobile ? "column" : "row")};
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -1363,6 +1387,7 @@ const FinishedTask = () => {
         </Button>
       </ActionSection>
 
+      <ScrollArea>
       {filteredCards.length === 0 ? (
         <NoDataWrapper isMobile={isMobileView}>
           <NoDataIcon isMobile={isMobileView}>📭</NoDataIcon>
@@ -1460,6 +1485,7 @@ const FinishedTask = () => {
           </CardList>
         </TableWrapper>
       )}
+      </ScrollArea>
 
       {/* Modal for Card Details */}
       <Modal isOpen={!!selectedCard} isMobile={isMobileView} onClick={closeModal}>

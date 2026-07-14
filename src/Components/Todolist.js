@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -17,9 +17,70 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest";
 import { motion, AnimatePresence } from "framer-motion";
+import ModalOverlay from "./ui/Overlay";
 
 const ItemType = {
   CARD: "card",
+};
+
+const CARD_AVATAR_COLORS = [
+  "#818cf8", // Indigo
+  "#fb7185", // Rose
+  "#34d399", // Emerald
+  "#60a5fa", // Blue
+  "#a78bfa", // Purple
+  "#fbbf24", // Amber
+];
+
+const getBackgroundColor = (name) => {
+  const index = name.charCodeAt(0) % CARD_AVATAR_COLORS.length;
+  return CARD_AVATAR_COLORS[index];
+};
+
+const isOverdue = (endDate, columnId) => {
+  if (columnId === "done") return false;
+
+  const today = new Date();
+  const todayDateOnly = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+
+  const endDateOnly = new Date(
+    endDate.getFullYear(),
+    endDate.getMonth(),
+    endDate.getDate()
+  );
+
+  return todayDateOnly > endDateOnly;
+};
+
+const formatCardDate = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString();
+};
+
+const COLUMN_ACCENT_COLORS = {
+  do: "#f59e0b",
+  doing: "#3b82f6",
+  hold: "#ef4444",
+  done: "#10b981",
+};
+
+const EMPLOYEE_CARDS_POPUP_WIDTH = 290;
+const VIEWPORT_EDGE_MARGIN = 12;
+
+const getClampedPopupPosition = (rect) => {
+  const maxLeft = window.scrollX + window.innerWidth - EMPLOYEE_CARDS_POPUP_WIDTH - VIEWPORT_EDGE_MARGIN;
+  const minLeft = window.scrollX + VIEWPORT_EDGE_MARGIN;
+  const left = Math.min(Math.max(rect.left + window.scrollX, minLeft), maxLeft);
+
+  return {
+    top: rect.bottom + window.scrollY + 10,
+    left,
+  };
 };
 
 const TodolistContainer = styled.div`
@@ -202,7 +263,7 @@ const ColumnTitle = styled.h3`
 `;
 
 const CountBadge = styled.span`
-  background: #cbd5e1;
+  background: var(--border-subtle);
   color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 700;
@@ -213,63 +274,18 @@ const CountBadge = styled.span`
 const CardsList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   overflow-y: auto;
   flex: 1;
   padding: 2px;
-  
+
   &::-webkit-scrollbar {
     width: 4px;
   }
   &::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--border-subtle);
     border-radius: 4px;
   }
-`;
-
-const CardContainer = styled.div`
-  background: var(--bg-primary);
-  border-radius: 12px;
-  padding: 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04);
-  border: 1px solid var(--border-subtle);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.08);
-    border-color: var(--primary-accent);
-  }
-`;
-
-const CardRow = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-`;
-
-const CardBody = styled.div`
-  cursor: pointer;
-  flex: 1;
-`;
-
-const CardText = styled.strong`
-  font-size: 0.925rem;
-  font-weight: 600;
-  color: var(--text-main);
-  line-height: 1.4;
-  word-break: break-word;
-`;
-
-const CreatorInfo = styled.p`
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin: 4px 0 0 0;
-  line-height: 1.3;
 `;
 
 const RemoveButton = styled.button`
@@ -284,21 +300,72 @@ const RemoveButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  opacity: 0;
+  transition: all 0.15s ease;
 
   &:hover {
     color: var(--danger);
-    background: #fee2e2;
+    background: rgba(239, 68, 68, 0.12);
   }
+`;
+
+const CardContainer = styled.div`
+  background: var(--bg-secondary);
+  border-radius: 14px;
+  padding: 14px 14px 12px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid ${(props) => props.accentColor || "var(--border-subtle)"};
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: grab;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -8px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary-accent);
+    border-left-color: ${(props) => props.accentColor || "var(--primary-accent)"};
+  }
+
+  &:hover ${RemoveButton} {
+    opacity: 1;
+  }
+`;
+
+const CardRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+const CardBody = styled.div`
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+`;
+
+const CardText = styled.strong`
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.4;
+  word-break: break-word;
+`;
+
+const CreatorInfo = styled.p`
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 4px 0 0 0;
+  line-height: 1.3;
 `;
 
 const CardFooter = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-subtle);
   flex-wrap: wrap;
   gap: 8px;
 `;
@@ -311,7 +378,7 @@ const DateBadge = styled.span`
   border-radius: 6px;
   font-size: 0.7rem;
   font-weight: 600;
-  background: ${(props) => (props.isOverdue ? "rgba(239, 68, 68, 0.15)" : "var(--bg-secondary)")};
+  background: ${(props) => (props.isOverdue ? "rgba(239, 68, 68, 0.15)" : "var(--bg-primary)")};
   color: ${(props) => (props.isOverdue ? "var(--danger)" : "var(--text-muted)")};
 `;
 
@@ -319,7 +386,7 @@ const CardMemberList = styled.div`
   display: flex;
   align-items: center;
   margin-left: auto;
-  
+
   & > * {
     margin-left: -6px;
     &:first-child {
@@ -332,7 +399,7 @@ const CardMemberAvatar = styled.div`
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 1.5px solid white;
+  border: 1.5px solid var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -347,7 +414,7 @@ const CardMemberImage = styled.img`
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 1.5px solid white;
+  border: 1.5px solid var(--bg-secondary);
   object-fit: cover;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 `;
@@ -438,21 +505,6 @@ const AddInitialCardButton = styled.button`
     color: var(--text-main);
     border-color: #cbd5e1;
   }
-`;
-
-const ModalOverlay = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(8px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-  padding: 20px;
 `;
 
 const ModalContainer = styled(motion.div)`
@@ -614,7 +666,7 @@ const EmployeeCardsWrapper = styled.div`
   background-color: var(--bg-sidebar);
   padding: 1.25rem;
   border-radius: 16px;
-  width: 290px;
+  width: ${EMPLOYEE_CARDS_POPUP_WIDTH}px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: white;
@@ -690,6 +742,187 @@ const CalendarContainer = styled.div`
   }
 `;
 
+const Card = React.memo(function Card({
+  id,
+  index,
+  columnId,
+  text,
+  createdByName,
+  columnTitle,
+  openModal,
+  members = [],
+  trackerBaseUrl,
+  onRequestDelete,
+  enddate,
+}) {
+  const [, drag] = useDrag({
+    type: ItemType.CARD,
+    item: { id, index, columnId },
+  });
+
+  const overdue = enddate && isOverdue(enddate, columnId);
+
+  return (
+    <CardContainer ref={drag} accentColor={COLUMN_ACCENT_COLORS[columnId]}>
+      <CardRow>
+        <CardBody onClick={() => openModal(text, id, columnTitle)}>
+          <CardText>{text || "Untitled Task"}</CardText>
+          {createdByName && (
+            <CreatorInfo>
+              By {createdByName}
+            </CreatorInfo>
+          )}
+        </CardBody>
+        <RemoveButton onClick={() => onRequestDelete(id, columnId)}>
+          ×
+        </RemoveButton>
+      </CardRow>
+
+      {(enddate || members.length > 0) && (
+        <CardFooter>
+          {enddate && (
+            <DateBadge isOverdue={overdue}>
+              <FaRegCalendarAlt size={10} />
+              <span>{formatCardDate(enddate)}</span>
+            </DateBadge>
+          )}
+
+          <CardMemberList>
+            {members.slice(0, 3).map((member, idx) => (
+              <React.Fragment key={idx}>
+                {member.profilePicture ? (
+                  <CardMemberImage
+                    src={member.profilePicture.startsWith("http") || member.profilePicture.startsWith("data:") ? member.profilePicture : `${trackerBaseUrl}${member.profilePicture.startsWith("/") ? member.profilePicture.slice(1) : member.profilePicture}`}
+                    alt={member.employeeName}
+                    title={member.employeeName}
+                  />
+                ) : (
+                  <CardMemberAvatar
+                    bgColor={getBackgroundColor(member.employeeName)}
+                    title={member.employeeName}
+                  >
+                    {member.employeeName.charAt(0).toUpperCase()}
+                  </CardMemberAvatar>
+                )}
+              </React.Fragment>
+            ))}
+            {members.length > 3 && (
+              <CardMemberAvatar bgColor="#cbd5e1" title={`${members.length - 3} more`}>
+                +{members.length - 3}
+              </CardMemberAvatar>
+            )}
+          </CardMemberList>
+        </CardFooter>
+      )}
+    </CardContainer>
+  );
+});
+
+const Column = React.memo(function Column({
+  id,
+  title,
+  cards = [],
+  moveCard,
+  openModal,
+  addCard,
+  showAddCardButton = false,
+  cardMembers,
+  trackerBaseUrl,
+  onRequestDelete,
+}) {
+  const [, drop] = useDrop({
+    accept: ItemType.CARD,
+    hover: (item) => {
+      if (!item) return;
+      const { id: cardId, index: fromIndex, columnId: fromColumnId } = item;
+      const toIndex = cards.findIndex((card) => card.id === cardId);
+      if (fromColumnId === id) {
+        if (toIndex !== -1 && fromIndex !== toIndex) {
+          moveCard(fromIndex, id, toIndex, id);
+          item.index = toIndex;
+        }
+      } else {
+        const toIndex = cards.length;
+        moveCard(fromIndex, fromColumnId, toIndex, id);
+        item.columnId = id;
+      }
+    },
+  });
+  const [inputValue, setInputValue] = useState("");
+  const [isAddingCard, setIsAddingCard] = useState(false);
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+  };
+
+  const handleAddCard = () => {
+    if (inputValue.trim()) {
+      addCard(id, inputValue);
+      setInputValue("");
+      setIsAddingCard(false);
+    }
+  };
+
+  return (
+    <ColumnWrapper ref={drop}>
+      <ColumnHeader>
+        <ColumnTitle>{title}</ColumnTitle>
+        <CountBadge>{cards.length}</CountBadge>
+      </ColumnHeader>
+
+      <CardsList>
+        {cards.map((card, index) => (
+          <Card
+            key={card.cardId}
+            id={card.cardId}
+            index={index}
+            columnId={id}
+            text={card.cardName}
+            createdByName={card.created_by_name}
+            enddate={card.enddate}
+            columnTitle={title}
+            openModal={openModal}
+            members={cardMembers[card.cardId] || []}
+            trackerBaseUrl={trackerBaseUrl}
+            onRequestDelete={onRequestDelete}
+          />
+        ))}
+      </CardsList>
+
+      {showAddCardButton &&
+        (localStorage.getItem("role") === "Admin" ||
+          localStorage.getItem("role") === "HOD" ||
+          localStorage.getItem("role") === "Employee") && (
+          <AddCardContainer>
+            {isAddingCard ? (
+              <>
+                <AddCardInput
+                  placeholder="What needs to be done?"
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  autoFocus
+                />
+                <AddCardActions>
+                  <AddCardBtn onClick={handleAddCard}>
+                    Add Task
+                  </AddCardBtn>
+                  <AddCardCancelBtn onClick={() => setIsAddingCard(false)}>
+                    <FaTimes />
+                  </AddCardCancelBtn>
+                </AddCardActions>
+              </>
+            ) : (
+              <AddInitialCardButton onClick={() => setIsAddingCard(true)}>
+                <FaPlus size={12} />
+                <span>Add Task</span>
+              </AddInitialCardButton>
+            )}
+          </AddCardContainer>
+        )}
+    </ColumnWrapper>
+  );
+});
+
 const DragAndDropCards = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -718,180 +951,10 @@ const DragAndDropCards = () => {
 
   const localizer = momentLocalizer(moment);
 
-  const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, created_date, startdate, enddate }) => {
-    const [, drag] = useDrag({
-      type: ItemType.CARD,
-      item: { id, index, columnId },
-    });
-
-    const formatDate = (dateString) => {
-      if (!dateString) return "";
-      const date = new Date(dateString);
-      return date.toLocaleDateString(); 
-    };
-
-    const overdue = enddate && isOverdue(enddate, columnId);
-
-    return (
-      <CardContainer ref={drag}>
-        <CardRow>
-          <CardBody onClick={() => openModal(text, id)}>
-            <CardText>{text || "Untitled Task"}</CardText>
-            {createdByName && (
-              <CreatorInfo>
-                By {createdByName}
-              </CreatorInfo>
-            )}
-          </CardBody>
-          <RemoveButton onClick={() => {
-            setCardToDelete({ id, columnId });
-            setShowDeleteCardConfirm(true);
-          }}>
-            ×
-          </RemoveButton>
-        </CardRow>
-        
-        {(enddate || cardMembers[id]?.length > 0) && (
-          <CardFooter>
-            {enddate && (
-              <DateBadge isOverdue={overdue}>
-                <FaRegCalendarAlt size={10} />
-                <span>{formatDate(enddate)}</span>
-              </DateBadge>
-            )}
-            
-            <CardMemberList>
-              {cardMembers[id]?.slice(0, 3).map((member, idx) => (
-                <React.Fragment key={idx}>
-                  {member.profilePicture ? (
-                    <CardMemberImage
-                      src={member.profilePicture.startsWith("http") || member.profilePicture.startsWith("data:") ? member.profilePicture : `${Trackerbaseurl}${member.profilePicture.startsWith("/") ? member.profilePicture.slice(1) : member.profilePicture}`}
-                      alt={member.employeeName}
-                      title={member.employeeName}
-                    />
-                  ) : (
-                    <CardMemberAvatar
-                      bgColor={getBackgroundColor(member.employeeName)}
-                      title={member.employeeName}
-                    >
-                      {member.employeeName.charAt(0).toUpperCase()}
-                    </CardMemberAvatar>
-                  )}
-                </React.Fragment>
-              ))}
-              {cardMembers[id]?.length > 3 && (
-                <CardMemberAvatar bgColor="#cbd5e1" title={`${cardMembers[id].length - 3} more`}>
-                  +{cardMembers[id].length - 3}
-                </CardMemberAvatar>
-              )}
-            </CardMemberList>
-          </CardFooter>
-        )}
-      </CardContainer>
-    );
-  };
-  
-  const Column = ({
-    id,
-    title,
-    cards = [],
-    moveCard,
-    openModal,
-    addCard,
-    setColumns,
-    showAddCardButton = false,
-  }) => {
-    const [, drop] = useDrop({
-      accept: ItemType.CARD,
-      hover: (item) => {
-        if (!item) return;
-        const { id: cardId, index: fromIndex, columnId: fromColumnId } = item;
-        const toIndex = cards.findIndex((card) => card.id === cardId);
-        if (fromColumnId === id) {
-          if (toIndex !== -1 && fromIndex !== toIndex) {
-            moveCard(fromIndex, id, toIndex, id);
-            item.index = toIndex;
-          }
-        } else {
-          const toIndex = cards.length;
-          moveCard(fromIndex, fromColumnId, toIndex, id);
-          item.columnId = id;
-        }
-      },
-    });
-    const [inputValue, setInputValue] = useState("");
-    const [isAddingCard, setIsAddingCard] = useState(false);
-
-    const handleInputChange = (e) => {
-      setInputValue(e.target.value);
-    };
-
-    const handleAddCard = () => {
-      if (inputValue.trim()) {
-        addCard(id, inputValue);
-        setInputValue("");
-        setIsAddingCard(false);
-      }
-    };
-
-    return (
-      <ColumnWrapper ref={drop}>
-        <ColumnHeader>
-          <ColumnTitle>{title}</ColumnTitle>
-          <CountBadge>{cards.length}</CountBadge>
-        </ColumnHeader>
-        
-        <CardsList>
-          {cards.map((card, index) => (
-            <Card
-              key={card.cardId}
-              id={card.cardId}
-              index={index}
-              columnId={id}
-              text={card.cardName}
-              createdByName={card.created_by_name}
-              created_date={card.created_date}
-              startdate={card.startdate}
-              enddate={card.enddate}
-              moveCard={moveCard}
-              openModal={() => openModal(card.cardName, card.cardId, title)}
-            />
-          ))}
-        </CardsList>
-        
-        {showAddCardButton &&
-          (localStorage.getItem("role") === "Admin" ||
-            localStorage.getItem("role") === "HOD" ||
-            localStorage.getItem("role") === "Employee") && (
-            <AddCardContainer>
-              {isAddingCard ? (
-                <>
-                  <AddCardInput
-                    placeholder="What needs to be done?"
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    autoFocus
-                  />
-                  <AddCardActions>
-                    <AddCardBtn onClick={handleAddCard}>
-                      Add Task
-                    </AddCardBtn>
-                    <AddCardCancelBtn onClick={() => setIsAddingCard(false)}>
-                      <FaTimes />
-                    </AddCardCancelBtn>
-                  </AddCardActions>
-                </>
-              ) : (
-                <AddInitialCardButton onClick={() => setIsAddingCard(true)}>
-                  <FaPlus size={12} />
-                  <span>Add Task</span>
-                </AddInitialCardButton>
-              )}
-            </AddCardContainer>
-          )}
-      </ColumnWrapper>
-    );
-  };
+  const onRequestDeleteCard = useCallback((id, columnId) => {
+    setCardToDelete({ id, columnId });
+    setShowDeleteCardConfirm(true);
+  }, []);
 
   const closeModal = () => {
     setIsEditing(false);
@@ -1014,7 +1077,7 @@ const DragAndDropCards = () => {
     fetchCardsWithMembers(boardId);
   }, [boardId, userRole]);
 
-  const moveCard = async (fromIndex, fromColumnId, toIndex, toColumnId) => {
+  const moveCard = useCallback(async (fromIndex, fromColumnId, toIndex, toColumnId) => {
     const updatedColumns = { ...columns };
     if (!updatedColumns[fromColumnId] || !updatedColumns[toColumnId]) {
       console.error("Invalid column IDs:", fromColumnId, toColumnId);
@@ -1041,9 +1104,9 @@ const DragAndDropCards = () => {
     } catch (error) {
       console.error("Error updating card column:", error);
     }
-  };
+  }, [columns, boardId, Trackerbaseurl]);
 
-  const addCard = async (columnId, text) => {
+  const addCard = useCallback(async (columnId, text) => {
     const newCard = {
       cardName: text || `Task ${Date.now()}`,
       boardId,
@@ -1079,7 +1142,7 @@ const DragAndDropCards = () => {
     } catch (error) {
       console.error("Error saving card:", error);
     }
-  };
+  }, [columns, boardId, employeeId, employeeName, boardName, Trackerbaseurl]);
 
   useEffect(() => {
     if (cardAdded) {
@@ -1088,7 +1151,7 @@ const DragAndDropCards = () => {
     }
   }, [cardAdded]);
 
-  const openModal = (cardName, cardId, colTitle) => {
+  const openModal = useCallback((cardName, cardId, colTitle) => {
     const selectedCard = cards.find((card) => card.cardId === cardId);
 
     const defaultStartDate = selectedCard?.startdate || null;
@@ -1111,7 +1174,7 @@ const DragAndDropCards = () => {
     setEditedCardName(cardName || "");
     setIsModalOpen(true);
     setIsOpen(true);
-  };
+  }, [cards, boardId]);
 
   const handleRemoveCard = async (targetCardId, colId) => {
     const userRole = localStorage.getItem("role");
@@ -1175,19 +1238,6 @@ const DragAndDropCards = () => {
     }
   }, [cardId, boardId, cardName]);
 
-  const getBackgroundColor = (name) => {
-    const colors = [
-      "#818cf8", // Indigo
-      "#fb7185", // Rose
-      "#34d399", // Emerald
-      "#60a5fa", // Blue
-      "#a78bfa", // Purple
-      "#fbbf24", // Amber
-    ];
-    const index = name.charCodeAt(0) % colors.length;
-    return colors[index];
-  };
-
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employeeCards, setEmployeeCards] = useState([]);
   const [members1, setMembers1] = useState([]);
@@ -1245,25 +1295,6 @@ const DragAndDropCards = () => {
         console.error("Error fetching cards:", error);
         setSelectedEmployee(null);
       });
-  };
-
-  const isOverdue = (endDate, columnId) => {
-    if (columnId === "done") return false;
-
-    const today = new Date();
-    const todayDateOnly = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-
-    const endDateOnly = new Date(
-      endDate.getFullYear(),
-      endDate.getMonth(),
-      endDate.getDate()
-    );
-
-    return todayDateOnly > endDateOnly;
   };
 
   const handleInstantDateUpdate = (newStartDate, newEndDate) => {
@@ -1325,11 +1356,7 @@ const DragAndDropCards = () => {
                     title={member.employeeName}
                     onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect();
-                      const calculatedPosition = {
-                        top: rect.bottom + window.scrollY + 10,
-                        left: rect.left + window.scrollX,
-                      };
-                      fetchEmployeeCards(member, boardId, calculatedPosition);
+                      fetchEmployeeCards(member, boardId, getClampedPopupPosition(rect));
                     }}
                   >
                     <img
@@ -1416,7 +1443,9 @@ const DragAndDropCards = () => {
             moveCard={moveCard}
             openModal={openModal}
             addCard={addCard}
-            setColumns={setColumns}
+            cardMembers={cardMembers}
+            trackerBaseUrl={Trackerbaseurl}
+            onRequestDelete={onRequestDeleteCard}
             showAddCardButton={true}
           />
           <Column
@@ -1425,7 +1454,9 @@ const DragAndDropCards = () => {
             cards={columns.doing}
             moveCard={moveCard}
             openModal={openModal}
-            setColumns={setColumns}
+            cardMembers={cardMembers}
+            trackerBaseUrl={Trackerbaseurl}
+            onRequestDelete={onRequestDeleteCard}
           />
           <Column
             id="done"
@@ -1433,7 +1464,9 @@ const DragAndDropCards = () => {
             cards={columns.done}
             moveCard={moveCard}
             openModal={openModal}
-            setColumns={setColumns}
+            cardMembers={cardMembers}
+            trackerBaseUrl={Trackerbaseurl}
+            onRequestDelete={onRequestDeleteCard}
           />
           <Column
             id="hold"
@@ -1441,7 +1474,9 @@ const DragAndDropCards = () => {
             cards={columns.hold}
             moveCard={moveCard}
             openModal={openModal}
-            setColumns={setColumns}
+            cardMembers={cardMembers}
+            trackerBaseUrl={Trackerbaseurl}
+            onRequestDelete={onRequestDeleteCard}
           />
         </BoardGrid>
 
