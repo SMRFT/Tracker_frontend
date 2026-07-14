@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { VscAccount } from "react-icons/vsc";
 import { FiLogOut, FiKey, FiX } from "react-icons/fi";
 import { Tooltip } from "react-tooltip";
 import styled from "styled-components";
@@ -8,24 +7,22 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest";
 
-const SignOut = () => {
+const SignOut = ({ isCollapsed, isHeader }) => {
   const navigate = useNavigate();
   const [employeeName, setEmployeeName] = useState("");
   const [employeeId, setEmployeeId] = useState("");
+  const [role, setRole] = useState("");
   const [showSignOut, setShowSignOut] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
   useEffect(() => {
     const storedUserName = localStorage.getItem("employeeName");
     const storedEmployeeId = localStorage.getItem("employeeId");
-    console.log("Stored User Name:", storedUserName);
-    console.log("Stored Employee ID:", storedEmployeeId);
+    const storedRole = localStorage.getItem("role");
     setEmployeeName(storedUserName || "User");
     setEmployeeId(storedEmployeeId || "");
+    setRole(storedRole || "Member");
   }, []);
 
   useEffect(() => {
@@ -48,213 +45,240 @@ const SignOut = () => {
     window.location.href = "/login";
   };
 
-  const openChangePasswordModal = () => {
-    setShowModal(true);
-    setShowSignOut(false);
-  };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setError("");
-  };
-
-  const handleChangePassword = async () => {
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match!");
-      return;
-    }
-
-    try {
-      const response = await apiRequest(`${Trackerbaseurl}change-password/`, {
-        employeeId,
-        currentPassword,
-        newPassword,
-      });
-
-      if (response.status === 200) {
-        toast.success("Password updated successfully!", {
-          onClose: () => {
-            setTimeout(() => {
-              navigate("/");
-            }, 1000);
-          },
-        });
-        closeModal();
-      } else {
-        setError(response.data.error || "Something went wrong!");
-      }
-    } catch (error) {
-      setError(
-        error.response?.data?.error || "An error occurred. Please try again."
-      );
-    }
-  };
 
   const handleIconClick = () => {
     setShowSignOut(!showSignOut);
   };
 
   return (
-    <SignOutWrapper className="profile-menu-container">
-      <ProfileCircle onClick={handleIconClick} data-tooltip-id="accountTooltip">
-        {employeeName.charAt(0).toUpperCase()}
-      </ProfileCircle>
+    <SignOutWrapper className="profile-menu-container" isCollapsed={isCollapsed} isHeader={isHeader}>
+      <ProfileContainer onClick={handleIconClick} isCollapsed={isCollapsed} isHeader={isHeader} data-tooltip-id="accountTooltip">
+        <ProfileCircle>
+          {employeeName.charAt(0).toUpperCase()}
+        </ProfileCircle>
+        {!isCollapsed && !isHeader && (
+          <UserMeta>
+            <div className="name">{employeeName}</div>
+            <div className="role">{role}</div>
+          </UserMeta>
+        )}
+        {isHeader && (
+          <HeaderUserMeta>
+            <div className="name-row">
+              <span className="label">name : </span>
+              <span className="val">{employeeName}</span>
+            </div>
+            <div className="id-row">
+              <span className="label">id : </span>
+              <span className="val">{employeeId}</span>
+              < span style={{ marginRight: "10px" }}> </span>
+              
+              <UserRole>{role}</UserRole>
+            </div>
+            {/* <div className="role-row">
+              <span className="label">role : </span>
+              <span className="val">{role}</span>
+            </div> */}
+          </HeaderUserMeta>
+        )}
+      </ProfileContainer>
 
-      <Tooltip
-        id="accountTooltip"
-        place="top"
-        effect="solid"
-        className="custom-tooltip"
-      >
-        <TooltipContent>
-          <div>{employeeName}</div>
-          <div>{employeeId}</div>
-        </TooltipContent>
-      </Tooltip>
+      {(isCollapsed || isHeader) && (
+        <Tooltip
+          id="accountTooltip"
+          place={isHeader ? "bottom" : "right"}
+          className="custom-tooltip"
+        >
+          <TooltipContent>
+            <div>{employeeName}</div>
+            <div>{employeeId}</div>
+          </TooltipContent>
+        </Tooltip>
+      )}
 
       {showSignOut && (
-        <SignOutContainer>
+        <SignOutContainer isCollapsed={isCollapsed} isHeader={isHeader}>
           <UserInfo>
             <UserAvatar>{employeeName.charAt(0).toUpperCase()}</UserAvatar>
             <UserDetails>
               <UserName>{employeeName}</UserName>
               <UserID>{employeeId}</UserID>
+              <UserRole>{role}</UserRole>
             </UserDetails>
           </UserInfo>
 
-          <Divider />
-
-          <MenuButton onClick={openChangePasswordModal}>
-            <FiKey />
-            <span>Change Password</span>
-          </MenuButton>
-
-          <MenuButton onClick={handleSignOut}>
+          <MenuButton onClick={() => setShowLogoutConfirm(true)}>
             <FiLogOut />
             <span>Sign Out</span>
           </MenuButton>
         </SignOutContainer>
       )}
 
-      {showModal && (
-        <ModalOverlay>
-          <ModalWrapper>
+      {showLogoutConfirm && (
+        <ModalOverlay onClick={() => setShowLogoutConfirm(false)}>
+          <ModalWrapper onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
-              <h3>Change Password</h3>
-              <CloseButton onClick={closeModal}>
+              <h3>Confirm Log Out</h3>
+              <CloseButton onClick={() => setShowLogoutConfirm(false)}>
                 <FiX />
               </CloseButton>
             </ModalHeader>
-
-            {error && <ErrorMessage>{error}</ErrorMessage>}
-
-            <FormGroup>
-              <Label>Current Password</Label>
-              <Input
-                type="password"
-                placeholder="Enter your current password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label>New Password</Label>
-              <Input
-                type="password"
-                placeholder="Enter new password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Confirm Password</Label>
-              <Input
-                type="password"
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </FormGroup>
-
+            <div style={{ color: "#64748b", fontSize: "0.95rem", margin: "8px 0 20px 0", lineHeight: 1.5 }}>
+              Are you sure you want to log out of Shinova Tracker?
+            </div>
             <ButtonGroup>
-              <CancelButton onClick={closeModal}>Cancel</CancelButton>
-              <UpdateButton onClick={handleChangePassword}>
-                Update Password
+              <CancelButton onClick={() => setShowLogoutConfirm(false)}>Cancel</CancelButton>
+              <UpdateButton style={{ background: "#ef4444" }} onClick={handleSignOut}>
+                Log Out
               </UpdateButton>
             </ButtonGroup>
           </ModalWrapper>
         </ModalOverlay>
       )}
+
+
     </SignOutWrapper>
   );
 };
 
-// Styled components with modern UI
+// Styled components
 const SignOutWrapper = styled.div`
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  z-index: 1000;
+  position: relative;
+  width: ${(props) => (props.isHeader ? "auto" : "100%")};
+  margin-top: ${(props) => (props.isHeader ? "0" : "8px")};
+`;
+
+const ProfileContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: ${(props) => (props.isHeader ? "2px" : "8px")};
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  justify-content: ${(props) => (props.isCollapsed ? "center" : "flex-start")};
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
 `;
 
 const ProfileCircle = styled.div`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(5px);
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: white;
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  flex-shrink: 0;
+`;
 
-  &:hover {
-    transform: scale(1.05);
-    background: rgba(255, 255, 255, 0.3);
+const UserMeta = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  .name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .role {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 `;
 
+const HeaderUserMeta = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-family: 'Inter', sans-serif;
+  text-align: left;
+
+  .name-row, .id-row, .role-row {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+
+  .label {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .val {
+    font-weight: 600;
+    color: var(--text-main);
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const RoleBadge = styled.span`
+  display: inline-block;
+  margin-top: 3px;
+  padding: 1px 8px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+  color: var(--primary-accent);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+`;
+
 const TooltipContent = styled.div`
-  padding: 8px 12px;
-  font-size: 14px;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1.4;
 
   & > div:first-child {
     font-weight: 600;
-    margin-bottom: 4px;
   }
 
   & > div:last-child {
-    opacity: 0.8;
-    font-size: 12px;
+    opacity: 0.7;
   }
 `;
 
 const SignOutContainer = styled.div`
   position: absolute;
-  bottom: 50px;
-  left: 0;
-  background-color: white;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  top: ${(props) => (props.isHeader ? "52px" : "auto")};
+  bottom: ${(props) => (props.isHeader ? "auto" : "60px")};
+  right: ${(props) => (props.isHeader ? "0" : "auto")};
+  left: ${(props) => (props.isHeader ? "auto" : props.isCollapsed ? "10px" : "0")};
+  background-color: #ffffff;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
   border-radius: 12px;
   padding: 16px;
   width: 240px;
-  z-index: 1001;
+  z-index: 2200;
   animation: fadeIn 0.2s ease-in-out;
+  border: 1px solid #f1f5f9;
 
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(${(props) => (props.isHeader ? "-10px" : "10px")});
     }
     to {
       opacity: 1;
@@ -266,45 +290,63 @@ const SignOutContainer = styled.div`
 const UserInfo = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 `;
 
 const UserAvatar = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: white;
   margin-right: 12px;
 `;
 
 const UserDetails = styled.div`
   flex: 1;
+  min-width: 0;
 `;
 
 const UserName = styled.div`
   font-weight: 600;
-  font-size: 14px;
-  color: #333;
+  font-size: 0.9rem;
+  color: #0f172a;
   margin-bottom: 2px;
-`;
-
-const UserID = styled.div`
-  font-size: 12px;
-  color: #666;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 `;
 
+const UserID = styled.div`
+  font-size: 0.75rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const UserRole = styled.div`
+  display: inline-block;
+  margin-top: 5px;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+  color: var(--primary-accent);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+`;
+
 const Divider = styled.div`
   height: 1px;
-  background-color: #eee;
+  background-color: #f1f5f9;
   margin: 12px 0;
 `;
 
@@ -315,22 +357,24 @@ const MenuButton = styled.button`
   padding: 10px 12px;
   border: none;
   background-color: transparent;
-  color: #333;
-  font-size: 14px;
+  color: #334155;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   border-radius: 8px;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   text-align: left;
   margin-bottom: 4px;
+  gap: 12px;
 
   &:hover {
-    background-color: #f5f5f5;
+    background-color: #f1f5f9;
+    color: #0f172a;
   }
 
   svg {
-    margin-right: 12px;
-    font-size: 18px;
-    color: #666;
+    font-size: 1.1rem;
+    color: #64748b;
   }
 `;
 
@@ -338,35 +382,25 @@ const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1002;
+  z-index: 3000;
   animation: fadeIn 0.2s ease-in-out;
 `;
 
 const ModalWrapper = styled.div`
   background-color: white;
-  border-radius: 12px;
-  width: 380px;
+  border-radius: 16px;
+  width: 400px;
   max-width: 90%;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   padding: 24px;
   animation: slideIn 0.3s ease-out;
-
-  @keyframes slideIn {
-    from {
-      transform: translateY(-30px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
 `;
 
 const ModalHeader = styled.div`
@@ -377,25 +411,28 @@ const ModalHeader = styled.div`
 
   h3 {
     margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1f2937;
   }
 `;
 
 const CloseButton = styled.button`
-  background: none;
+  background: #f3f4f6;
   border: none;
-  font-size: 20px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   cursor: pointer;
-  color: #666;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  color: #4b5563;
+  transition: all 0.2s;
 
   &:hover {
-    color: #333;
+    background: #e5e7eb;
+    color: #111827;
   }
 `;
 
@@ -406,27 +443,23 @@ const FormGroup = styled.div`
 const Label = styled.label`
   display: block;
   margin-bottom: 6px;
-  font-size: 14px;
-  color: #555;
-  font-weight: 500;
+  font-size: 0.85rem;
+  color: #4b5563;
+  font-weight: 600;
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #ddd;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  font-size: 0.9rem;
+  transition: all 0.2s;
 
   &:focus {
     outline: none;
-    border-color: #2575fc;
-    box-shadow: 0 0 0 2px rgba(37, 117, 252, 0.2);
-  }
-
-  &::placeholder {
-    color: #aaa;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   }
 `;
 
@@ -438,56 +471,44 @@ const ButtonGroup = styled.div`
 `;
 
 const Button = styled.button`
-  padding: 10px 16px;
+  padding: 10px 18px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-
-  &:hover {
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(1px);
-  }
 `;
 
 const CancelButton = styled(Button)`
   background-color: transparent;
-  border: 1px solid #ddd;
-  color: #666;
+  border: 1px solid #d1d5db;
+  color: #4b5563;
 
   &:hover {
-    background-color: #f5f5f5;
+    background-color: #f3f4f6;
   }
 `;
 
 const UpdateButton = styled(Button)`
-  background: linear-gradient(135deg, #4776e6 0%, #8e54e9 100%);
+  background: #6366f1;
   border: none;
   color: white;
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(71, 118, 230, 0.3);
+    background: #4f46e5;
   }
 `;
 
 const ErrorMessage = styled.div`
-  color: #e74c3c;
-  font-size: 14px;
-  padding: 12px;
-  background-color: rgba(231, 76, 60, 0.1);
+  color: #ef4444;
+  font-size: 0.85rem;
+  padding: 10px 14px;
+  background-color: #fef2f2;
   border-radius: 8px;
   margin-bottom: 16px;
   display: flex;
   align-items: center;
-
-  &::before {
-    content: "⚠️";
-    margin-right: 8px;
-  }
+  gap: 8px;
 `;
 
 export default SignOut;

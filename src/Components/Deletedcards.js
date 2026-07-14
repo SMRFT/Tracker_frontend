@@ -4,7 +4,7 @@ import apiRequest from "./apiRequest";
 
 const Container = styled.div`
   padding: 40px;
-  background: linear-gradient(135deg, hsla(0, 0%, 99%, 1.00) 0%, rgba(241, 241, 241, 1) 100%);
+  background: var(--bg-primary);
   min-height: 100vh;
 `;
 
@@ -19,7 +19,7 @@ const Header = styled.div`
 `;
 
 const Title = styled.h1`
-  color: black;
+  color: var(--text-main);
   font-size: 2.5rem;
   font-weight: 700;
   margin: 0 0 10px 0;
@@ -30,18 +30,18 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-  color: rgba(19, 17, 17, 0.8);
+  color: var(--text-muted);
   font-size: 1.1rem;
   margin: 0;
 `;
 
 const FilterCard = styled.div`
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 16px;
   padding: 30px;
   margin-bottom: 30px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(252, 145, 151, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
 `;
 
 const FilterRow = styled.div`
@@ -52,6 +52,76 @@ const FilterRow = styled.div`
   flex-wrap: wrap;
 `;
 
+// Multi-select board filter
+const BoardFilterWrapper = styled.div`
+  position: relative;
+  min-width: 180px;
+`;
+
+const BoardFilterButton = styled.button`
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-main);
+  font-size: 0.95rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+`;
+
+const BoardDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 200;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px 0;
+
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
+`;
+
+const BoardOption = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--primary-accent);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+`;
+
 const FilterGroup = styled.div`
   display: flex;
   flex-direction: column;
@@ -60,7 +130,7 @@ const FilterGroup = styled.div`
 
 const FilterLabel = styled.label`
   font-weight: 600;
-  color: #333;
+  color: var(--text-main);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -68,19 +138,20 @@ const FilterLabel = styled.label`
 
 const DateInput = styled.input`
   padding: 12px 16px;
-  border: 2px solid #e0e0e0;
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   font-size: 0.95rem;
   font-family: inherit;
   transition: all 0.3s ease;
   min-width: 180px;
-  background: #f8f9ff;
+  background: var(--bg-primary);
+  color: var(--text-main);
   
   &:focus {
     outline: none;
-    border-color: #fc9197ff;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(252, 145, 151, 0.1);
+    border-color: var(--primary-accent);
+    background: var(--bg-secondary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   }
   
   &::-webkit-calendar-picker-indicator {
@@ -91,7 +162,7 @@ const DateInput = styled.input`
 
 const FilterButton = styled.button`
   padding: 12px 32px;
-  background: linear-gradient(135deg, #ef777dff 0%, #ff6363ff 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -99,11 +170,11 @@ const FilterButton = styled.button`
   font-weight: 600;
   font-size: 0.95rem;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(254, 119, 119, 0.3);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(250, 110, 110, 0.4);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
   }
   
   &:active {
@@ -113,9 +184,9 @@ const FilterButton = styled.button`
 
 const ResetButton = styled.button`
   padding: 12px 32px;
-  background: white;
-  color: #ff6363ff;
-  border: 2px solid #ff6363ff;
+  background: var(--bg-secondary);
+  color: var(--primary-accent);
+  border: 2px solid var(--primary-accent);
   border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
@@ -123,7 +194,7 @@ const ResetButton = styled.button`
   transition: all 0.3s ease;
   
   &:hover {
-    background: #fff0f0;
+    background: rgba(99, 102, 241, 0.1);
     transform: translateY(-2px);
   }
   
@@ -136,20 +207,21 @@ const ResultCount = styled.div`
   text-align: center;
   margin-bottom: 20px;
   font-size: 1rem;
-  color: #666;
+  color: var(--text-muted);
   font-weight: 500;
   
   span {
-    color: #ff6363ff;
+    color: var(--primary-accent);
     font-weight: 700;
     font-size: 1.2rem;
   }
 `;
 
 const TableCard = styled.div`
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border-subtle);
   overflow: hidden;
 `;
 
@@ -161,11 +233,11 @@ const TableWrapper = styled.div`
   }
   
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--bg-primary);
   }
   
   &::-webkit-scrollbar-thumb {
-    background: #888;
+    background: var(--border-subtle);
     border-radius: 4px;
   }
 `;
@@ -177,14 +249,14 @@ const Table = styled.table`
 `;
 
 const TableHead = styled.thead`
-  background: linear-gradient(135deg, #ff8086ff 0%, rgba(249, 100, 100, 1) 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
 `;
 
 const TableRow = styled.tr`
   transition: all 0.3s ease;
   
   &:hover {
-    background: #f8f9ff;
+    background: rgba(99, 102, 241, 0.1);
     transform: scale(1.01);
   }
 `;
@@ -192,24 +264,24 @@ const TableRow = styled.tr`
 const TableHeader = styled.th`
   padding: 20px 16px;
   text-align: left;
-  color: black;
+  color: white;
   font-weight: 600;
   font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #fcb1b5ff 0%, #fc9292ff 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
 `;
 
 const TableCell = styled.td`
   padding: 20px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  color: #333;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-main);
   font-size: 0.95rem;
 `;
 
 const ViewButton = styled.button`
   padding: 10px 24px;
-  background: linear-gradient(135deg, #ef777dff 0%, #ff6363ff 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
   color: white;
   border: none;
   border-radius: 25px;
@@ -217,11 +289,33 @@ const ViewButton = styled.button`
   font-weight: 600;
   font-size: 0.9rem;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(254, 119, 119, 0.88);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(250, 110, 110, 0.97);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const RestoreButton = styled.button`
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
   }
   
   &:active {
@@ -253,15 +347,16 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background: white;
+  background: var(--bg-secondary);
   padding: 0;
   border-radius: 20px;
   max-width: 800px;
   width: 90%;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease;
+  border: 1px solid var(--border-subtle);
   
   @keyframes slideUp {
     from {
@@ -279,17 +374,17 @@ const ModalContent = styled.div`
   }
   
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--bg-primary);
   }
   
   &::-webkit-scrollbar-thumb {
-    background: #888;
+    background: var(--border-subtle);
     border-radius: 4px;
   }
 `;
 
 const ModalHeader = styled.div`
-  background: linear-gradient(135deg, #fc9197ff 0%, #fa6a6dff 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   padding: 30px;
   display: flex;
   justify-content: space-between;
@@ -318,7 +413,7 @@ const CloseButton = styled.button`
   
   &:hover {
     background: white;
-    color: #fd777eff;
+    color: #4f46e5;
   }
 `;
 
@@ -332,7 +427,7 @@ const DetailSection = styled.div`
 
 const DetailLabel = styled.div`
   font-weight: 600;
-  color: #f57178ff;
+  color: var(--primary-accent);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -340,57 +435,61 @@ const DetailLabel = styled.div`
 `;
 
 const DetailValue = styled.div`
-  color: #333;
+  color: var(--text-main);
   font-size: 1rem;
   line-height: 1.6;
   padding: 12px;
-  background: #f8f9ff;
+  background: var(--bg-primary);
   border-radius: 8px;
-  border-left: 4px solid #fc7178ff;
+  border-left: 4px solid var(--primary-accent);
+  border-top: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
 `;
 
 const MemberCard = styled.div`
   padding: 16px;
-  background: linear-gradient(135deg, #f8f9ff 0%, #e9ecff 100%);
+  background: var(--bg-primary);
   border-radius: 12px;
   margin-bottom: 12px;
-  border: 1px solid #e0e5ff;
+  border: 1px solid var(--border-subtle);
   transition: all 0.3s ease;
   
   &:hover {
     transform: translateX(5px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
   }
 `;
 
 const MemberName = styled.div`
   font-weight: 600;
-  color: #333;
+  color: var(--text-main);
   font-size: 1rem;
   margin-bottom: 4px;
 `;
 
 const MemberInfo = styled.div`
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-muted);
 `;
 
 const CommentCard = styled.div`
   padding: 16px;
-  background: #fff8f0;
+  background: var(--bg-primary);
   border-radius: 12px;
   margin-bottom: 12px;
+  border: 1px solid var(--border-subtle);
   border-left: 4px solid #ff9800;
   transition: all 0.3s ease;
   
   &:hover {
-    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.15);
   }
 `;
 
 const CommentHeader = styled.div`
   font-weight: 600;
-  color: #333;
+  color: var(--text-main);
   margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
@@ -398,20 +497,20 @@ const CommentHeader = styled.div`
 `;
 
 const CommentText = styled.div`
-  color: #555;
+  color: var(--text-main);
   margin: 10px 0;
   line-height: 1.6;
 `;
 
 const CommentDate = styled.div`
   font-size: 0.85rem;
-  color: #999;
+  color: var(--text-muted);
 `;
 
 const Badge = styled.span`
   display: inline-block;
   padding: 6px 14px;
-  background: ${props => props.color || '#f87373ff'};
+  background: ${props => props.color || 'var(--primary-accent)'};
   color: white;
   border-radius: 20px;
   font-size: 0.85rem;
@@ -424,14 +523,14 @@ const LoadingContainer = styled.div`
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  color: #333;
+  color: var(--text-main);
   font-size: 1.2rem;
 `;
 
 const EmptyState = styled.div`
   text-align: center;
   padding: 60px 20px;
-  color: #666;
+  color: var(--text-muted);
   
   svg {
     width: 120px;
@@ -443,12 +542,101 @@ const EmptyState = styled.div`
   h3 {
     font-size: 1.5rem;
     margin: 0 0 10px 0;
-    color: #333;
+    color: var(--text-main);
   }
   
   p {
     font-size: 1.1rem;
     opacity: 0.8;
+  }
+`;
+
+const ConfirmModalContainer = styled.div`
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  width: 100%;
+  max-width: 400px;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 2100;
+  animation: slideUp 0.3s ease;
+`;
+
+const ConfirmModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+`;
+
+const ConfirmCloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 600;
+  
+  &:hover {
+    color: var(--text-main);
+  }
+`;
+
+const ConfirmModalBody = styled.div`
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+`;
+
+const ConfirmButtonGroup = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+`;
+
+const ConfirmCancelButton = styled.button`
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: var(--bg-primary);
+    color: var(--text-main);
+  }
+`;
+
+const ConfirmRestoreButton = styled.button`
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+
+  &:hover {
+    background: #059669;
+    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3);
   }
 `;
 
@@ -458,7 +646,11 @@ export default function DeletedCards() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [cardToRestore, setCardToRestore] = useState(null);
   const [filteredCards, setFilteredCards] = useState([]);
+  const [selectedBoards, setSelectedBoards] = useState([]);
+  const [boardDropdownOpen, setBoardDropdownOpen] = useState(false);
 
   useEffect(() => {
     loadDeletedCards();
@@ -498,6 +690,33 @@ export default function DeletedCards() {
     }
   };
 
+  const triggerRestore = (cardId) => {
+    setCardToRestore(cardId);
+    setShowRestoreConfirm(true);
+  };
+
+  const confirmRestore = async () => {
+    if (!cardToRestore) return;
+    try {
+      const url = `${process.env.REACT_APP_BACKEND_TRACKER_BASE_URL}cards/${cardToRestore}/restore/`;
+      const response = await apiRequest(url, "POST", {});
+
+      if (response.success) {
+        alert("Card restored successfully!");
+        setSelectedCard(null);
+        loadDeletedCards();
+      } else {
+        alert(response.error || "Failed to restore card.");
+      }
+    } catch (error) {
+      console.error("Error restoring card:", error);
+      alert("An error occurred while restoring the card.");
+    } finally {
+      setShowRestoreConfirm(false);
+      setCardToRestore(null);
+    }
+  };
+
   const applyFilter = () => {
     if (!fromDate || !toDate) {
       alert("Please select both From and To dates");
@@ -515,19 +734,43 @@ export default function DeletedCards() {
       return;
     }
 
-    const filtered = deletedCards.filter((card) => {
+    let filtered = deletedCards.filter((card) => {
       if (!card.lastmodified_date) return false;
       const deletedDate = new Date(card.lastmodified_date);
       return deletedDate >= from && deletedDate <= to;
     });
+
+    if (selectedBoards.length > 0) {
+      filtered = filtered.filter((card) =>
+        selectedBoards.includes(card.boardName)
+      );
+    }
 
     setFilteredCards(filtered);
   };
 
   const resetFilter = () => {
     setDefaultDates();
+    setSelectedBoards([]);
     setFilteredCards(deletedCards);
   };
+
+  const uniqueBoards = [...new Set(deletedCards.map((c) => c.boardName).filter(Boolean))];
+
+  const toggleBoard = (boardName) => {
+    setSelectedBoards((prev) =>
+      prev.includes(boardName)
+        ? prev.filter((b) => b !== boardName)
+        : [...prev, boardName]
+    );
+  };
+
+  const boardFilterLabel =
+    selectedBoards.length === 0
+      ? "All Boards"
+      : selectedBoards.length === 1
+      ? selectedBoards[0]
+      : `${selectedBoards.length} Boards`;
 
   useEffect(() => {
     if (deletedCards.length > 0 && fromDate && toDate) {
@@ -586,6 +829,42 @@ export default function DeletedCards() {
               />
             </FilterGroup>
 
+            {/* Board multi-select */}
+            <FilterGroup>
+              <FilterLabel>🏢 Board</FilterLabel>
+              <BoardFilterWrapper>
+                <BoardFilterButton
+                  onClick={() => setBoardDropdownOpen((o) => !o)}
+                  title="Filter by Board"
+                >
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {boardFilterLabel}
+                  </span>
+                  <span style={{ marginLeft: 6, flexShrink: 0 }}>{boardDropdownOpen ? "▲" : "▼"}</span>
+                </BoardFilterButton>
+                {boardDropdownOpen && (
+                  <BoardDropdown>
+                    {uniqueBoards.length === 0 ? (
+                      <BoardOption style={{ color: "var(--text-muted)", cursor: "default" }}>
+                        No boards available
+                      </BoardOption>
+                    ) : (
+                      uniqueBoards.map((board) => (
+                        <BoardOption key={board}>
+                          <input
+                            type="checkbox"
+                            checked={selectedBoards.includes(board)}
+                            onChange={() => toggleBoard(board)}
+                          />
+                          {board}
+                        </BoardOption>
+                      ))
+                    )}
+                  </BoardDropdown>
+                )}
+              </BoardFilterWrapper>
+            </FilterGroup>
+
             <FilterButton onClick={applyFilter}>
               Apply Filter
             </FilterButton>
@@ -634,9 +913,14 @@ export default function DeletedCards() {
                       <TableCell>{card.lastmodified_by_name || "Unknown"}</TableCell>
                       <TableCell>{formatDate(card.lastmodified_date)}</TableCell>
                       <TableCell>
-                        <ViewButton onClick={() => setSelectedCard(card)}>
-                          View Details
-                        </ViewButton>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <ViewButton onClick={() => setSelectedCard(card)}>
+                            View Details
+                          </ViewButton>
+                          <RestoreButton onClick={() => triggerRestore(card.cardId)}>
+                            Restore
+                          </RestoreButton>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -651,9 +935,14 @@ export default function DeletedCards() {
             <ModalContent onClick={(e) => e.stopPropagation()}>
               <ModalHeader>
                 <ModalTitle>{selectedCard.cardName}</ModalTitle>
-                <CloseButton onClick={() => setSelectedCard(null)}>
-                  Close
-                </CloseButton>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <RestoreButton onClick={() => triggerRestore(selectedCard.cardId)}>
+                    Restore Card
+                  </RestoreButton>
+                  <CloseButton onClick={() => setSelectedCard(null)}>
+                    Close
+                  </CloseButton>
+                </div>
               </ModalHeader>
 
               <ModalBody>
@@ -734,6 +1023,29 @@ export default function DeletedCards() {
                 )}
               </ModalBody>
             </ModalContent>
+          </ModalOverlay>
+        )}
+        {showRestoreConfirm && (
+          <ModalOverlay onClick={() => setShowRestoreConfirm(false)}>
+            <ConfirmModalContainer onClick={(e) => e.stopPropagation()}>
+              <ConfirmModalHeader>
+                <h3>Restore Task</h3>
+                <ConfirmCloseButton onClick={() => setShowRestoreConfirm(false)}>
+                  Close
+                </ConfirmCloseButton>
+              </ConfirmModalHeader>
+              <ConfirmModalBody>
+                Are you sure you want to restore/revert this deleted card back to its active board column?
+              </ConfirmModalBody>
+              <ConfirmButtonGroup>
+                <ConfirmCancelButton onClick={() => setShowRestoreConfirm(false)}>
+                  Cancel
+                </ConfirmCancelButton>
+                <ConfirmRestoreButton onClick={confirmRestore}>
+                  Restore
+                </ConfirmRestoreButton>
+              </ConfirmButtonGroup>
+            </ConfirmModalContainer>
           </ModalOverlay>
         )}
       </ContentWrapper>

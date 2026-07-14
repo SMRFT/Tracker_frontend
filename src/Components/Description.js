@@ -19,15 +19,15 @@ import apiRequest from "./apiRequest";
 const colors = {
   primary: "#4361ee",
   primaryHover: "#3a56d4",
-  background: "#f8f9fa",
-  cardBackground: "#ffffff",
-  text: "#2b2d42",
-  lightText: "#6c757d",
-  border: "#e9ecef",
+  background: "var(--bg-primary)",
+  cardBackground: "var(--bg-secondary)",
+  text: "var(--text-main)",
+  lightText: "var(--text-muted)",
+  border: "var(--border-subtle)",
   success: "#2ecc71",
   danger: "#e74c3c",
   warning: "#f39c12",
-  inputBg: "#f1f3f5",
+  inputBg: "var(--bg-primary)",
 };
 
 // Container Components
