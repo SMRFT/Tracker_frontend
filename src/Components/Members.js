@@ -23,15 +23,41 @@ const THEME = {
 // --- STYLED COMPONENTS ---
 
 const PageContainer = styled.div`
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background-color: ${THEME.bg};
   padding: 2rem;
   font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  display: flex;
+  flex-direction: column;
 `;
 
 const ContentWrapper = styled(motion.div)`
   max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+`;
+
+const ScrollArea = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 1.5rem;
+  margin: 0 -0.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 99px;
+  }
 `;
 
 const Header = styled.header`
@@ -41,6 +67,7 @@ const Header = styled.header`
   margin-bottom: 2.5rem;
   flex-wrap: wrap;
   gap: 1.5rem;
+  flex-shrink: 0;
 `;
 
 const TitleGroup = styled.div`
@@ -164,6 +191,7 @@ const StatsGrid = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+  flex-shrink: 0;
 `;
 
 const StatCard = styled(motion.div)`
@@ -661,28 +689,30 @@ const Members = () => {
           </StatCard>
         </StatsGrid>
 
-        <AnimatePresence mode="wait">
-          {isLoading ? (
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              style={{ textAlign: "center", padding: "4rem", color: THEME.primaryColor }}
-            >
-              Loading...
-            </motion.div>
-          ) : filteredEmployees.length > 0 ? (
-            <motion.div key="content">
-              {viewType === "table" ? renderTableView() : renderGridView()}
-              {totalPages > 1 && renderPagination()}
-            </motion.div>
-          ) : (
-            <EmptyState>
-              <FiUser size={64} style={{ color: "#cbd5e1", marginBottom: "1rem" }} />
-              <h3>No members found</h3>
-              <p>Try adjusting your search or add a new member to the team.</p>
-            </EmptyState>
-          )}
-        </AnimatePresence>
+        <ScrollArea>
+          <AnimatePresence mode="wait">
+            {isLoading ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{ textAlign: "center", padding: "4rem", color: THEME.primaryColor }}
+              >
+                Loading...
+              </motion.div>
+            ) : filteredEmployees.length > 0 ? (
+              <motion.div key="content">
+                {viewType === "table" ? renderTableView() : renderGridView()}
+                {totalPages > 1 && renderPagination()}
+              </motion.div>
+            ) : (
+              <EmptyState>
+                <FiUser size={64} style={{ color: "#cbd5e1", marginBottom: "1rem" }} />
+                <h3>No members found</h3>
+                <p>Try adjusting your search or add a new member to the team.</p>
+              </EmptyState>
+            )}
+          </AnimatePresence>
+        </ScrollArea>
       </ContentWrapper>
     </PageContainer>
   );

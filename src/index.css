@@ -81,3 +81,60 @@ code {
   background: var(--primary-accent) !important;
 }
 
+/* Dark mode overrides for react-datepicker (used for card/task date selection) */
+body.dark .react-datepicker {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-subtle);
+  color: var(--text-main);
+}
+
+body.dark .react-datepicker__header {
+  background-color: var(--bg-primary);
+  border-bottom-color: var(--border-subtle);
+}
+
+body.dark .react-datepicker__current-month,
+body.dark .react-datepicker__day-name,
+body.dark .react-datepicker-time__header {
+  color: var(--text-main);
+}
+
+body.dark .react-datepicker__day {
+  color: var(--text-main);
+}
+
+body.dark .react-datepicker__day:hover {
+  background-color: var(--border-subtle);
+}
+
+body.dark .react-datepicker__day--selected,
+body.dark .react-datepicker__day--keyboard-selected,
+body.dark .react-datepicker__day--in-selecting-range,
+body.dark .react-datepicker__day--in-range {
+  background-color: var(--primary-accent);
+  color: #ffffff;
+}
+
+body.dark .react-datepicker__day--disabled {
+  color: var(--text-light);
+}
+
+body.dark .react-datepicker__day--outside-month {
+  color: var(--text-muted);
+}
+
+body.dark .react-datepicker__triangle::before,
+body.dark .react-datepicker__triangle::after {
+  border-bottom-color: var(--bg-primary) !important;
+}
+
+body.dark .react-datepicker__navigation-icon::before {
+  border-color: var(--text-muted);
+}
+
+body.dark .react-datepicker__input-container input {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  border-color: var(--border-subtle);
+}
+

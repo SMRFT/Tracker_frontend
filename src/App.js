@@ -12,9 +12,10 @@ import Todolist from "./Components/Todolist";
 import Sidebar from "./Components/Sidebar";
 import SignOut from "./Components/SignOut";
 import Notification from "./Components/Notification";
-import { FiLogOut, FiX, FiSun, FiMoon } from "react-icons/fi";
+import { FiX, FiSun, FiMoon, FiLogOut } from "react-icons/fi";
 import Members from "./Components/Members";
 import styled from "styled-components";
+import logo from "./Components/Images/logo.png";
 import "./App.css";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./Components/apiRequest";
@@ -29,14 +30,16 @@ import FinishedTask from "./Components/FinishedTask";
 import Deletedcards from "./Components/Deletedcards";
 
 const Trackerbaseurl =
-  process.env.REACT_APP_BACKEND_TRACKER_BASE_URL ;
+  process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
+export const HEADER_HEIGHT = 60;
 
 const ContentContainer = styled.div`
-  margin-left: ${({ sidebarVisible, isCollapsed }) => 
+  margin-left: ${({ sidebarVisible, isCollapsed }) =>
     sidebarVisible ? (isCollapsed ? "72px" : "270px") : "0"};
-  margin-top: 0px;
+  margin-top: ${HEADER_HEIGHT}px;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 100vh;
+  min-height: calc(100vh - ${HEADER_HEIGHT}px);
   background-color: var(--bg-primary);
   @media (max-width: 768px) {
     margin-left: 0;
@@ -50,21 +53,43 @@ const HeaderContainer = styled.header`
   padding: 0 24px;
   background-color: var(--bg-primary);
   color: var(--text-main);
-  height: 60px;
+  height: ${HEADER_HEIGHT}px;
   border-bottom: 1px solid var(--border-subtle);
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 1000;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1050;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+
+  @media (max-width: 768px) {
+    padding: 0 12px;
+  }
 `;
 
 const HeaderLeft = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+  white-space: nowrap;
+  min-width: 0;
 
   @media (max-width: 768px) {
-    padding-left: 56px;
+    padding-left: 52px;
+    gap: 8px;
+  }
+`;
+
+const HeaderLogo = styled.img`
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    width: 28px;
+    height: 28px;
   }
 `;
 
@@ -78,12 +103,26 @@ const HeaderTitle = styled.h1`
   background: linear-gradient(135deg, var(--text-main) 0%, var(--text-muted) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const HeaderRight = styled.div`
   display: flex;
   align-items: center;
   gap: 20px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    gap: 6px;
+  }
 `;
 
 const LogOutButton = styled.button`
@@ -98,11 +137,18 @@ const LogOutButton = styled.button`
   width: 40px;
   height: 40px;
   border-radius: 10px;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 
   &:hover {
     color: #ef4444;
     background: rgba(239, 68, 68, 0.1);
+  }
+
+  @media (max-width: 768px) {
+    width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
   }
 `;
 
@@ -118,13 +164,21 @@ const ThemeToggleBtn = styled.button`
   width: 40px;
   height: 40px;
   border-radius: 10px;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 
   &:hover {
     color: var(--primary-accent);
     background: rgba(99, 102, 241, 0.1);
   }
+
+  @media (max-width: 768px) {
+    width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
+  }
 `;
+
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -232,7 +286,7 @@ const ConfirmLogoutButton = styled.button`
   }
 `;
 
-const AppContent = ({ boards, addBoard }) => {
+const AppContent = ({ boards, addBoard, refreshBoards, boardsLoading }) => {
   const location = useLocation();
   const sidebarVisible = !["/Register"].includes(location.pathname);
   const [hasAdminPrivileges, setHasAdminPrivileges] = useState(false);
@@ -262,7 +316,7 @@ const AppContent = ({ boards, addBoard }) => {
       return role === "Admin";
     };
     setHasAdminPrivileges(hasAdminAccess());
-  }, []);  
+  }, []);
 
   const handleSignOut = () => {
     localStorage.removeItem("employeeId");
@@ -272,77 +326,79 @@ const AppContent = ({ boards, addBoard }) => {
   };
 
   return (
-     <>
-       {sidebarVisible && (
-         <Sidebar 
-           boards={boards} 
-           setBoards={addBoard} 
-           isCollapsed={isSidebarCollapsed} 
-           setIsCollapsed={setIsSidebarCollapsed} 
-         />
-       )}
-       <ContentContainer sidebarVisible={sidebarVisible} isCollapsed={isSidebarCollapsed}>
-         {sidebarVisible && (
-           <HeaderContainer>
-             <HeaderLeft>
-               <HeaderTitle>Shinova Tracker</HeaderTitle>
-             </HeaderLeft>
-             <HeaderRight>
-               <SignOut isCollapsed={true} isHeader={true} />
-               <ThemeToggleBtn onClick={toggleTheme} title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
-                 {isDarkMode ? <FiSun /> : <FiMoon />}
-               </ThemeToggleBtn>
-               <Notification />
-               <LogOutButton onClick={() => setShowLogoutConfirm(true)} title="Log Out">
-                 <FiLogOut />
-               </LogOutButton>
-             </HeaderRight>
-           </HeaderContainer>
-         )}
-         <Routes>
-           <Route
-             path="/"
-             element={<Board boards={boards} addBoard={addBoard} />}
-           />
-           <Route
-             path="/Board"
-             element={<Board boards={boards} addBoard={addBoard} />}
-           />
-           <Route path="/finished" element={<FinishedTask />} />
-           <Route path="/deadlines" element={<TaskDeadline />} />
-           <Route path="/SignOut" element={<SignOut />} />
-           <Route path="/Register" element={<Register />} />
-           <Route path="/Todolist" element={<Todolist />} />
-           <Route path="/Members" element={<Members />} />
-           <Route path="/Deletedcards" element={<Deletedcards />} />
-         </Routes>
-       </ContentContainer>
+    <>
+      {sidebarVisible && (
+        <>
+          <HeaderContainer>
+            <HeaderLeft>
+              <HeaderLogo src={logo} alt="Shinova" />
+              <HeaderTitle>Tracker</HeaderTitle>
+            </HeaderLeft>
+            <HeaderRight>
+              <SignOut isCollapsed={true} isHeader={true} />
+              <ThemeToggleBtn onClick={toggleTheme} title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+                {isDarkMode ? <FiSun /> : <FiMoon />}
+              </ThemeToggleBtn>
+              <Notification />
+              <LogOutButton onClick={() => setShowLogoutConfirm(true)} title="Log Out">
+                <FiLogOut />
+              </LogOutButton>
+            </HeaderRight>
+          </HeaderContainer>
+          <Sidebar
+            boards={boards}
+            refreshBoards={refreshBoards}
+            isCollapsed={isSidebarCollapsed}
+            setIsCollapsed={setIsSidebarCollapsed}
+          />
+        </>
+      )}
+      <ContentContainer sidebarVisible={sidebarVisible} isCollapsed={isSidebarCollapsed}>
+        <Routes>
+          <Route
+            path="/"
+            element={<Board boards={boards} addBoard={addBoard} refreshBoards={refreshBoards} boardsLoading={boardsLoading} />}
+          />
+          <Route
+            path="/Board"
+            element={<Board boards={boards} addBoard={addBoard} refreshBoards={refreshBoards} boardsLoading={boardsLoading} />}
+          />
+          <Route path="/finished" element={<FinishedTask />} />
+          <Route path="/deadlines" element={<TaskDeadline />} />
+          <Route path="/SignOut" element={<SignOut />} />
+          <Route path="/Register" element={<Register />} />
+          <Route path="/Todolist" element={<Todolist />} />
+          <Route path="/Members" element={<Members />} />
+          <Route path="/Deletedcards" element={<Deletedcards />} />
+        </Routes>
+      </ContentContainer>
 
-       {showLogoutConfirm && (
-         <ModalOverlay onClick={() => setShowLogoutConfirm(false)}>
-           <ConfirmModalContainer onClick={(e) => e.stopPropagation()}>
-             <ConfirmModalHeader>
-               <h3>Confirm Log Out</h3>
-               <CloseButton onClick={() => setShowLogoutConfirm(false)}>
-                 <FiX />
-               </CloseButton>
-             </ConfirmModalHeader>
-             <ConfirmModalBody>
-               Are you sure you want to log out of Shinova Tracker?
-             </ConfirmModalBody>
-             <ConfirmButtonGroup>
-               <CancelButton onClick={() => setShowLogoutConfirm(false)}>Cancel</CancelButton>
-               <ConfirmLogoutButton onClick={handleSignOut}>Log Out</ConfirmLogoutButton>
-             </ConfirmButtonGroup>
-           </ConfirmModalContainer>
-         </ModalOverlay>
-       )}
-     </>
+      {showLogoutConfirm && (
+        <ModalOverlay onClick={() => setShowLogoutConfirm(false)}>
+          <ConfirmModalContainer onClick={(e) => e.stopPropagation()}>
+            <ConfirmModalHeader>
+              <h3>Confirm Log Out</h3>
+              <CloseButton onClick={() => setShowLogoutConfirm(false)}>
+                <FiX />
+              </CloseButton>
+            </ConfirmModalHeader>
+            <ConfirmModalBody>
+              Are you sure you want to log out of Shinova Tracker?
+            </ConfirmModalBody>
+            <ConfirmButtonGroup>
+              <CancelButton onClick={() => setShowLogoutConfirm(false)}>Cancel</CancelButton>
+              <ConfirmLogoutButton onClick={handleSignOut}>Log Out</ConfirmLogoutButton>
+            </ConfirmButtonGroup>
+          </ConfirmModalContainer>
+        </ModalOverlay>
+      )}
+    </>
   );
 };
 
 const App = () => {
   const [boards, setBoards] = useState([]);
+  const [boardsLoading, setBoardsLoading] = useState(true);
   const [role, setRole] = useState("");
 
   useEffect(() => {
@@ -353,16 +409,21 @@ const App = () => {
   }, []);
 
   const fetchBoards = async () => {
+    setBoardsLoading(true);
     const currentRole = localStorage.getItem("role");
-    const result = await apiRequest(`${Trackerbaseurl}get-boards/${currentRole}/`);
-    if (result.success) {
-      setBoards(Array.isArray(result.data) ? result.data : []);
-    } else {
-      console.error("Failed to fetch boards:", result.error);
-      if (result.status === 401 || result.status === 403) {
-        console.warn("Unauthorized access. Redirecting to login...");
-        // window.location.href = "/login";
+    try {
+      const result = await apiRequest(`${Trackerbaseurl}get-boards/${currentRole}/`);
+      if (result.success) {
+        setBoards(Array.isArray(result.data) ? result.data : []);
+      } else {
+        console.error("Failed to fetch boards:", result.error);
+        if (result.status === 401 || result.status === 403) {
+          console.warn("Unauthorized access. Redirecting to login...");
+          // window.location.href = "/login";
+        }
       }
+    } finally {
+      setBoardsLoading(false);
     }
   };
 
@@ -381,13 +442,13 @@ const App = () => {
 
   return (
     <Router basename={process.env.PUBLIC_URL}>
-      <AppContent boards={boards} addBoard={addBoard} />
-      <ToastContainer 
-  autoClose={2000} 
-  closeOnClick 
-  closeButton 
-  hideProgressBar 
-/>
+      <AppContent boards={boards} addBoard={addBoard} refreshBoards={fetchBoards} boardsLoading={boardsLoading} />
+      <ToastContainer
+        autoClose={2000}
+        closeOnClick
+        closeButton
+        hideProgressBar
+      />
     </Router>
   );
 };

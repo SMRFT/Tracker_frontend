@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import styled from "styled-components";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -18,15 +18,17 @@ const isMobile = () => {
   return window.innerWidth <= 768;
 };
 
+const HEADER_HEIGHT = 60;
+
 const SidebarContainer = styled.div`
   width: ${(props) => (props.isMobile ? "85%" : props.isCollapsed ? "72px" : "270px")};
   max-width: ${(props) => (props.isMobile ? "320px" : "270px")};
   background-color: var(--bg-primary);
   padding: ${(props) => (props.isMobile ? "20px 15px" : props.isCollapsed ? "20px 10px" : "24px 20px")};
-  height: 100vh;
+  height: calc(100vh - ${HEADER_HEIGHT}px);
   position: fixed;
   color: var(--text-main);
-  top: 0;
+  top: ${HEADER_HEIGHT}px;
   left: 0;
   border-right: 1px solid var(--border-subtle);
   box-shadow: 1px 0 0 var(--border-subtle);
@@ -53,47 +55,10 @@ const SidebarContainer = styled.div`
   }
 `;
 
-const SidebarHeader = styled.div`
-  display: flex;
-  justify-content: ${(props) => (props.isCollapsed && !props.isMobile ? "center" : "space-between")};
-  align-items: center;
-  margin-bottom: 32px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border-subtle);
-`;
-
-const LogoSection = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-const LogoIcon = styled.div`
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 16px;
-  color: white;
-  flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-`;
-
-const SidebarTitle = styled.h2`
-  color: var(--text-main);
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin: 0;
-  letter-spacing: -0.5px;
-  white-space: nowrap;
-  display: ${(props) => (props.isCollapsed ? "none" : "block")};
-`;
-
 const CloseButton = styled.button`
+  position: absolute;
+  top: 12px;
+  right: 12px;
   background: rgba(0, 0, 0, 0.05);
   border: none;
   color: var(--text-muted);
@@ -105,6 +70,7 @@ const CloseButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  z-index: 10;
 
   &:hover {
     background: rgba(0, 0, 0, 0.1);
@@ -236,14 +202,14 @@ const SidebarSearchInput = styled.input`
   outline: none;
 
   &::placeholder {
-    color: #64748b;
+    color: var(--text-muted);
   }
 `;
 
 const CloseSearchButton = styled.button`
   background: transparent;
   border: none;
-  color: #64748b;
+  color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -271,7 +237,7 @@ const BoardList = styled.ul`
   }
 `;
 
-const BoardItem = styled.li`
+const BoardItemContainer = styled.li`
   list-style: none;
   padding: ${(props) => (props.isCollapsed ? "8px" : "10px 12px")};
   cursor: pointer;
@@ -351,7 +317,7 @@ const BoardName = styled.span`
 
 const MenuIcon = styled.div`
   cursor: pointer;
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 0.85rem;
   position: relative;
   width: 24px;
@@ -372,7 +338,7 @@ const MenuDropdown = styled.div`
   position: absolute;
   right: 0;
   top: calc(100% + 4px);
-  background: #ffffff;
+  background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
@@ -391,7 +357,7 @@ const MenuItem = styled.div`
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: var(--border-subtle);
     color: var(--text-main);
   }
 `;
@@ -408,7 +374,7 @@ const BottomActionSection = styled.div`
 const CollapseBtn = styled.button`
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--text-muted);
   cursor: pointer;
   padding: 10px;
   display: flex;
@@ -436,7 +402,65 @@ const CollapseBtn = styled.button`
   }
 `;
 
-const Sidebar = ({ boards, setBoards, isCollapsed, setIsCollapsed }) => {
+
+const BoardRow = React.memo(function BoardRow({
+  board,
+  index,
+  isCollapsed,
+  isSelected,
+  isMenuOpen,
+  onSelect,
+  onToggleMenu,
+  onEdit,
+  onDelete,
+}) {
+  const { boardId, boardName, boardColor } = board;
+
+  return (
+    <BoardItemContainer
+      isCollapsed={isCollapsed}
+      isSelected={isSelected}
+      title={isCollapsed ? boardName : ""}
+      onClick={() => onSelect(board)}
+    >
+      <BoardDetails>
+        <ColorBox bgColor={boardColor} />
+        <BoardName isCollapsed={isCollapsed}>{boardName}</BoardName>
+      </BoardDetails>
+      <div className={`menu-${index}`}>
+        <MenuIcon
+          isCollapsed={isCollapsed}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleMenu(index);
+          }}
+        >
+          <FontAwesomeIcon icon={faEllipsisV} />
+          <MenuDropdown isOpen={isMenuOpen}>
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit({ boardId, boardName, boardColor }, index);
+              }}
+            >
+              Edit
+            </MenuItem>
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete({ boardId, boardName });
+              }}
+            >
+              Delete
+            </MenuItem>
+          </MenuDropdown>
+        </MenuIcon>
+      </div>
+    </BoardItemContainer>
+  );
+});
+
+const Sidebar = ({ boards, refreshBoards, isCollapsed, setIsCollapsed }) => {
   const [selectedBoard, setSelectedBoard] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -473,18 +497,7 @@ const Sidebar = ({ boards, setBoards, isCollapsed, setIsCollapsed }) => {
     }
   }, [location.pathname]);
 
-  useEffect(() => {
-    localStorage.setItem("boards", JSON.stringify(boards));
-  }, [boards]);
-
-  useEffect(() => {
-    const storedBoards = JSON.parse(localStorage.getItem("boards"));
-    if (storedBoards) {
-      setBoards(storedBoards);
-    }
-  }, []);
-
-  const handleBoardClick = (board) => {
+  const handleBoardClick = useCallback((board) => {
     setSelectedBoard(board);
     navigate("/Todolist", {
       state: {
@@ -498,29 +511,29 @@ const Sidebar = ({ boards, setBoards, isCollapsed, setIsCollapsed }) => {
     if (isMobileView) {
       setIsSidebarOpen(false);
     }
-  };
+  }, [navigate, employeeId, employeeName, isMobileView]);
 
-  const openDeleteModal = (board) => {
+  const openDeleteModal = useCallback((board) => {
     setSelectedBoard(board);
     setBoardName(board.boardName);
     setBoardId(board.boardId);
     setIsDeleteModalOpen(true);
     setActiveMenu(null);
-  };
+  }, []);
 
   const closeDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setSelectedBoard(null);
   };
 
-  const openEditModal = (board, index) => {
+  const openEditModal = useCallback((board, index) => {
     setSelectedBoard(board);
     setEditingBoardIndex(index);
     setBoardName(board.boardName);
     setBoardId(board.boardId);
     setIsEditModalOpen(true);
     setActiveMenu(null);
-  };
+  }, []);
 
   const closeEditModal = () => {
     setIsEditModalOpen(false);
@@ -530,8 +543,6 @@ const Sidebar = ({ boards, setBoards, isCollapsed, setIsCollapsed }) => {
 
   const saveEditedBoard = async (newTitle) => {
     try {
-      const updatedBoard = { ...selectedBoard, boardName: newTitle };
-
       const result = await apiRequest(
         `${Trackerbaseurl}boards/${selectedBoard.boardId}/`,
         "PUT",
@@ -542,10 +553,7 @@ const Sidebar = ({ boards, setBoards, isCollapsed, setIsCollapsed }) => {
       );
 
       if (result.success) {
-        const updatedBoards = boards.map((board) =>
-          board.boardId === selectedBoard.boardId ? updatedBoard : board
-        );
-        setBoards(updatedBoards);
+        await refreshBoards();
         closeEditModal();
         toast.success("Board updated successfully!", {
           position: isMobileView ? "top-center" : "top-right",
@@ -587,10 +595,7 @@ const Sidebar = ({ boards, setBoards, isCollapsed, setIsCollapsed }) => {
       );
 
       if (result.success) {
-        const updatedBoards = boards.filter(
-          (board) => board.boardId !== selectedBoard.boardId
-        );
-        setBoards(updatedBoards);
+        await refreshBoards();
         closeDeleteModal();
         toast.success("Board deleted successfully!", {
           position: isMobileView ? "top-center" : "top-right",
@@ -609,9 +614,16 @@ const Sidebar = ({ boards, setBoards, isCollapsed, setIsCollapsed }) => {
     }
   };
 
-  const toggleMenu = (index) => {
-    setActiveMenu(activeMenu === index ? null : index);
-  };
+  const toggleMenu = useCallback((index) => {
+    setActiveMenu((prev) => (prev === index ? null : index));
+  }, []);
+
+  const filteredBoards = useMemo(() => {
+    const term = (boardSearchTerm || "").toLowerCase();
+    return boards.filter(
+      (board) => board && board.boardName && board.boardName.toLowerCase().includes(term)
+    );
+  }, [boards, boardSearchTerm]);
 
   return (
     <>
@@ -624,17 +636,11 @@ const Sidebar = ({ boards, setBoards, isCollapsed, setIsCollapsed }) => {
         isSidebarOpen={isSidebarOpen}
         isCollapsed={isCollapsed}
       >
-        <SidebarHeader isCollapsed={isCollapsed} isMobile={isMobileView}>
-          <LogoSection>
-            <LogoIcon>S</LogoIcon>
-            <SidebarTitle isCollapsed={isCollapsed}>SHINOVA</SidebarTitle>
-          </LogoSection>
-          {isMobileView && (
-            <CloseButton onClick={toggleSidebar}>
-              <FontAwesomeIcon icon={faTimes} />
-            </CloseButton>
-          )}
-        </SidebarHeader>
+        {isMobileView && (
+          <CloseButton onClick={toggleSidebar}>
+            <FontAwesomeIcon icon={faTimes} />
+          </CloseButton>
+        )}
 
         <SidebarNav isCollapsed={isCollapsed}>
           <ul>
@@ -715,7 +721,7 @@ const Sidebar = ({ boards, setBoards, isCollapsed, setIsCollapsed }) => {
               </BoardsHeaderContainer>
               {isSearching && (
                 <SearchInputWrapper>
-                  <FiSearch size={14} color="#64748b" />
+                  <FiSearch size={14} color="var(--text-muted)" />
                   <SidebarSearchInput
                     type="text"
                     placeholder="Search boards..."
@@ -737,68 +743,20 @@ const Sidebar = ({ boards, setBoards, isCollapsed, setIsCollapsed }) => {
             </>
           )}
           <BoardList>
-            {boards
-              .filter((board) =>
-                board && board.boardName && board.boardName.toLowerCase().includes((boardSearchTerm || "").toLowerCase())
-              )
-              .map(
-                ({ boardId, boardName, boardColor, employeeName }, index) => {
-                  const isSelected = selectedBoard && selectedBoard.boardId === boardId;
-                return (
-                  <BoardItem
-                    key={boardId}
-                    isCollapsed={isCollapsed}
-                    isSelected={isSelected}
-                    title={isCollapsed ? boardName : ""}
-                    onClick={() =>
-                      handleBoardClick({
-                        boardId,
-                        boardName,
-                        boardColor,
-                        employeeName,
-                      })
-                    }
-                  >
-                    <BoardDetails>
-                      <ColorBox bgColor={boardColor} />
-                      <BoardName isCollapsed={isCollapsed}>{boardName}</BoardName>
-                    </BoardDetails>
-                    <div className={`menu-${index}`}>
-                      <MenuIcon
-                        isCollapsed={isCollapsed}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleMenu(index);
-                        }}
-                      >
-                        <FontAwesomeIcon icon={faEllipsisV} />
-                        <MenuDropdown isOpen={activeMenu === index}>
-                          <MenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditModal(
-                                { boardId, boardName, boardColor },
-                                index
-                              );
-                            }}
-                          >
-                            Edit
-                          </MenuItem>
-                          <MenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDeleteModal({ boardId, boardName });
-                            }}
-                          >
-                            Delete
-                          </MenuItem>
-                        </MenuDropdown>
-                      </MenuIcon>
-                    </div>
-                  </BoardItem>
-                );
-              }
-            )}
+            {filteredBoards.map((board, index) => (
+              <BoardRow
+                key={board.boardId}
+                board={board}
+                index={index}
+                isCollapsed={isCollapsed}
+                isSelected={!!selectedBoard && selectedBoard.boardId === board.boardId}
+                isMenuOpen={activeMenu === index}
+                onSelect={handleBoardClick}
+                onToggleMenu={toggleMenu}
+                onEdit={openEditModal}
+                onDelete={openDeleteModal}
+              />
+            ))}
           </BoardList>
         </BoardsSection>
 

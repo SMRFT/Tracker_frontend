@@ -20,10 +20,17 @@ const NotificationIcon = styled.div`
   border-radius: 10px;
   background: transparent;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 
   &:hover {
     color: #4f46e5;
     background: #f1f5f9;
+  }
+
+  @media (max-width: 768px) {
+    width: 34px;
+    height: 34px;
+    font-size: 1.2rem;
   }
 `;
 
