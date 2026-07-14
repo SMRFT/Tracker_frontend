@@ -34,16 +34,29 @@ const apiRequest = async (url, method = "GET", data = null, headers = {}) => {
 
     // Success status codes (2xx range)
     if (response.status >= 200 && response.status < 300) {
+      let unwrappedData = response.data;
+      // Automatically unwrap standard API success envelope
+      if (
+        response.data &&
+        typeof response.data === "object" &&
+        response.data.success === true &&
+        "data" in response.data
+      ) {
+        unwrappedData = response.data.data;
+      }
       return {
         success: true,
-        data: response.data,
+        data: unwrappedData,
         status: response.status,
       };
     }
     // Client errors (4xx range)
     else if (response.status >= 400 && response.status < 500) {
       // Extract error message from backend response
-      const backendError = response.data?.error || response.data?.message;
+      const backendError =
+        (response.data?.error && typeof response.data.error === "object"
+          ? response.data.error.message
+          : response.data?.error) || response.data?.message;
       return {
         success: false,
         error: backendError || `Client error (${response.status})`,
@@ -53,7 +66,10 @@ const apiRequest = async (url, method = "GET", data = null, headers = {}) => {
     }
     // Server errors (5xx range)
     else if (response.status >= 500) {
-      const backendError = response.data?.error || response.data?.message;
+      const backendError =
+        (response.data?.error && typeof response.data.error === "object"
+          ? response.data.error.message
+          : response.data?.error) || response.data?.message;
       return {
         success: false,
         error: backendError || "Server error occurred.",

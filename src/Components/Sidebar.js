@@ -3,9 +3,10 @@ import styled from "styled-components";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEllipsisV, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FiClock, FiCheckSquare, FiTrash2, FiChevronLeft, FiChevronRight, FiSearch, FiX } from "react-icons/fi";
 import DeleteBoardModal from "./DeleteBoardModal";
 import EditBoardModal from "./EditBoardModal";
-import SignOut from "./SignOut";
+
 import { MdOutlineSpaceDashboard } from "react-icons/md";
 import { PiUsersThreeDuotone } from "react-icons/pi";
 import { toast } from "react-toastify";
@@ -14,88 +15,100 @@ import apiRequest from "./apiRequest";
 
 // Detect if device is mobile
 const isMobile = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  ) || window.innerWidth <= 768;
+  return window.innerWidth <= 768;
 };
 
 const SidebarContainer = styled.div`
-  width: ${(props) => (props.isMobile ? "85%" : "290px")};
-  max-width: ${(props) => (props.isMobile ? "320px" : "290px")};
-  background-color: ${(props) =>
-    props.bgColor || "linear-gradient(135deg, #ff9a9e, #fad0c4)"};
-  padding: ${(props) => (props.isMobile ? "20px 15px" : "20px")};
+  width: ${(props) => (props.isMobile ? "85%" : props.isCollapsed ? "72px" : "270px")};
+  max-width: ${(props) => (props.isMobile ? "320px" : "270px")};
+  background-color: var(--bg-primary);
+  padding: ${(props) => (props.isMobile ? "20px 15px" : props.isCollapsed ? "20px 10px" : "24px 20px")};
   height: 100vh;
   position: fixed;
-  color: white;
+  color: var(--text-main);
   top: 0;
   left: 0;
-  box-shadow: ${(props) =>
-    props.isMobile
-      ? "2px 0 10px rgba(0, 0, 0, 0.3)"
-      : "1px 0 2px rgba(0, 0, 0, 0.5)"};
-  transition: transform 0.3s ease, background-color 0.3s ease;
+  border-right: 1px solid var(--border-subtle);
+  box-shadow: 1px 0 0 var(--border-subtle);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
   overflow-y: auto;
 
   &::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 99px;
   }
 
   @media (max-width: 768px) {
-    transform: ${(props) =>
-      props.isSidebarOpen ? "translateX(0)" : "translateX(-100%)"};
+    transform: ${(props) => (props.isSidebarOpen ? "translateX(0)" : "translateX(-100%)")};
     width: 85%;
     max-width: 320px;
-    padding: 20px 15px;
+    padding: 24px 20px;
   }
 `;
 
 const SidebarHeader = styled.div`
-  display: ${(props) => (props.isMobile ? "flex" : "none")};
-  justify-content: space-between;
+  display: flex;
+  justify-content: ${(props) => (props.isCollapsed && !props.isMobile ? "center" : "space-between")};
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-
-  @media (max-width: 768px) {
-    display: flex;
-  }
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
 `;
 
-const SidebarTitle = styled.h2`
-  color: white;
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0;
+const LogoSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
 `;
 
-const CloseButton = styled.button`
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 1.2rem;
+const LogoIcon = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  font-weight: 800;
+  font-size: 16px;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+`;
+
+const SidebarTitle = styled.h2`
+  color: var(--text-main);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  display: ${(props) => (props.isCollapsed ? "none" : "block")};
+`;
+
+const CloseButton = styled.button`
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
-  }
-
-  &:active {
-    transform: rotate(90deg) scale(0.95);
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--text-main);
   }
 `;
 
@@ -106,58 +119,36 @@ const SidebarNav = styled.nav`
     margin: 0;
   }
   li {
-    margin-bottom: ${(props) => (props.isMobile ? "8px" : "10px")};
-  }
-
-  @media (max-width: 768px) {
-    li {
-      margin-bottom: 8px;
-    }
+    margin-bottom: 4px;
   }
 `;
 
 const ToggleButton = styled.button`
   position: fixed;
-  top: ${(props) => (props.isMobile ? "15px" : "20px")};
-  left: ${(props) => (props.isMobile ? "15px" : "20px")};
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  width: ${(props) => (props.isMobile ? "50px" : "44px")};
-  height: ${(props) => (props.isMobile ? "50px" : "44px")};
+  top: 15px;
+  left: 15px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
-  font-size: ${(props) => (props.isMobile ? "22px" : "20px")};
+  font-size: 20px;
   cursor: pointer;
-  z-index: 1100;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  display: flex;
+  z-index: 1099;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: none;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  }
-
-  &:active {
-    transform: translateY(0) scale(0.95);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  }
-
-  @media (min-width: 769px) {
-    display: none;
+    background: #f1f5f9;
+    transform: scale(1.05);
   }
 
   @media (max-width: 768px) {
     display: flex;
-    width: 50px;
-    height: 50px;
-    font-size: 22px;
   }
 `;
 
@@ -168,203 +159,212 @@ const Overlay = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
   z-index: 900;
   transition: opacity 0.3s ease;
-
-  @media (max-width: 768px) {
-    opacity: ${(props) => (props.isOpen ? "1" : "0")};
-  }
 `;
 
 const BoardsSection = styled.div`
-  margin-top: ${(props) => (props.isMobile ? "20px" : "30px")};
+  margin-top: 32px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+`;
 
+const BoardsHeaderContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 12px;
+  
   @media (max-width: 768px) {
-    margin-top: 20px;
+    padding: 0;
   }
 `;
 
-const BoardsTitle = styled.h3`
-  font-size: ${(props) => (props.isMobile ? "1rem" : "18px")};
-  margin-bottom: ${(props) => (props.isMobile ? "12px" : "15px")};
-  color: white;
-  font-weight: 600;
+const BoardsTitleText = styled.h3`
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
+  margin: 0;
+`;
+
+const SearchIconButton = styled.button`
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    color: var(--text-main);
+    background: rgba(0, 0, 0, 0.05);
+  }
+`;
+
+const SearchInputWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: 0 12px 12px 12px;
+  gap: 8px;
 
   @media (max-width: 768px) {
-    font-size: 1rem;
-    margin-bottom: 12px;
+    margin: 0 0 12px 0;
+  }
+`;
+
+const SidebarSearchInput = styled.input`
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-size: 0.85rem;
+  width: 100%;
+  outline: none;
+
+  &::placeholder {
+    color: #64748b;
+  }
+`;
+
+const CloseSearchButton = styled.button`
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 50%;
+
+  &:hover {
+    color: var(--text-main);
+    background: rgba(0, 0, 0, 0.05);
   }
 `;
 
 const BoardList = styled.ul`
   padding: 0;
   margin: 0;
+  overflow-y: auto;
+  flex: 1;
+  
+  &::-webkit-scrollbar {
+    width: 2px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+  }
 `;
 
 const BoardItem = styled.li`
   list-style: none;
-  padding: ${(props) => (props.isMobile ? "12px 14px" : "8px 16px")};
+  padding: ${(props) => (props.isCollapsed ? "8px" : "10px 12px")};
   cursor: pointer;
   display: flex;
-  justify-content: space-between;
+  justify-content: ${(props) => (props.isCollapsed ? "center" : "space-between")};
   align-items: center;
-  border-radius: ${(props) => (props.isMobile ? "8px" : "4px")};
-  font-size: ${(props) => (props.isMobile ? "15px" : "16px")};
-  background-color: ${(props) =>
-    props.isSelected ? "#F0F0F0" : "transparent"};
-  color: ${(props) => (props.isSelected ? "black" : "white")};
-  margin-bottom: ${(props) => (props.isMobile ? "8px" : "6px")};
-  transition: all 0.3s ease;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background-color: ${(props) => (props.isSelected ? "rgba(99, 102, 241, 0.15)" : "transparent")};
+  color: ${(props) => (props.isSelected ? "var(--primary-accent)" : "var(--text-muted)")};
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
 
   &:hover {
-    background-color: ${(props) =>
-      props.isSelected ? "#F0F0F0" : "rgba(255, 255, 255, 0.1)"};
-    transform: ${(props) => (props.isMobile ? "translateX(4px)" : "none")};
-  }
-
-  &:active {
-    transform: scale(0.98);
-  }
-
-  @media (max-width: 768px) {
-    padding: 12px 14px;
-    border-radius: 8px;
-    font-size: 15px;
-    margin-bottom: 8px;
+    background-color: rgba(0, 0, 0, 0.03);
+    color: var(--text-main);
   }
 `;
 
 const StyledNavLink = styled(NavLink)`
-  color: white;
+  color: var(--text-muted);
   text-decoration: none;
-  font-size: ${(props) => (props.isMobile ? "15px" : "16px")};
+  font-size: 0.925rem;
   font-weight: 500;
-  padding: ${(props) => (props.isMobile ? "12px 10px" : "10px")};
-  border-radius: ${(props) => (props.isMobile ? "8px" : "4px")};
+  padding: ${(props) => (props.isCollapsed ? "12px" : "10px 14px")};
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: ${(props) => (props.isCollapsed ? "center" : "flex-start")};
   width: 100%;
   box-sizing: border-box;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  gap: 12px;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: ${(props) => (props.isMobile ? "translateX(4px)" : "none")};
-  }
-
-  &:active {
-    transform: scale(0.98);
+    background: rgba(0, 0, 0, 0.03);
+    color: var(--text-main);
   }
 
   &.active {
-    color: ${(props) => (props.isMobile ? "white" : "blue")};
-    font-weight: bold;
-    background: ${(props) =>
-      props.isMobile ? "rgba(255, 255, 255, 0.15)" : "transparent"};
+    color: var(--primary-accent);
+    background: rgba(99, 102, 241, 0.15);
+    border-left: 3px solid var(--primary-accent);
+    border-radius: 0 8px 8px 0;
   }
 
   svg {
-    font-size: ${(props) => (props.isMobile ? "20px" : "18px")};
-    margin-right: ${(props) => (props.isMobile ? "12px" : "10px")};
-  }
-
-  @media (max-width: 768px) {
-    font-size: 15px;
-    padding: 12px 10px;
-    border-radius: 8px;
-
-    &.active {
-      color: white;
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    svg {
-      font-size: 20px;
-      margin-right: 12px;
-    }
+    font-size: 1.15rem;
+    flex-shrink: 0;
   }
 `;
 
 const BoardDetails = styled.div`
   display: flex;
   align-items: center;
-  flex: 1;
+  gap: 12px;
   min-width: 0;
+  flex: 1;
 `;
 
 const ColorBox = styled.div`
-  width: ${(props) => (props.isMobile ? "24px" : "20px")};
-  height: ${(props) => (props.isMobile ? "24px" : "20px")};
+  width: 12px;
+  height: 12px;
   background: ${(props) => props.bgColor};
-  margin-right: ${(props) => (props.isMobile ? "10px" : "8px")};
-  border-radius: ${(props) => (props.isMobile ? "6px" : "4px")};
+  border-radius: 50%;
   flex-shrink: 0;
-
-  @media (max-width: 768px) {
-    width: 24px;
-    height: 24px;
-    margin-right: 10px;
-    border-radius: 6px;
-  }
+  box-shadow: 0 0 6px ${(props) => props.bgColor}80;
 `;
 
 const BoardName = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: ${(props) => (props.isCollapsed ? "none" : "block")};
 `;
 
 const MenuIcon = styled.div`
   cursor: pointer;
-  color: ${(props) => (props.isSelected ? "#333" : "white")};
-  font-size: ${(props) => (props.isMobile ? "18px" : "16px")};
+  color: #64748b;
+  font-size: 0.85rem;
   position: relative;
-  padding: ${(props) => (props.isMobile ? "8px" : "4px")};
-  display: flex;
+  width: 24px;
+  height: 24px;
+  display: ${(props) => (props.isCollapsed ? "none" : "flex")};
   align-items: center;
   justify-content: center;
-  background: ${(props) => 
-    props.isSelected 
-      ? "rgba(0, 0, 0, 0.05)" 
-      : "rgba(255, 255, 255, 0.1)"};
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid ${(props) => 
-    props.isSelected 
-      ? "rgba(0, 0, 0, 0.1)" 
-      : "rgba(255, 255, 255, 0.2)"};
-  border-radius: ${(props) => (props.isMobile ? "8px" : "6px")};
-  width: ${(props) => (props.isMobile ? "32px" : "28px")};
-  height: ${(props) => (props.isMobile ? "32px" : "28px")};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
+  transition: all 0.2s;
 
   &:hover {
-    background: ${(props) => 
-      props.isSelected 
-        ? "rgba(0, 0, 0, 0.1)" 
-        : "rgba(255, 255, 255, 0.2)"};
-    border: 1px solid ${(props) => 
-      props.isSelected 
-        ? "rgba(0, 0, 0, 0.15)" 
-        : "rgba(255, 255, 255, 0.3)"};
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-
-  @media (max-width: 768px) {
-    font-size: 18px;
-    padding: 8px;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-main);
   }
 `;
 
@@ -372,61 +372,71 @@ const MenuDropdown = styled.div`
   position: absolute;
   right: 0;
   top: calc(100% + 4px);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: ${(props) => (props.isMobile ? "10px" : "8px")};
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
   display: ${(props) => (props.isOpen ? "block" : "none")};
-  min-width: ${(props) => (props.isMobile ? "140px" : "120px")};
+  min-width: 110px;
   z-index: 1500;
   overflow: hidden;
-  animation: slideDown 0.2s ease-out;
-
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @media (max-width: 768px) {
-    border-radius: 10px;
-    min-width: 140px;
-    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
-  }
 `;
 
 const MenuItem = styled.div`
-  padding: ${(props) => (props.isMobile ? "12px 16px" : "10px 14px")};
-  color: #333;
+  padding: 8px 12px;
+  color: var(--text-muted);
   cursor: pointer;
-  font-size: ${(props) => (props.isMobile ? "15px" : "14px")};
+  font-size: 0.825rem;
   font-weight: 500;
-  transition: all 0.2s ease;
-  background: transparent;
+  transition: all 0.2s;
 
   &:hover {
     background: rgba(0, 0, 0, 0.05);
-  }
-
-  &:active {
-    background: rgba(0, 0, 0, 0.1);
-    transform: scale(0.98);
-  }
-
-  @media (max-width: 768px) {
-    padding: 12px 16px;
-    font-size: 15px;
+    color: var(--text-main);
   }
 `;
 
-const Sidebar = ({ boards, setBoards }) => {
+const BottomActionSection = styled.div`
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+`;
+
+const CollapseBtn = styled.button`
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: ${(props) => (props.isCollapsed ? "center" : "flex-start")};
+  gap: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s;
+  width: 100%;
+
+  &:hover {
+    color: var(--text-main);
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  svg {
+    font-size: 1.15rem;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const Sidebar = ({ boards, setBoards, isCollapsed, setIsCollapsed }) => {
   const [selectedBoard, setSelectedBoard] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -436,6 +446,8 @@ const Sidebar = ({ boards, setBoards }) => {
   const [boardName, setBoardName] = useState("");
   const [boardId, setBoardId] = useState("");
   const [isMobileView, setIsMobileView] = useState(isMobile());
+  const [isSearching, setIsSearching] = useState(false);
+  const [boardSearchTerm, setBoardSearchTerm] = useState("");
   const navigate = useNavigate();
   const employeeId = localStorage.getItem("employeeId");
   const employeeName = localStorage.getItem("employeeName");
@@ -471,9 +483,6 @@ const Sidebar = ({ boards, setBoards }) => {
       setBoards(storedBoards);
     }
   }, []);
-
-  const selectedBoardColor =
-    location.state?.boardColor || "linear-gradient(135deg, #ff9a9e, #fad0c4)";
 
   const handleBoardClick = (board) => {
     setSelectedBoard(board);
@@ -606,92 +615,141 @@ const Sidebar = ({ boards, setBoards }) => {
 
   return (
     <>
-      <ToggleButton isMobile={isMobileView} onClick={toggleSidebar}>
+      <ToggleButton onClick={toggleSidebar}>
         ☰
       </ToggleButton>
       <Overlay isOpen={isSidebarOpen} onClick={toggleSidebar} />
       <SidebarContainer
         isMobile={isMobileView}
         isSidebarOpen={isSidebarOpen}
-        style={{ background: selectedBoardColor, minHeight: "100vh" }}
+        isCollapsed={isCollapsed}
       >
-        {isMobileView && (
-          <SidebarHeader isMobile={isMobileView}>
-            <SidebarTitle>Menu</SidebarTitle>
+        <SidebarHeader isCollapsed={isCollapsed} isMobile={isMobileView}>
+          <LogoSection>
+            <LogoIcon>S</LogoIcon>
+            <SidebarTitle isCollapsed={isCollapsed}>SHINOVA</SidebarTitle>
+          </LogoSection>
+          {isMobileView && (
             <CloseButton onClick={toggleSidebar}>
               <FontAwesomeIcon icon={faTimes} />
             </CloseButton>
-          </SidebarHeader>
-        )}
+          )}
+        </SidebarHeader>
 
-        <SidebarNav isMobile={isMobileView}>
+        <SidebarNav isCollapsed={isCollapsed}>
           <ul>
             <li>
               <StyledNavLink
-                isMobile={isMobileView}
+                isCollapsed={isCollapsed}
                 to="/Board"
+                title={isCollapsed ? "Boards" : ""}
                 className={({ isActive }) => (isActive ? "active" : "")}
               >
                 <MdOutlineSpaceDashboard />
-                Board
+                {!isCollapsed && <span>Boards</span>}
               </StyledNavLink>
             </li>
             {(role === "Admin" || role === "HOD") && (
               <li>
                 <StyledNavLink
-                  isMobile={isMobileView}
+                  isCollapsed={isCollapsed}
                   to="/Members"
+                  title={isCollapsed ? "Members" : ""}
                   className={({ isActive }) => (isActive ? "active" : "")}
                 >
                   <PiUsersThreeDuotone />
-                  Members
+                  {!isCollapsed && <span>Members</span>}
                 </StyledNavLink>
               </li>
             )}
             <li>
               <StyledNavLink
-                isMobile={isMobileView}
+                isCollapsed={isCollapsed}
                 to="/deadlines"
+                title={isCollapsed ? "Task Deadlines" : ""}
                 className={({ isActive }) => (isActive ? "active" : "")}
               >
-                Task Deadlines
+                <FiClock />
+                {!isCollapsed && <span>Task Deadlines</span>}
               </StyledNavLink>
             </li>
             <li>
               <StyledNavLink
-                isMobile={isMobileView}
+                isCollapsed={isCollapsed}
                 to="/finished"
+                title={isCollapsed ? "Finished Tasks" : ""}
                 className={({ isActive }) => (isActive ? "active" : "")}
               >
-                Finished Tasks
+                <FiCheckSquare />
+                {!isCollapsed && <span>Finished Tasks</span>}
               </StyledNavLink>
             </li>
-            {(role === "Admin") && (
-            <li>
-              <StyledNavLink
-                isMobile={isMobileView}
-                to="/Deletedcards"
-                className={({ isActive }) => (isActive ? "active" : "")}
-              >
-                Deleted cards
-              </StyledNavLink>
-            </li>  
-            )}          
+            {role === "Admin" && (
+              <li>
+                <StyledNavLink
+                  isCollapsed={isCollapsed}
+                  to="/Deletedcards"
+                  title={isCollapsed ? "Deleted Cards" : ""}
+                  className={({ isActive }) => (isActive ? "active" : "")}
+                >
+                  <FiTrash2 />
+                  {!isCollapsed && <span>Deleted Cards</span>}
+                </StyledNavLink>
+              </li>
+            )}
           </ul>
         </SidebarNav>
 
-        <BoardsSection isMobile={isMobileView}>
-          <BoardsTitle isMobile={isMobileView}>Your Boards</BoardsTitle>
+        <BoardsSection isCollapsed={isCollapsed}>
+          {isCollapsed ? (
+            <div style={{ height: "1px", background: "rgba(255, 255, 255, 0.08)", margin: "16px 0" }} />
+          ) : (
+            <>
+              <BoardsHeaderContainer>
+                <BoardsTitleText>Your Boards</BoardsTitleText>
+                {!isSearching && (
+                  <SearchIconButton onClick={() => setIsSearching(true)} title="Search boards">
+                    <FiSearch size={14} />
+                  </SearchIconButton>
+                )}
+              </BoardsHeaderContainer>
+              {isSearching && (
+                <SearchInputWrapper>
+                  <FiSearch size={14} color="#64748b" />
+                  <SidebarSearchInput
+                    type="text"
+                    placeholder="Search boards..."
+                    value={boardSearchTerm}
+                    onChange={(e) => setBoardSearchTerm(e.target.value)}
+                    autoFocus
+                  />
+                  <CloseSearchButton 
+                    onClick={() => {
+                      setIsSearching(false);
+                      setBoardSearchTerm("");
+                    }}
+                    title="Close search"
+                  >
+                    <FiX size={12} />
+                  </CloseSearchButton>
+                </SearchInputWrapper>
+              )}
+            </>
+          )}
           <BoardList>
-            {boards.map(
-              ({ boardId, boardName, boardColor, employeeName }, index) => {
-                const isSelected = selectedBoard && selectedBoard.boardId === boardId;
+            {boards
+              .filter((board) =>
+                board && board.boardName && board.boardName.toLowerCase().includes((boardSearchTerm || "").toLowerCase())
+              )
+              .map(
+                ({ boardId, boardName, boardColor, employeeName }, index) => {
+                  const isSelected = selectedBoard && selectedBoard.boardId === boardId;
                 return (
                   <BoardItem
                     key={boardId}
-                    isMobile={isMobileView}
+                    isCollapsed={isCollapsed}
                     isSelected={isSelected}
-                    bgColor={boardColor}
+                    title={isCollapsed ? boardName : ""}
                     onClick={() =>
                       handleBoardClick({
                         boardId,
@@ -702,22 +760,20 @@ const Sidebar = ({ boards, setBoards }) => {
                     }
                   >
                     <BoardDetails>
-                      <ColorBox isMobile={isMobileView} bgColor={boardColor} />
-                      <BoardName>{boardName}</BoardName>
+                      <ColorBox bgColor={boardColor} />
+                      <BoardName isCollapsed={isCollapsed}>{boardName}</BoardName>
                     </BoardDetails>
                     <div className={`menu-${index}`}>
                       <MenuIcon
-                        isMobile={isMobileView}
-                        isSelected={isSelected}
+                        isCollapsed={isCollapsed}
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleMenu(index);
                         }}
                       >
                         <FontAwesomeIcon icon={faEllipsisV} />
-                        <MenuDropdown isMobile={isMobileView} isOpen={activeMenu === index}>
+                        <MenuDropdown isOpen={activeMenu === index}>
                           <MenuItem
-                            isMobile={isMobileView}
                             onClick={(e) => {
                               e.stopPropagation();
                               openEditModal(
@@ -729,7 +785,6 @@ const Sidebar = ({ boards, setBoards }) => {
                             Edit
                           </MenuItem>
                           <MenuItem
-                            isMobile={isMobileView}
                             onClick={(e) => {
                               e.stopPropagation();
                               openDeleteModal({ boardId, boardName });
@@ -746,7 +801,12 @@ const Sidebar = ({ boards, setBoards }) => {
             )}
           </BoardList>
         </BoardsSection>
-        <SignOut />
+
+        <BottomActionSection>
+          <CollapseBtn isCollapsed={isCollapsed} onClick={() => setIsCollapsed(!isCollapsed)}>
+            {isCollapsed ? <FiChevronRight /> : <><FiChevronLeft /> <span>Collapse Sidebar</span></>}
+          </CollapseBtn>
+        </BottomActionSection>
 
         {isDeleteModalOpen && (
           <DeleteBoardModal
@@ -765,7 +825,6 @@ const Sidebar = ({ boards, setBoards }) => {
             onSave={saveEditedBoard}
           />
         )}
-
       </SidebarContainer>
     </>
   );

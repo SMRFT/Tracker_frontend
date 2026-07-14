@@ -27,23 +27,30 @@ const SectionTitle = styled.div`
   margin-bottom: 10px;
   display: flex;
   align-items: center;
+  color: var(--text-main);
 `;
 
 const ActivityInput = styled.textarea`
   width: 100%;
   height: 60px;
   padding: 10px;
+  padding-right: 40px; /* Space for the attachment button */
   border-radius: 4px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-subtle);
   font-size: 14px;
-  background-color: white;
-  color: #000000;
+  background-color: var(--bg-secondary);
+  color: var(--text-main);
   resize: none;
+`;
+
+const InputWrapper = styled.div`
+  position: relative;
+  width: 100%;
 `;
 
 const Actions = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-top: 10px;
 `;
@@ -81,6 +88,10 @@ const AttachButton = styled.button`
   align-items: center;
   padding: 5px;
   border-radius: 50%;
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  z-index: 10;
   &:hover {
     background-color: #ecf0f1;
     color: #3498db;
@@ -139,11 +150,13 @@ const Avatar = styled.div`
 `;
 
 const CommentContent = styled.div`
-  background-color: #fff;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
   padding: 10px;
   border-radius: 6px;
   width: 100%;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-subtle);
 `;
 
 const CommentText = styled.div`
@@ -152,9 +165,9 @@ const CommentText = styled.div`
   white-space: pre-wrap;
 
   .mention-tag {
-    color: #2980b9;
+    color: var(--primary-accent);
     font-weight: 600;
-    background-color: #ebf5fb;
+    background-color: rgba(79, 70, 229, 0.1);
     padding: 0 4px;
     border-radius: 4px;
   }
@@ -166,7 +179,7 @@ const CommentAuthor = styled.span`
 `;
 
 const CommentDate = styled.small`
-  color: gray;
+  color: var(--text-muted);
   font-size: 0.8rem;
   margin-left: 10px;
 `;
@@ -199,10 +212,12 @@ const ActionIcon = styled.div`
 const EditInput = styled.input`
   width: 100%;
   padding: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   font-size: 14px;
   margin-bottom: 8px;
+  background-color: var(--bg-secondary);
+  color: var(--text-main);
 `;
 
 const EditActions = styled.div`
@@ -325,6 +340,62 @@ const FullPreviewFrame = styled.iframe`
   background-color: white;
 `;
 
+// --- Confirmation Modal Styles ---
+const ConfirmOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 3000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+`;
+
+const ConfirmContainer = styled.div`
+  background-color: white;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const ConfirmTitle = styled.h3`
+  margin: 0;
+  font-size: 1.2rem;
+  color: #1e293b;
+  font-weight: 700;
+`;
+
+const ConfirmText = styled.p`
+  margin: 0;
+  font-size: 0.95rem;
+  color: #64748b;
+  line-height: 1.5;
+`;
+
+const ConfirmActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+`;
+
+const ConfirmDeleteButton = styled(Button)`
+  background-color: #ef4444;
+  &:hover {
+    background-color: #dc2626;
+  }
+`;
+
 // --- Mentions Dropdown Styles ---
 const MentionsList = styled.ul`
   position: absolute;
@@ -388,6 +459,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewData, setPreviewData] = useState({ url: null, type: null, name: "" });
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
 
   const activityInputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -428,7 +500,10 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   }, [boardId, Trackerbaseurl]);
 
   const canModifyComment = (comment) => {
+    const userRole = localStorage.getItem("role");
+    const isAdminOrHOD = userRole === "Admin" || userRole === "HOD";
     return (
+      isAdminOrHOD ||
       String(comment.empid) === String(employeeId) ||
       comment.empname === employeeName
     );
@@ -654,13 +729,14 @@ const handleSaveActivity = async () => {
 };
 
 
-  const handleDeleteComment = async (comment) => {
+  const handleDeleteComment = async () => {
+    if (!commentToDelete) return;
     try {
       const payload = {
         cardId: String(cardId),
         boardId: String(boardId),
-        commentId: comment.commentId,
-        commenttext: comment.commenttext,
+        commentId: commentToDelete.commentId,
+        commenttext: commentToDelete.commenttext,
       };
 
       const result = await apiRequest(
@@ -677,6 +753,8 @@ const handleSaveActivity = async () => {
       }
     } catch (error) {
       showErrorToast("Connection failed.");
+    } finally {
+      setCommentToDelete(null);
     }
   };
 
@@ -790,13 +868,21 @@ const getFileUrl = (comment) => {
           Activity
         </SectionTitle>
         
-        <ActivityInput
-          placeholder="Add a comment... Type '@' to tag a member (Ctrl+Enter to submit)"
-          ref={activityInputRef}
-          value={commentText} 
-          onChange={handleInputChange} 
-          onKeyDown={handleKeyPress}
-        />
+        <InputWrapper>
+          <ActivityInput
+            placeholder="Add a comment... Type '@' to tag a member (Ctrl+Enter to submit)"
+            ref={activityInputRef}
+            value={commentText} 
+            onChange={handleInputChange} 
+            onKeyDown={handleKeyPress}
+          />
+          <AttachButton 
+            onClick={() => fileInputRef.current.click()} 
+            title="Attach a file"
+          >
+            <FaPaperclip />
+          </AttachButton>
+        </InputWrapper>
 
         {showMentions && filteredMembers.length > 0 && (
             <MentionsList>
@@ -823,24 +909,14 @@ const getFileUrl = (comment) => {
         )}
 
         <Actions>
-          <AttachButton 
-            onClick={() => fileInputRef.current.click()} 
-            title="Attach a file"
-          >
-            <FaPaperclip />
-          </AttachButton>
-          
           <HiddenInput 
             type="file" 
             ref={fileInputRef} 
             onChange={handleFileChange}
           />
-
-          <RightActions>
-            <Button onClick={handleSaveActivity} disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Comment"}
-            </Button>
-          </RightActions>
+          <Button onClick={handleSaveActivity} disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Comment"}
+          </Button>
         </Actions>
       </Section>
 
@@ -919,7 +995,7 @@ const getFileUrl = (comment) => {
                           </ActionIcon>
                           <ActionIcon
                             className="delete-icon"
-                            onClick={() => handleDeleteComment(comment)}
+                            onClick={() => setCommentToDelete(comment)}
                             title="Delete comment"
                           >
                             <FaTrashAlt />
@@ -936,6 +1012,19 @@ const getFileUrl = (comment) => {
           <p>No comments available.</p>
         )}
       </CommentsSection>
+
+      {commentToDelete && (
+        <ConfirmOverlay onClick={() => setCommentToDelete(null)}>
+          <ConfirmContainer onClick={(e) => e.stopPropagation()}>
+            <ConfirmTitle>Delete Comment</ConfirmTitle>
+            <ConfirmText>Are you sure you want to delete this comment? This action cannot be undone.</ConfirmText>
+            <ConfirmActions>
+              <CancelButton onClick={() => setCommentToDelete(null)}>Cancel</CancelButton>
+              <ConfirmDeleteButton onClick={handleDeleteComment}>Delete</ConfirmDeleteButton>
+            </ConfirmActions>
+          </ConfirmContainer>
+        </ConfirmOverlay>
+      )}
 
       {showPreviewModal && (
         <PreviewOverlay onClick={closePreview}>

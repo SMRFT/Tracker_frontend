@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { FaPlusCircle, FaTrashAlt, FaTimes } from "react-icons/fa";
+import { FaPlus, FaTrashAlt, FaTimes } from "react-icons/fa";
 import { MdOutlinePersonOutline } from "react-icons/md";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest";
 
-// Detect if device is mobile
+// Robust check for mobile based on viewport width
 const isMobile = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  ) || window.innerWidth <= 768;
+  return window.innerWidth <= 768;
 };
 
 const ModalBackdrop = styled.div`
@@ -19,297 +17,264 @@ const ModalBackdrop = styled.div`
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 3000;
   padding: ${(props) => (props.isMobile ? "0" : "20px")};
 `;
 
 const ModalContainer = styled.div`
-  background-color: white;
-  padding: ${(props) => (props.isMobile ? "15px" : "20px")};
-  border-radius: ${(props) => (props.isMobile ? "0" : "8px")};
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  width: ${(props) => (props.isMobile ? "100%" : "450px")};
+  background-color: var(--bg-secondary);
+  padding: 24px;
+  border-radius: ${(props) => (props.isMobile ? "0" : "16px")};
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: ${(props) => (props.isMobile ? "100%" : "480px")};
   height: ${(props) => (props.isMobile ? "100vh" : "auto")};
-  max-height: ${(props) => (props.isMobile ? "100vh" : "90vh")};
-  overflow-y: auto;
-  z-index: 1001;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    height: 100vh;
-    border-radius: 0;
-    max-height: 100vh;
-  }
-`;
-
-const MembersContainer = styled.div`
+  max-height: ${(props) => (props.isMobile ? "100vh" : "85vh")};
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: ${(props) => (props.isMobile ? "10px" : "20px")};
+  z-index: 3001;
   position: relative;
-
-  @media (max-width: 768px) {
-    padding: 10px;
-  }
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
 `;
 
-const EmployeeCard = styled.div`
-  background-color: #f0f0f0;
-  color: black;
-  border-radius: 8px;
-  padding: ${(props) => (props.isMobile ? "12px" : "10px 20px")};
-  margin: ${(props) => (props.isMobile ? "8px 0" : "10px 0")};
-  width: ${(props) => (props.isMobile ? "100%" : "400px")};
-  max-width: 100%;
+const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-
-  @media (max-width: 768px) {
-    padding: 12px 10px;
-    margin: 8px 0;
-    width: 100%;
-  }
-`;
-
-const EmployeeCardContent = styled.div`
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  flex-direction: ${(props) => (props.isMobile ? "column" : "row")};
-  gap: ${(props) => (props.isMobile ? "8px" : "0")};
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-`;
-
-const EmployeeInfo = styled.div`
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: ${(props) => (props.isMobile ? "wrap" : "nowrap")};
-  gap: ${(props) => (props.isMobile ? "8px" : "0")};
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-`;
-
-const EmployeeName = styled.div`
-  flex: ${(props) => (props.isMobile ? "1" : "2")};
-  font-weight: bold;
-  font-size: ${(props) => (props.isMobile ? "1rem" : "inherit")};
-  word-break: break-word;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    font-size: 1rem;
-  }
-`;
-
-const DepartmentText = styled.div`
-  flex: ${(props) => (props.isMobile ? "1" : "2")};
-  text-align: ${(props) => (props.isMobile ? "left" : "center")};
-  color: #555;
-  font-size: ${(props) => (props.isMobile ? "0.85rem" : "0.9rem")};
-
-  @media (max-width: 768px) {
-    width: 100%;
-    text-align: left;
-    font-size: 0.85rem;
-  }
-`;
-
-const EmployeeId = styled.div`
-  flex: ${(props) => (props.isMobile ? "1" : "1")};
-  text-align: ${(props) => (props.isMobile ? "left" : "center")};
-  font-size: ${(props) => (props.isMobile ? "0.85rem" : "inherit")};
-  color: #666;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    text-align: left;
-    font-size: 0.85rem;
-  }
-`;
-
-const ActionButtonContainer = styled.div`
-  flex: ${(props) => (props.isMobile ? "1" : "0.5")};
-  text-align: center;
-  display: flex;
-  justify-content: ${(props) => (props.isMobile ? "flex-end" : "center")};
-  align-items: center;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    justify-content: flex-end;
-    margin-top: 5px;
-  }
-`;
-
-const IconButton = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  color: ${(props) => (props.delete ? "red" : "green")};
-  font-size: ${(props) => (props.isMobile ? "1.5em" : "1.2em")};
-  padding: ${(props) => (props.isMobile ? "8px" : "4px")};
-  transition: all 0.2s ease;
-
-  &:hover {
-    opacity: 0.8;
-    transform: scale(1.1);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-
-  @media (max-width: 768px) {
-    font-size: 1.5em;
-    padding: 8px;
-  }
-`;
-
-const SearchBox = styled.input`
-  padding: ${(props) => (props.isMobile ? "12px" : "8px")};
   margin-bottom: 20px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 100%;
-  max-width: ${(props) => (props.isMobile ? "100%" : "300px")};
-  font-size: ${(props) => (props.isMobile ? "16px" : "14px")};
+  padding-right: 30px;
 
-  @media (max-width: 768px) {
-    padding: 12px;
-    font-size: 16px;
-    max-width: 100%;
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
   }
 `;
 
 const CloseButton = styled.button`
   position: absolute;
-  top: ${(props) => (props.isMobile ? "15px" : "10px")};
-  right: ${(props) => (props.isMobile ? "15px" : "10px")};
-  background: ${(props) => (props.isMobile ? "rgba(255,255,255,0.9)" : "none")};
-  border: none;
+  top: 20px;
+  right: 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   cursor: pointer;
-  color: ${(props) => (props.isMobile ? "red" : "#ccc")};
-  font-size: ${(props) => (props.isMobile ? "2em" : "1.5em")};
-  z-index: 10;
-  border-radius: ${(props) => (props.isMobile ? "50%" : "0")};
-  width: ${(props) => (props.isMobile ? "40px" : "auto")};
-  height: ${(props) => (props.isMobile ? "40px" : "auto")};
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
 
   &:hover {
-    color: ${(props) => (props.isMobile ? "darkred" : "black")};
-    transform: scale(1.1);
-  }
-
-  @media (max-width: 768px) {
-    top: 15px;
-    right: 15px;
-    font-size: 2em;
-    background: rgba(255, 255, 255, 0.9);
-    color: red;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+    background: var(--border-subtle);
+    color: var(--text-main);
+    transform: rotate(90deg);
   }
 `;
 
-const Button = styled.button`
-  margin-top: 15px;
-  padding: ${(props) => (props.isMobile ? "12px 20px" : "10px 20px")};
-  background-color: #4caf50;
+const SearchBox = styled.input`
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  width: 100%;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  background-color: var(--bg-primary);
+  outline: none;
+  transition: all 0.2s;
+
+  &:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+
+  &::placeholder {
+    color: var(--text-light);
+  }
+`;
+
+const ScrollArea = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 3px;
+  }
+`;
+
+const SectionTitle = styled.h3`
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 16px 0 8px 0;
+  
+  &:first-of-type {
+    margin-top: 0;
+  }
+`;
+
+const EmployeeCard = styled.div`
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--primary-accent);
+    background: var(--bg-secondary);
+  }
+`;
+
+const EmployeeInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+`;
+
+const AvatarCircle = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: ${(props) => props.bgColor || "#6366f1"};
   color: white;
-  border: none;
-  border-radius: 8px;
-  width: ${(props) => (props.isMobile ? "100%" : "150px")};
-  cursor: pointer;
-  font-size: ${(props) => (props.isMobile ? "1.1rem" : "1rem")};
-  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  float: ${(props) => (props.isMobile ? "none" : "right")};
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+`;
+
+const TextDetails = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  .name {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    gap: 8px;
+  }
+`;
+
+const ActionButton = styled.button`
+  background: ${(props) => (props.isDelete ? "#fee2e2" : "#eeebff")};
+  color: ${(props) => (props.isDelete ? "#ef4444" : "#6366f1")};
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
 
   &:hover {
-    background-color: #45a049;
-    transform: translateY(-2px);
+    background: ${(props) => (props.isDelete ? "#fecaca" : "#e0dcfe")};
+    transform: scale(1.05);
+  }
+`;
+
+const TriggerButton = styled.button`
+  width: 100%;
+  padding: 10px 16px;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+
+  &:hover {
+    background-color: #4f46e5;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.2);
   }
 
   &:active {
     transform: translateY(0);
   }
-
-  @media (max-width: 768px) {
-    width: 100%;
-    padding: 12px 20px;
-    font-size: 1.1rem;
-    float: none;
-  }
-`;
-
-const SectionTitle = styled.h2`
-  font-size: ${(props) => (props.isMobile ? "1.3rem" : "1.5rem")};
-  margin: ${(props) => (props.isMobile ? "15px 0 10px" : "20px 0 10px")};
-  color: #333;
-  width: 100%;
-  text-align: center;
-
-  @media (max-width: 768px) {
-    font-size: 1.3rem;
-    margin: 15px 0 10px;
-  }
 `;
 
 const EmptyMessage = styled.p`
-  color: #666;
-  font-size: ${(props) => (props.isMobile ? "0.95rem" : "1rem")};
+  color: var(--text-light);
+  font-size: 0.85rem;
   text-align: center;
-  padding: ${(props) => (props.isMobile ? "15px" : "10px")};
-
-  @media (max-width: 768px) {
-    font-size: 0.95rem;
-    padding: 15px;
-  }
+  margin: 12px 0;
+  font-weight: 500;
 `;
+
+const getBackgroundColor = (name) => {
+  const colors = [
+    "#818cf8", // Indigo
+    "#fb7185", // Rose
+    "#fbbf24", // Amber
+    "#34d399", // Emerald
+    "#60a5fa", // Blue
+    "#c084fc", // Purple
+  ];
+  if (!name) return colors[0];
+  const index = name.charCodeAt(0) % colors.length;
+  return colors[index];
+};
 
 const Addmembers = ({ cardId, cardName, boardId, closeModal, onMemberUpdate }) => {
   const [employees, setEmployees] = useState([]);
   const [addedMembers, setAddedMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileView, setIsMobileView] = useState(isMobile());
-  const role = localStorage.getItem("role");
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
 
-  // Handle window resize
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobileView(isMobile());
-    };
+    const handleResize = () => setIsMobileView(isMobile());
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -318,16 +283,11 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal, onMemberUpdate }) =
     const fetchEmployees = async () => {
       try {
         const response = await apiRequest(`${Trackerbaseurl}get-employees/`);
-
         if (response.success) {
           setEmployees(response.data);
-        } else {
-          console.error("API Error:", response.error);
-          setError(response.error || "Error fetching employee data");
         }
       } catch (error) {
         console.error("Error fetching employees:", error);
-        setError("Error fetching employee data");
       } finally {
         setLoading(false);
       }
@@ -338,11 +298,8 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal, onMemberUpdate }) =
         const response = await apiRequest(
           `${Trackerbaseurl}add_member_to_card/?cardId=${cardId}&boardId=${boardId}&cardName=${cardName}`
         );
-
         if (response.success) {
           setAddedMembers(response.data);
-        } else {
-          console.error("API Error:", response.error);
         }
       } catch (error) {
         console.error("Error fetching added members:", error);
@@ -351,10 +308,9 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal, onMemberUpdate }) =
 
     fetchEmployees();
     fetchAddedMembers();
-  }, [cardId, boardId, cardName]);
+  }, [cardId, boardId, cardName, Trackerbaseurl]);
 
   const handleSelect = async (employee) => {
-    setLoading(true);
     try {
       const result = await apiRequest(`${Trackerbaseurl}add_member_to_card/`, "POST", {
         cardId,
@@ -364,27 +320,16 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal, onMemberUpdate }) =
       });
 
       if (!result.success) {
-        toast.error(result.error || "Error adding member.", {
-          position: isMobileView ? "top-center" : "top-right",
-        });
+        toast.error(result.error || "Error adding member.");
       } else {
         setAddedMembers([...addedMembers, employee]);
         setEmployees(employees.filter((emp) => emp.employeeId !== employee.employeeId));
-
         if (onMemberUpdate) onMemberUpdate();
-
-        const successMessage = result.data?.message || "Member added successfully!";
-        toast.success(successMessage, {
-          position: isMobileView ? "top-center" : "top-right",
-        });
+        toast.success("Member added successfully!");
       }
     } catch (error) {
       console.error("Unexpected error:", error);
-      toast.error("Unexpected error occurred.", {
-        position: isMobileView ? "top-center" : "top-right",
-      });
-    } finally {
-      setLoading(false);
+      toast.error("Unexpected error occurred.");
     }
   };
 
@@ -396,24 +341,16 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal, onMemberUpdate }) =
       );
 
       if (!result.success) {
-        toast.error(result.error || "Failed to remove member", {
-          position: isMobileView ? "top-center" : "top-right",
-        });
+        toast.error(result.error || "Failed to remove member");
       } else {
         setAddedMembers(addedMembers.filter((m) => m.employeeId !== employee.employeeId));
         setEmployees([...employees, employee]);
-
         if (onMemberUpdate) onMemberUpdate();
-
-        toast.warn("Member removed successfully!", {
-          position: isMobileView ? "top-center" : "top-right",
-        });
+        toast.warn("Member removed successfully!");
       }
     } catch (error) {
       console.error("Unexpected error:", error);
-      toast.error("Error removing member.", {
-        position: isMobileView ? "top-center" : "top-right",
-      });
+      toast.error("Error removing member.");
     }
   };
 
@@ -424,83 +361,75 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal, onMemberUpdate }) =
   );
 
   return (
-    <ModalBackdrop isMobile={isMobileView}>
-      <ModalContainer isMobile={isMobileView}>
-        <MembersContainer isMobile={isMobileView}>
-          <CloseButton isMobile={isMobileView} onClick={closeModal}>
+    <ModalBackdrop isMobile={isMobileView} onClick={closeModal}>
+      <ModalContainer isMobile={isMobileView} onClick={(e) => e.stopPropagation()}>
+        <Header>
+          <h2>Manage Members</h2>
+          <CloseButton onClick={closeModal}>
             <FaTimes />
           </CloseButton>
-          <SectionTitle isMobile={isMobileView}>Members</SectionTitle>
-          <SearchBox
-            isMobile={isMobileView}
-            type="text"
-            placeholder="Search members..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        </Header>
 
-          {filteredEmployees.length > 0 ? (
-            filteredEmployees.map((employee) => (
-              <EmployeeCard key={employee.employeeId} isMobile={isMobileView}>
-                <EmployeeCardContent isMobile={isMobileView}>
-                  <EmployeeInfo isMobile={isMobileView}>
-                    <EmployeeName isMobile={isMobileView}>
-                      {employee.employeeName}
-                    </EmployeeName>
-                    <DepartmentText isMobile={isMobileView}>
-                      {employee.department}
-                    </DepartmentText>
-                    <EmployeeId isMobile={isMobileView}>
-                      ID: {employee.employeeId}
-                    </EmployeeId>
-                  </EmployeeInfo>
-                  <ActionButtonContainer isMobile={isMobileView}>
-                    <IconButton
-                      isMobile={isMobileView}
-                      onClick={() => handleSelect(employee)}
-                    >
-                      <FaPlusCircle />
-                    </IconButton>
-                  </ActionButtonContainer>
-                </EmployeeCardContent>
-              </EmployeeCard>
-            ))
-          ) : (
-            <EmptyMessage isMobile={isMobileView}>No employees found.</EmptyMessage>
-          )}
+        <SearchBox
+          type="text"
+          placeholder="Search employees to assign..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
 
-          <SectionTitle isMobile={isMobileView}>Added Members</SectionTitle>
+        <ScrollArea>
+          <SectionTitle>Assigned Members ({addedMembers.length})</SectionTitle>
           {addedMembers.length > 0 ? (
             addedMembers.map((member) => (
-              <EmployeeCard key={member.employeeId} isMobile={isMobileView}>
-                <EmployeeCardContent isMobile={isMobileView}>
-                  <EmployeeInfo isMobile={isMobileView}>
-                    <EmployeeName isMobile={isMobileView}>
-                      {member.employeeName}
-                    </EmployeeName>
-                    <DepartmentText isMobile={isMobileView}>
-                      {member.department}
-                    </DepartmentText>
-                    <EmployeeId isMobile={isMobileView}>
-                      ID: {member.employeeId}
-                    </EmployeeId>
-                  </EmployeeInfo>
-                  <ActionButtonContainer isMobile={isMobileView}>
-                    <IconButton
-                      isMobile={isMobileView}
-                      delete
-                      onClick={() => handleRemove(member)}
-                    >
-                      <FaTrashAlt />
-                    </IconButton>
-                  </ActionButtonContainer>
-                </EmployeeCardContent>
+              <EmployeeCard key={member.employeeId}>
+                <EmployeeInfo>
+                  <AvatarCircle bgColor={getBackgroundColor(member.employeeName)}>
+                    {member.employeeName ? member.employeeName.charAt(0).toUpperCase() : "U"}
+                  </AvatarCircle>
+                  <TextDetails>
+                    <span className="name">{member.employeeName}</span>
+                    <span className="sub">
+                      <span>{member.department}</span>
+                      <span>•</span>
+                      <span>ID: {member.employeeId}</span>
+                    </span>
+                  </TextDetails>
+                </EmployeeInfo>
+                <ActionButton isDelete onClick={() => handleRemove(member)} title="Remove Member">
+                  <FaTrashAlt size={12} />
+                </ActionButton>
               </EmployeeCard>
             ))
           ) : (
-            <EmptyMessage isMobile={isMobileView}>No members added yet.</EmptyMessage>
+            <EmptyMessage>No members assigned to this task yet.</EmptyMessage>
           )}
-        </MembersContainer>
+
+          <SectionTitle>Available Employees</SectionTitle>
+          {filteredEmployees.length > 0 ? (
+            filteredEmployees.map((employee) => (
+              <EmployeeCard key={employee.employeeId}>
+                <EmployeeInfo>
+                  <AvatarCircle bgColor={getBackgroundColor(employee.employeeName)}>
+                    {employee.employeeName ? employee.employeeName.charAt(0).toUpperCase() : "U"}
+                  </AvatarCircle>
+                  <TextDetails>
+                    <span className="name">{employee.employeeName}</span>
+                    <span className="sub">
+                      <span>{employee.department}</span>
+                      <span>•</span>
+                      <span>ID: {employee.employeeId}</span>
+                    </span>
+                  </TextDetails>
+                </EmployeeInfo>
+                <ActionButton onClick={() => handleSelect(employee)} title="Assign Member">
+                  <FaPlus size={12} />
+                </ActionButton>
+              </EmployeeCard>
+            ))
+          ) : (
+            <EmptyMessage>No available employees matching search.</EmptyMessage>
+          )}
+        </ScrollArea>
       </ModalContainer>
     </ModalBackdrop>
   );
@@ -508,27 +437,17 @@ const Addmembers = ({ cardId, cardName, boardId, closeModal, onMemberUpdate }) =
 
 const Addmembersbutton = ({ cardId, boardId, cardName, onMemberUpdate }) => {
   const [showModal, setShowModal] = useState(false);
-  const [isMobileView, setIsMobileView] = useState(isMobile());
   const openModal = () => setShowModal(true);
   const closeModal = () => setShowModal(false);
   const role = localStorage.getItem("role");
 
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobileView(isMobile());
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   return (
     <div>
       {(role === "Admin" || role === "HOD") && (
-        <Button isMobile={isMobileView} onClick={openModal}>
-          <MdOutlinePersonOutline style={{ marginRight: "8px", fontSize: "1.2rem" }} />
-          Member
-        </Button>
+        <TriggerButton onClick={openModal}>
+          <MdOutlinePersonOutline size={18} />
+          Members
+        </TriggerButton>
       )}
       {showModal && (
         <Addmembers

@@ -6,10 +6,8 @@ import styled from "styled-components";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { FaCalendarAlt } from "react-icons/fa";
-import Notification from "./Notification";
-import { FaTimes, FaPlus } from "react-icons/fa";
-import { FaRegCreditCard } from "react-icons/fa";
+import { FaCalendarAlt, FaRegCalendarAlt, FaRegComment, FaTimes, FaPlus, FaRegCreditCard } from "react-icons/fa";
+
 import DateComponent from "./Dates";
 import Addmembers from "./Addmembers";
 import Description from "./Description";
@@ -18,8 +16,681 @@ import { isBefore, format, parseISO } from "date-fns";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiRequest from "./apiRequest";
+import { motion, AnimatePresence } from "framer-motion";
 
-const DragAndDropCards = ({ boards, setBoards }) => {
+const ItemType = {
+  CARD: "card",
+};
+
+const TodolistContainer = styled.div`
+  background-color: var(--bg-primary);
+  height: calc(100vh - 60px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  font-family: 'Inter', sans-serif;
+
+  @media (max-width: 768px) {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    padding: 1rem;
+    margin-top: 50px;
+  }
+`;
+
+const HeaderBanner = styled.div`
+  background: ${(props) => props.bannerColor || "linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)"};
+  border-radius: 16px;
+  padding: 1.75rem 2.25rem;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
+  gap: 1.5rem;
+`;
+
+const HeaderLeft = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const BoardTitle = styled.h1`
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const BoardSubtitle = styled.span`
+  font-size: 0.85rem;
+  opacity: 0.85;
+  font-weight: 500;
+`;
+
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+`;
+
+const EmployeeAvatars = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  
+  /* Overlapping avatar stack effect */
+  & > * {
+    margin-left: -8px;
+    &:first-child {
+      margin-left: 0;
+    }
+  }
+`;
+
+const EmployeeAvatar = styled.div`
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+
+  &:hover {
+    transform: translateY(-3px) scale(1.08);
+    z-index: 10;
+    border-color: white;
+  }
+`;
+
+const IconGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+`;
+
+const CalendarIconButton = styled.button`
+  background: none;
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+  }
+`;
+
+const BoardGrid = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  padding-bottom: 2rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  align-items: flex-start;
+  flex: 1;
+
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 99px;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    overflow-x: visible;
+    overflow-y: visible;
+    flex: none;
+  }
+`;
+
+const ColumnWrapper = styled.div`
+  width: 290px;
+  min-width: 290px;
+  padding: 16px;
+  border-radius: 16px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 280px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.01);
+
+  @media (max-width: 768px) {
+    width: 100%;
+    min-width: unset;
+    height: auto;
+  }
+`;
+
+const ColumnHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0 4px;
+`;
+
+const ColumnTitle = styled.h3`
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+`;
+
+const CountBadge = styled.span`
+  background: #cbd5e1;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+`;
+
+const CardsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+  padding: 2px;
+  
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+`;
+
+const CardContainer = styled.div`
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border-subtle);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary-accent);
+  }
+`;
+
+const CardRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+const CardBody = styled.div`
+  cursor: pointer;
+  flex: 1;
+`;
+
+const CardText = styled.strong`
+  font-size: 0.925rem;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.4;
+  word-break: break-word;
+`;
+
+const CreatorInfo = styled.p`
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 4px 0 0 0;
+  line-height: 1.3;
+`;
+
+const RemoveButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--text-light);
+  padding: 2px;
+  line-height: 1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+
+  &:hover {
+    color: var(--danger);
+    background: #fee2e2;
+  }
+`;
+
+const CardFooter = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const DateBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: ${(props) => (props.isOverdue ? "rgba(239, 68, 68, 0.15)" : "var(--bg-secondary)")};
+  color: ${(props) => (props.isOverdue ? "var(--danger)" : "var(--text-muted)")};
+`;
+
+const CardMemberList = styled.div`
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  
+  & > * {
+    margin-left: -6px;
+    &:first-child {
+      margin-left: 0;
+    }
+  }
+`;
+
+const CardMemberAvatar = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: white;
+  background-color: ${(props) => props.bgColor || "var(--primary-accent)"};
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+`;
+
+const CardMemberImage = styled.img`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid white;
+  object-fit: cover;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+`;
+
+const AddCardContainer = styled.div`
+  margin-top: 12px;
+`;
+
+const AddCardInput = styled.textarea`
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  background: white;
+  resize: none;
+  min-height: 60px;
+  font-family: inherit;
+  transition: all 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  }
+`;
+
+const AddCardActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+`;
+
+const AddCardBtn = styled.button`
+  padding: 6px 12px;
+  background-color: var(--primary-accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background 0.2s;
+
+  &:hover {
+    background-color: var(--primary-hover);
+  }
+`;
+
+const AddCardCancelBtn = styled.button`
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+
+  &:hover {
+    background: #e2e8f0;
+    color: var(--text-main);
+  }
+`;
+
+const AddInitialCardButton = styled.button`
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px dashed var(--border-subtle);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #e2e8f0;
+    color: var(--text-main);
+    border-color: #cbd5e1;
+  }
+`;
+
+const ModalOverlay = styled(motion.div)`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  padding: 20px;
+`;
+
+const ModalContainer = styled(motion.div)`
+  background-color: var(--bg-secondary);
+  width: 100%;
+  max-width: 900px;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-subtle);
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border-subtle);
+`;
+
+const ModalHeaderTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+`;
+
+const ModalCloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--border-subtle);
+    color: var(--text-main);
+  }
+`;
+
+const ModalContent = styled.div`
+  display: flex;
+  padding: 2rem;
+  gap: 2rem;
+  flex: 1;
+  overflow-y: auto;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+`;
+
+const ModalLeft = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+`;
+
+const ModalRight = styled.div`
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+
+  @media (max-width: 768px) {
+    flex: unset;
+    width: 100%;
+  }
+`;
+
+const CardNameInput = styled.input`
+  font-size: 1.35rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border: 1px solid var(--primary-accent);
+  border-radius: 6px;
+  color: var(--text-main);
+  width: 90%;
+  outline: none;
+`;
+
+const CardNameText = styled.h2`
+  cursor: pointer;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+  letter-spacing: -0.01em;
+
+  &:hover {
+    color: var(--primary-accent);
+  }
+`;
+
+const DetailGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const DetailLabel = styled.label`
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+`;
+
+const DetailValue = styled.div`
+  font-size: 0.9rem;
+  color: var(--text-main);
+`;
+
+const DateBoxWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-secondary);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+`;
+
+const DateRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  
+  strong {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+`;
+
+const EmployeeCardsWrapper = styled.div`
+  position: absolute;
+  top: ${(props) => props.top}px;
+  left: ${(props) => props.left}px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-sidebar);
+  padding: 1.25rem;
+  border-radius: 16px;
+  width: 290px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+
+  @media (max-width: 768px) {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 320px;
+  }
+`;
+
+const EmployeeCardsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+`;
+
+const EmployeeCardsHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: 8px;
+
+  h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+`;
+
+const EmployeeCardsList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+`;
+
+const EmployeeCardItem = styled.li`
+  padding: 8px 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const CalendarContainer = styled.div`
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80vw;
+  height: 80vh;
+  background-color: #fff;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+  z-index: 1000;
+  overflow: hidden;
+  padding: 20px;
+  border: 1px solid var(--border-subtle);
+
+  @media (max-width: 768px) {
+    width: 95vw;
+    height: 70vh;
+    top: 80px;
+  }
+`;
+
+const DragAndDropCards = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { employeeId, employeeName, boardId, boardName, boardColor } =
@@ -28,6 +699,12 @@ const DragAndDropCards = ({ boards, setBoards }) => {
     cardName: "",
     cardId: "",
     boardName: "",
+    boardId: "",
+    startdate: null,
+    enddate: null,
+    columnId: null,
+    created_by_name: "",
+    created_date: null,
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editedCardName, setEditedCardName] = useState("");
@@ -35,46 +712,82 @@ const DragAndDropCards = ({ boards, setBoards }) => {
   const [members, setMembers] = useState([]);
   const [cardMembers, setCardMembers] = useState([]);
   const [cardAdded, setCardAdded] = useState(false);
+  const [showDeleteCardConfirm, setShowDeleteCardConfirm] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState(null);
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
 
-  const ItemType = {
-    CARD: "card",
-  };
   const localizer = momentLocalizer(moment);
 
-const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, created_date }) => {
+  const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, created_date, startdate, enddate }) => {
     const [, drag] = useDrag({
       type: ItemType.CARD,
       item: { id, index, columnId },
     });
 
-    // Helper to format date
     const formatDate = (dateString) => {
-        if (!dateString) return "";
-        const date = new Date(dateString);
-        // Returns date in local format, e.g., "10/8/2025" or "08/10/2025" depending on locale
-        return date.toLocaleDateString(); 
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      return date.toLocaleDateString(); 
     };
 
+    const overdue = enddate && isOverdue(enddate, columnId);
+
     return (
-      <div ref={drag} style={styles.card} onClick={() => openModal(text)}>
-        <div style={styles.cardContent}>
-          <div>
-            <strong>{text || "No Name"}</strong>
+      <CardContainer ref={drag}>
+        <CardRow>
+          <CardBody onClick={() => openModal(text, id)}>
+            <CardText>{text || "Untitled Task"}</CardText>
             {createdByName && (
-              <p style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
-                Created by: {createdByName}
-                {created_date && (
-                    <>
-                        <br />
-                        Created Date: {formatDate(created_date)}
-                    </>
-                )}
-              </p>
+              <CreatorInfo>
+                By {createdByName}
+              </CreatorInfo>
             )}
-          </div>
-        </div>
-      </div>
+          </CardBody>
+          <RemoveButton onClick={() => {
+            setCardToDelete({ id, columnId });
+            setShowDeleteCardConfirm(true);
+          }}>
+            ×
+          </RemoveButton>
+        </CardRow>
+        
+        {(enddate || cardMembers[id]?.length > 0) && (
+          <CardFooter>
+            {enddate && (
+              <DateBadge isOverdue={overdue}>
+                <FaRegCalendarAlt size={10} />
+                <span>{formatDate(enddate)}</span>
+              </DateBadge>
+            )}
+            
+            <CardMemberList>
+              {cardMembers[id]?.slice(0, 3).map((member, idx) => (
+                <React.Fragment key={idx}>
+                  {member.profilePicture ? (
+                    <CardMemberImage
+                      src={member.profilePicture.startsWith("http") || member.profilePicture.startsWith("data:") ? member.profilePicture : `${Trackerbaseurl}${member.profilePicture.startsWith("/") ? member.profilePicture.slice(1) : member.profilePicture}`}
+                      alt={member.employeeName}
+                      title={member.employeeName}
+                    />
+                  ) : (
+                    <CardMemberAvatar
+                      bgColor={getBackgroundColor(member.employeeName)}
+                      title={member.employeeName}
+                    >
+                      {member.employeeName.charAt(0).toUpperCase()}
+                    </CardMemberAvatar>
+                  )}
+                </React.Fragment>
+              ))}
+              {cardMembers[id]?.length > 3 && (
+                <CardMemberAvatar bgColor="#cbd5e1" title={`${cardMembers[id].length - 3} more`}>
+                  +{cardMembers[id].length - 3}
+                </CardMemberAvatar>
+              )}
+            </CardMemberList>
+          </CardFooter>
+        )}
+      </CardContainer>
     );
   };
   
@@ -85,9 +798,7 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
     moveCard,
     openModal,
     addCard,
-    columns,
     setColumns,
-    backgroundColor,
     showAddCardButton = false,
   }) => {
     const [, drop] = useDrop({
@@ -123,127 +834,57 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
       }
     };
 
-    const handleRemoveCard = async (cardId) => {
-      console.log("Deleting card with ID:", cardId);
-      const userRole = localStorage.getItem("role");
-
-      try {
-        const result = await apiRequest(
-          `${Trackerbaseurl}cards/${cardId}/${boardId}/${userRole}/`,
-          "DELETE"
-        );
-
-        if (result.success) {
-          const successMessage =
-            result.data?.message || "Card deleted successfully!";
-          toast.success(successMessage, {
-            autoClose: 3000,
-            position: "top-right",
-          });
-
-          setColumns((prevColumns) => {
-            const updatedCards = prevColumns[id].filter(
-              (card) => card.cardId !== cardId
-            );
-            return { ...prevColumns, [id]: updatedCards };
-          });
-        } else {
-          const errorMessage =
-            result.data?.error || result.error || "Failed to delete the card.";
-          toast.error(errorMessage, {
-            autoClose: 3000,
-            position: "top-right",
-          });
-        }
-      } catch (error) {
-        console.error("Error deleting card:", error);
-        toast.error("Error deleting card. Please try again later.", {
-          autoClose: 3000,
-          position: "top-right",
-        });
-      }
-    };
-
-    const getBackgroundColor = (name) => {
-      const colors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#FF8C33"];
-      let hash = 0;
-      for (let i = 0; i < name.length; i++) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const index = Math.abs(hash) % colors.length;
-      return colors[index];
-    };
-
     return (
-      <ColumnWrapper ref={drop} backgroundColor={backgroundColor}>
-        <ColumnTitle>{title}</ColumnTitle>
-        {cards.map((card, index) => (
-          <CardContainer key={card.cardId}>
-            <CardRow>
-              <Card
-                id={card.cardId}
-                index={index}
-                columnId={id}
-                text={card.cardName}
-                createdByName={card.created_by_name}  // 👈 new prop
-                created_date={card.created_date}
-                moveCard={moveCard}
-                openModal={() => openModal(card.cardName, card.cardId)}
-              />
-              <RemoveButton onClick={() => handleRemoveCard(card.cardId)}>
-                ×
-              </RemoveButton>
-            </CardRow>
-            <MemberList>
-              {cardMembers[card.cardId]?.length > 0 ? (
-                cardMembers[card.cardId].map((member, idx) => (
-                  <MemberItem key={idx}>
-                    {member.profilePicture ? (
-                      <MemberImage
-                        src={member.profilePicture}
-                        alt={member.employeeName}
-                        title={member.employeeName}
-                      />
-                    ) : (
-                      <MemberInitial
-                        bgColor={getBackgroundColor(member.employeeName)}
-                        title={member.employeeName}
-                      >
-                        {member.employeeName.charAt(0).toUpperCase()}
-                      </MemberInitial>
-                    )}
-                  </MemberItem>
-                ))
-              ) : (
-                <NoMembers>No members</NoMembers>
-              )}
-            </MemberList>
-          </CardContainer>
-        ))}
+      <ColumnWrapper ref={drop}>
+        <ColumnHeader>
+          <ColumnTitle>{title}</ColumnTitle>
+          <CountBadge>{cards.length}</CountBadge>
+        </ColumnHeader>
+        
+        <CardsList>
+          {cards.map((card, index) => (
+            <Card
+              key={card.cardId}
+              id={card.cardId}
+              index={index}
+              columnId={id}
+              text={card.cardName}
+              createdByName={card.created_by_name}
+              created_date={card.created_date}
+              startdate={card.startdate}
+              enddate={card.enddate}
+              moveCard={moveCard}
+              openModal={() => openModal(card.cardName, card.cardId, title)}
+            />
+          ))}
+        </CardsList>
+        
         {showAddCardButton &&
           (localStorage.getItem("role") === "Admin" ||
-            localStorage.getItem("role") === "HOD") && (
+            localStorage.getItem("role") === "HOD" ||
+            localStorage.getItem("role") === "Employee") && (
             <AddCardContainer>
               {isAddingCard ? (
                 <>
                   <AddCardInput
-                    type="text"
-                    placeholder="Enter a name for this card..."
+                    placeholder="What needs to be done?"
                     value={inputValue}
                     onChange={handleInputChange}
+                    autoFocus
                   />
                   <AddCardActions>
-                    <AddCardButton onClick={handleAddCard}>
-                      Add card
-                    </AddCardButton>
-                    <CancelButton onClick={() => setIsAddingCard(false)}>
-                      ×
-                    </CancelButton>
+                    <AddCardBtn onClick={handleAddCard}>
+                      Add Task
+                    </AddCardBtn>
+                    <AddCardCancelBtn onClick={() => setIsAddingCard(false)}>
+                      <FaTimes />
+                    </AddCardCancelBtn>
                   </AddCardActions>
                 </>
               ) : (
                 <AddInitialCardButton onClick={() => setIsAddingCard(true)}>
-                  + Add a card
+                  <FaPlus size={12} />
+                  <span>Add Task</span>
                 </AddInitialCardButton>
               )}
             </AddCardContainer>
@@ -251,8 +892,6 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
       </ColumnWrapper>
     );
   };
-
-  console.log("employeename", employeeId);
 
   const closeModal = () => {
     setIsEditing(false);
@@ -276,36 +915,20 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
       );
 
       if (result.success) {
-        console.log("columns:", columns);
-        console.log("modalContent.boardName:", modalContent.boardName);
-        console.log(
-          "updatedColumns[modalContent.boardName]:",
-          columns[modalContent.boardName]
-        );
-
-        if (
-          columns &&
-          modalContent.boardName &&
-          columns[modalContent.boardName]
-        ) {
+        if (columns && modalContent.boardName && columns[modalContent.boardName.toLowerCase()]) {
+          const key = modalContent.boardName.toLowerCase();
           const updatedColumns = { ...columns };
-          const updatedCards = updatedColumns[modalContent.boardName].map(
-            (card) =>
-              card.cardId === modalContent.cardId
-                ? { ...card, cardName: editedCardName }
-                : card
+          const updatedCards = updatedColumns[key].map((card) =>
+            card.cardId === modalContent.cardId
+              ? { ...card, cardName: editedCardName }
+              : card
           );
           setColumns({
             ...updatedColumns,
-            [modalContent.boardName]: updatedCards,
+            [key]: updatedCards,
           });
-        } else {
-          console.log("Skipping local state update due to missing data");
         }
-
-        console.log("About to call fetchCardsWithMembers");
         await fetchCardsWithMembers(boardId);
-        console.log("fetchCardsWithMembers completed");
       } else {
         console.error("Error updating card name:", result.error);
       }
@@ -346,6 +969,7 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
         ...card,
         startdate: card.startdate ? parseISO(card.startdate) : null,
         enddate: card.enddate ? parseISO(card.enddate) : null,
+        created_date: card.created_date ? parseISO(card.created_date) : null,
       }));
 
       const updatedColumns = {
@@ -439,8 +1063,6 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
 
       if (result.success) {
         const data = result.data;
-        console.log("Card added:", data);
-
         localStorage.setItem("cardId", data.cardId);
         localStorage.setItem("cardName", data.cardName);
 
@@ -450,7 +1072,6 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
           cardName: data.cardName,
         });
         setColumns(updatedColumns);
-
         setCardAdded(true);
       } else {
         console.error("Error adding card:", result.error);
@@ -467,7 +1088,7 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
     }
   }, [cardAdded]);
 
-  const openModal = (cardName, cardId, boardName) => {
+  const openModal = (cardName, cardId, colTitle) => {
     const selectedCard = cards.find((card) => card.cardId === cardId);
 
     const defaultStartDate = selectedCard?.startdate || null;
@@ -478,17 +1099,53 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
     setModalContent({
       cardName: cardName || "No Card Name",
       cardId: cardId || null,
-      boardName: boardName || "No Board Name",
+      boardName: colTitle || "No Board Name",
       boardId: boardId || null,
       startdate: defaultStartDate,
       enddate: defaultEndDate,
       columnId: selectedCard?.columnId || null,
       created_by_name: selectedCard?.created_by_name || "System",
+      created_date: selectedCard?.created_date || null,
     });
 
     setEditedCardName(cardName || "");
     setIsModalOpen(true);
     setIsOpen(true);
+  };
+
+  const handleRemoveCard = async (targetCardId, colId) => {
+    const userRole = localStorage.getItem("role");
+    try {
+      const result = await apiRequest(
+        `${Trackerbaseurl}cards/${targetCardId}/${boardId}/${userRole}/`,
+        "DELETE"
+      );
+
+      if (result.success) {
+        toast.success(result.data?.message || "Card deleted successfully!", {
+          autoClose: 2000,
+          position: "top-right",
+        });
+
+        setColumns((prevColumns) => {
+          const updatedCards = prevColumns[colId].filter(
+            (card) => card.cardId !== targetCardId
+          );
+          return { ...prevColumns, [colId]: updatedCards };
+        });
+      } else {
+        toast.error(result.error || "Failed to delete the card.", {
+          autoClose: 2000,
+          position: "top-right",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting card:", error);
+      toast.error("Error deleting card.", {
+        autoClose: 2000,
+        position: "top-right",
+      });
+    }
   };
 
   const fetchMembers = async (targetCardId, targetBoardId, targetCardName) => {
@@ -498,7 +1155,6 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
       );
 
       if (result.success) {
-        console.log("Fetched members:", result.data);
         setMembers(result.data);
 
         setCardMembers((prev) => ({
@@ -521,12 +1177,12 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
 
   const getBackgroundColor = (name) => {
     const colors = [
-      "#FF9A9E",
-      "#FFC93C",
-      "#84FAB0",
-      "#8FD3F4",
-      "#5E3EC8",
-      "#FF6F61",
+      "#818cf8", // Indigo
+      "#fb7185", // Rose
+      "#34d399", // Emerald
+      "#60a5fa", // Blue
+      "#a78bfa", // Purple
+      "#fbbf24", // Amber
     ];
     const index = name.charCodeAt(0) % colors.length;
     return colors[index];
@@ -544,9 +1200,6 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
         setMembers1(result.data.employees);
       } else {
         console.error("Failed to fetch employees:", result.error);
-        if (result.rawResponse) {
-          console.error("Server returned:", result.rawResponse);
-        }
       }
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -559,7 +1212,7 @@ const Card = ({ id, index, columnId, text, createdByName, moveCard, openModal, c
     }
   }, [boardId]);
 
-const fetchEmployeeCards = (member, boardId, position) => {
+  const fetchEmployeeCards = (member, boardId, position) => {
     const employeeId = member.employeeId;
 
     apiRequest(`${Trackerbaseurl}employeecards/${employeeId}/${boardId}/`)
@@ -578,14 +1231,14 @@ const fetchEmployeeCards = (member, boardId, position) => {
           if (filteredCards.length > 0) {
             setEmployeeCards(filteredCards);
             setAvatarPosition(position);
-            setSelectedEmployee(member); // <--- Popup opens here
+            setSelectedEmployee(member);
           } else {
             setSelectedEmployee(null);
             setEmployeeCards([]);
             toast.info(`No active cards found for ${member.employeeName}`, { autoClose: 2000 });
           }
         } else {
-            setSelectedEmployee(null);
+          setSelectedEmployee(null);
         }
       })
       .catch((error) => {
@@ -612,21 +1265,16 @@ const fetchEmployeeCards = (member, boardId, position) => {
 
     return todayDateOnly > endDateOnly;
   };
-// Inside DragAndDropCards component
 
-const handleInstantDateUpdate = (newStartDate, newEndDate) => {
-    // 1. Update the Modal view instantly
+  const handleInstantDateUpdate = (newStartDate, newEndDate) => {
     setModalContent((prev) => ({
       ...prev,
       startdate: newStartDate,
       enddate: newEndDate,
     }));
 
-    // 2. Update the Board Columns (Cards) state instantly
     setColumns((prevColumns) => {
       const updatedColumns = { ...prevColumns };
-      
-      // We loop through columns to find and update the specific card
       Object.keys(updatedColumns).forEach((colKey) => {
         updatedColumns[colKey] = updatedColumns[colKey].map((card) => {
           if (card.cardId === modalContent.cardId) {
@@ -642,10 +1290,8 @@ const handleInstantDateUpdate = (newStartDate, newEndDate) => {
       return updatedColumns;
     });
 
-    // 3. Update Calendar Events instantly
     setEvents((prevEvents) => 
       prevEvents.map((event) => {
-        // Assuming your event title matches card name or you map by ID
         if (event.title === modalContent.cardName) { 
            return { ...event, start: newStartDate, end: newEndDate };
         }
@@ -653,109 +1299,116 @@ const handleInstantDateUpdate = (newStartDate, newEndDate) => {
       })
     );
     
-    // 4. (Optional) Trigger background fetch to ensure perfect sync
-    // We do this *after* local update so UI is already fast
     fetchCardsWithMembers(boardId); 
-};
+  };
 
   const [avatarPosition, setAvatarPosition] = useState({ top: 0, left: 0 });
 
   return (
-    <TodolistContainer style={{ background: boardColor }}>
+    <TodolistContainer>
       <DndProvider backend={HTML5Backend}>
-        <IconWrapper>
-        <EmployeeAvatars>
-            {members1.map((member) => {
-              // 1. FILTER: If the employee has no name, do not display this avatar
-              if (!member.employeeName || member.employeeName.trim() === "") {
-                return null;
-              }
-
-              return (
-                <EmployeeAvatar
-                  key={member.employeeId}
-                  title={member.employeeName}
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    // 2. Calculate position
-                    const calculatedPosition = {
-                      top: rect.bottom + window.scrollY + 10,
-                      left: rect.left + window.scrollX,
-                    };
-                    
-                    // 3. FIX: Call fetch first (DO NOT set selectedEmployee here)
-                    // This ensures the popup only opens if cards are found
-                    fetchEmployeeCards(member, boardId, calculatedPosition);
-                  }}
-                >
-                  <img
-                    src={`https://ui-avatars.com/api/?name=${member.employeeName}&background=random`}
-                    alt={member.employeeName}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      borderRadius: "50%",
+        <HeaderBanner bannerColor={boardColor}>
+          <HeaderLeft>
+            <BoardTitle>{boardName || "Board Workspace"}</BoardTitle>
+            <BoardSubtitle>HOD / Owner: {employeeName || "General"}</BoardSubtitle>
+          </HeaderLeft>
+          
+          <HeaderRight>
+            <EmployeeAvatars>
+              {members1.map((member) => {
+                if (!member.employeeName || member.employeeName.trim() === "") {
+                  return null;
+                }
+                return (
+                  <EmployeeAvatar
+                    key={member.employeeId}
+                    title={member.employeeName}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const calculatedPosition = {
+                        top: rect.bottom + window.scrollY + 10,
+                        left: rect.left + window.scrollX,
+                      };
+                      fetchEmployeeCards(member, boardId, calculatedPosition);
                     }}
-                  />
-                </EmployeeAvatar>
-              );
-            })}
-          </EmployeeAvatars>
+                  >
+                    <img
+                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(member.employeeName)}&background=random&color=fff`}
+                      alt={member.employeeName}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "50%",
+                      }}
+                    />
+                  </EmployeeAvatar>
+                );
+              })}
+            </EmployeeAvatars>
 
-          <IconGroup>
-            <CalendarIcon
-              onClick={() => setIsCalendarVisible(!isCalendarVisible)}
-            />
-            <Notification employeeId={employeeId} />
-          </IconGroup>
-        </IconWrapper>
+            <IconGroup>
+              <CalendarIconButton
+                onClick={() => setIsCalendarVisible(!isCalendarVisible)}
+                title="Toggle Calendar View"
+              >
+                <FaCalendarAlt />
+              </CalendarIconButton>
+            </IconGroup>
+          </HeaderRight>
+        </HeaderBanner>
 
-        {selectedEmployee && (
-          <EmployeeCardsWrapper
-            top={avatarPosition.top}
-            left={avatarPosition.left}
-          >
-            <EmployeeCardsContainer>
-              <EmployeeCardsHeader>
-                <h3>{selectedEmployee.employeeName}'s Cards</h3>
-                <FaTimes
-                  style={{
-                    color: "white",
-                    cursor: "pointer",
-                    fontSize: "1.2rem",
-                  }}
-                  onClick={() => setSelectedEmployee(null)}
-                />
-              </EmployeeCardsHeader>
+        <AnimatePresence>
+          {selectedEmployee && (
+            <EmployeeCardsWrapper
+              top={avatarPosition.top}
+              left={avatarPosition.left}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+            >
+              <EmployeeCardsContainer>
+                <EmployeeCardsHeader>
+                  <h3>{selectedEmployee.employeeName}'s Tasks</h3>
+                  <ModalCloseButton 
+                    onClick={() => setSelectedEmployee(null)}
+                    style={{ padding: '2px', color: 'white' }}
+                  >
+                    <FaTimes size={14} />
+                  </ModalCloseButton>
+                </EmployeeCardsHeader>
 
-              <EmployeeCardsList>
-                {employeeCards.length > 0 ? (
-                  employeeCards.map((card) => (
+                <EmployeeCardsList>
+                  {employeeCards.map((card) => (
                     <EmployeeCardItem key={card.cardId}>
-                      <strong>{card.cardName}</strong> (Board: {card.boardName})
+                      <strong>{card.cardName}</strong> (Column: {card.columnId})
                     </EmployeeCardItem>
-                  ))
-                ) : (
-                  <EmployeeCardItem>No cards found</EmployeeCardItem>
-                )}
-              </EmployeeCardsList>
-            </EmployeeCardsContainer>
-          </EmployeeCardsWrapper>
-        )}
+                  ))}
+                </EmployeeCardsList>
+              </EmployeeCardsContainer>
+            </EmployeeCardsWrapper>
+          )}
+        </AnimatePresence>
 
-        {isCalendarVisible && (
-          <CalendarContainer>
-            <Calendar
-              localizer={localizer}
-              events={events}
-              startAccessor="start"
-              endAccessor="end"
-              style={{ height: "100%", width: "100%" }}
-            />
-          </CalendarContainer>
-        )}
+        <AnimatePresence>
+          {isCalendarVisible && (
+            <CalendarContainer>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                <ModalCloseButton onClick={() => setIsCalendarVisible(false)}>
+                  <FaTimes />
+                </ModalCloseButton>
+              </div>
+              <Calendar
+                localizer={localizer}
+                events={events}
+                startAccessor="start"
+                endAccessor="end"
+                style={{ height: "calc(100% - 40px)", width: "100%" }}
+              />
+            </CalendarContainer>
+          )}
+        </AnimatePresence>
 
-        <Board>
+        <BoardGrid>
           <Column
             id="do"
             title="Do"
@@ -763,9 +1416,7 @@ const handleInstantDateUpdate = (newStartDate, newEndDate) => {
             moveCard={moveCard}
             openModal={openModal}
             addCard={addCard}
-            columns={columns}
             setColumns={setColumns}
-            backgroundColor="#F1F2F4"
             showAddCardButton={true}
           />
           <Column
@@ -774,9 +1425,7 @@ const handleInstantDateUpdate = (newStartDate, newEndDate) => {
             cards={columns.doing}
             moveCard={moveCard}
             openModal={openModal}
-            columns={columns}
             setColumns={setColumns}
-            backgroundColor="#F1F2F4"
           />
           <Column
             id="done"
@@ -784,9 +1433,7 @@ const handleInstantDateUpdate = (newStartDate, newEndDate) => {
             cards={columns.done}
             moveCard={moveCard}
             openModal={openModal}
-            columns={columns}
             setColumns={setColumns}
-            backgroundColor="#F1F2F4"
           />
           <Column
             id="hold"
@@ -794,21 +1441,26 @@ const handleInstantDateUpdate = (newStartDate, newEndDate) => {
             cards={columns.hold}
             moveCard={moveCard}
             openModal={openModal}
-            columns={columns}
             setColumns={setColumns}
-            backgroundColor="#F1F2F4"
           />
-        </Board>
+        </BoardGrid>
 
-        {isOpen && (
-          <ModalOverlay>
-            <ModalContainer>
-              <ModalContent>
-                <ModalLeft>
-                  <CardNameSection>
-                    <FaRegCreditCard
-                      style={{ fontSize: "1.2rem", marginRight: "10px" }}
-                    />
+        <AnimatePresence>
+          {isOpen && (
+            <ModalOverlay
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <ModalContainer
+                initial={{ scale: 0.95, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 350 }}
+              >
+                <ModalHeader>
+                  <ModalHeaderTitle>
+                    <FaRegCreditCard size={18} style={{ color: "var(--primary-accent)" }} />
                     {isEditing ? (
                       <CardNameInput
                         type="text"
@@ -824,822 +1476,272 @@ const handleInstantDateUpdate = (newStartDate, newEndDate) => {
                             handleEditCardName();
                           }
                         }}
+                        autoFocus
                       />
                     ) : (
                       <CardNameText onClick={() => setIsEditing(true)}>
                         {editedCardName}
                       </CardNameText>
                     )}
-                  </CardNameSection>
+                  </ModalHeaderTitle>
+                  <ModalCloseButton onClick={closeModal}>
+                    <FaTimes />
+                  </ModalCloseButton>
+                </ModalHeader>
 
-                  <MembersAndDates>
-<MembersSection>
-  <Label>Members</Label>
-  <MembersContainer>
-    {members.length > 0 ? (
-      members.map((member, idx) => {
-        // 1. Handle Image URL logic (Consistent with your board)
-        let imageUrl = member.profilePicture;
-        if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
-          const cleanPath = imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl;
-          imageUrl = `${Trackerbaseurl}${cleanPath}`;
-        }
-
-        return (
-          <React.Fragment key={idx}>
-            {imageUrl ? (
-              // 2. Display Image if available (with hover title)
-              <MemberImage
-                src={imageUrl}
-                alt={member.employeeName}
-                title={member.employeeName} // 👈 Displays name on hover
-                style={{ width: '35px', height: '35px' }} // Match modal size
-                onError={(e) => {
-                   e.target.style.display = 'none';
-                   // Fallback logic could go here if needed
-                }}
-              />
-            ) : (
-              // 3. Display Initials if no image (with hover title)
-              <MemberCircle
-                bgColor={getBackgroundColor(member.employeeName)}
-                title={member.employeeName} // 👈 Displays name on hover
-                style={{ cursor: "pointer" }}
-              >
-                {member.employeeName.charAt(0)}
-              </MemberCircle>
-            )}
-          </React.Fragment>
-        );
-      })
-    ) : (
-      <p>No members found.</p>
-    )}
-  </MembersContainer>
-</MembersSection>
-
-                    <DatesSection>
-                      <Label>Due Date</Label>
-                      <DatesWrapper>
-                        <DateItem>
-                          <strong>Start: </strong>
-                          <DateValue
-                            isOverdue={
-                              modalContent.enddate &&
-                              isOverdue(
-                                modalContent.enddate,
-                                modalContent.columnId
-                              )
+                <ModalContent>
+                  <ModalLeft>
+                    <DetailGroup>
+                      <DetailLabel>Assigned Members</DetailLabel>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        {members.length > 0 ? (
+                          members.map((member, idx) => {
+                            let imageUrl = member.profilePicture;
+                            if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
+                              const cleanPath = imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl;
+                              imageUrl = `${Trackerbaseurl}${cleanPath}`;
                             }
-                          >
+
+                            return (
+                              <React.Fragment key={idx}>
+                                {imageUrl ? (
+                                  <CardMemberImage
+                                    src={imageUrl}
+                                    alt={member.employeeName}
+                                    title={member.employeeName}
+                                    style={{ width: '32px', height: '32px' }}
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                    }}
+                                  />
+                                ) : (
+                                  <CardMemberAvatar
+                                    bgColor={getBackgroundColor(member.employeeName)}
+                                    title={member.employeeName}
+                                    style={{ width: '32px', height: '32px', fontSize: '0.85rem' }}
+                                  >
+                                    {member.employeeName.charAt(0).toUpperCase()}
+                                  </CardMemberAvatar>
+                                )}
+                              </React.Fragment>
+                            );
+                          })
+                        ) : (
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>No members assigned yet</span>
+                        )}
+                      </div>
+                    </DetailGroup>
+
+                    <Description
+                      boardId={boardId}
+                      boardName={boardName}
+                      cardId={cardId}
+                      cardName={cardName}
+                    />
+
+                    <Comment
+                      boardId={boardId}
+                      boardName={boardName}
+                      cardId={cardId}
+                    />
+                  </ModalLeft>
+
+                  <ModalRight>
+                    <DetailGroup>
+                      <DetailLabel>Status / Column</DetailLabel>
+                      <DetailValue style={{ textTransform: 'capitalize', fontWeight: 600, color: 'var(--primary-accent)' }}>
+                        {modalContent.boardName}
+                      </DetailValue>
+                    </DetailGroup>
+                    
+                    <DetailGroup>
+                      <DetailLabel>Timeline</DetailLabel>
+                      <DateBoxWrapper>
+                        <DateRow>
+                          <strong>Start:</strong>
+                          <span style={{ fontWeight: 600 }}>
                             {modalContent.startdate
                               ? modalContent.startdate.toLocaleDateString()
-                              : "N/A"}
-                          </DateValue>
-                        </DateItem>
-                        <DateItem>
-                          <strong>End: </strong>
-                          <DateValue
-                            isOverdue={
-                              modalContent.enddate &&
-                              isOverdue(
-                                modalContent.enddate,
-                                modalContent.columnId
-                              )
-                            }
+                              : "—"}
+                          </span>
+                        </DateRow>
+                        <DateRow>
+                          <strong>Due Date:</strong>
+                          <span 
+                            style={{ 
+                              fontWeight: 600, 
+                              color: modalContent.enddate && isOverdue(modalContent.enddate, modalContent.columnId) ? "#ef4444" : "inherit" 
+                            }}
                           >
                             {modalContent.enddate
                               ? modalContent.enddate.toLocaleDateString()
-                              : "N/A"}
-                          </DateValue>
-                        </DateItem>
-                      </DatesWrapper>
-                    </DatesSection>
+                              : "—"}
+                          </span>
+                        </DateRow>
+                      </DateBoxWrapper>
+                    </DetailGroup>
 
-                    <CreatedBySection>
-                      <Label>Created By</Label>
-                      <CreatedByText>
-                        {modalContent.created_by_name
-                          ? modalContent.created_by_name
-                          : "Unknown"}
-                      </CreatedByText>
-                    </CreatedBySection>
-                  </MembersAndDates>
+                    <div style={{ display: 'flex', gap: '24px' }}>
+                      <DetailGroup style={{ flex: 1 }}>
+                        <DetailLabel>Created By</DetailLabel>
+                        <DetailValue style={{ fontWeight: 500 }}>
+                          {modalContent.created_by_name || "Unknown"}
+                        </DetailValue>
+                      </DetailGroup>
+                      <DetailGroup style={{ flex: 1 }}>
+                        <DetailLabel>Created At</DetailLabel>
+                        <DetailValue style={{ fontWeight: 500 }}>
+                          {modalContent.created_date
+                            ? new Date(modalContent.created_date).toLocaleDateString()
+                            : "—"}
+                        </DetailValue>
+                      </DetailGroup>
+                    </div>
 
-                  <Description
-                    boardId={boardId}
-                    boardName={boardName}
-                    cardId={cardId}
-                    cardName={cardName}
-                  />
-
-                  <Comment
-                    boardId={boardId}
-                    boardName={boardName}
-                    cardId={cardId}
-                  />
-                </ModalLeft>
-
-                <ModalRight>
-                  <Addmembers
-                    cardId={cardId}
-                    boardId={boardId}
-                    cardName={cardName}
-                    onMemberUpdate={() =>
-                      fetchMembers(cardId, boardId, cardName)
-                    }
-                  />
-                  <DateComponent
-                    cardId={cardId}
-                    boardId={boardId}
-                    employeeId={employeeId}
-                    existingStartDate={modalContent.startdate}
-       
-                    onDateUpdate={handleInstantDateUpdate}
-                  />
-                </ModalRight>
-              </ModalContent>
-
-              <CloseIcon onClick={closeModal}>
-                <FaTimes />
-              </CloseIcon>
-            </ModalContainer>
-          </ModalOverlay>
-        )}
+                    <Addmembers
+                      cardId={cardId}
+                      boardId={boardId}
+                      cardName={cardName}
+                      onMemberUpdate={() =>
+                        fetchMembers(cardId, boardId, cardName)
+                      }
+                    />
+                    
+                    <DateComponent
+                      cardId={cardId}
+                      boardId={boardId}
+                      employeeId={employeeId}
+                      existingStartDate={modalContent.startdate}
+                      onDateUpdate={handleInstantDateUpdate}
+                    />
+                  </ModalRight>
+                </ModalContent>
+              </ModalContainer>
+            </ModalOverlay>
+          )}
+        </AnimatePresence>
       </DndProvider>
+
+      {showDeleteCardConfirm && (
+        <ModalOverlay onClick={() => setShowDeleteCardConfirm(false)}>
+          <ConfirmModalContainer onClick={(e) => e.stopPropagation()}>
+            <ConfirmModalHeader>
+              <h3>Delete Task</h3>
+              <ConfirmCloseButton onClick={() => setShowDeleteCardConfirm(false)}>
+                <FaTimes />
+              </ConfirmCloseButton>
+            </ConfirmModalHeader>
+            <ConfirmModalBody>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </ConfirmModalBody>
+            <ConfirmButtonGroup>
+              <ConfirmCancelButton onClick={() => setShowDeleteCardConfirm(false)}>Cancel</ConfirmCancelButton>
+              <ConfirmDeleteButton
+                onClick={() => {
+                  if (cardToDelete) {
+                    handleRemoveCard(cardToDelete.id, cardToDelete.columnId);
+                  }
+                  setShowDeleteCardConfirm(false);
+                }}
+              >
+                Delete
+              </ConfirmDeleteButton>
+            </ConfirmButtonGroup>
+          </ConfirmModalContainer>
+        </ModalOverlay>
+      )}
     </TodolistContainer>
   );
 };
 
-// Styled Components
-const TodolistContainer = styled.div`
-  background-color: ${(props) => props.bgColor || "#FFFFFF"};
-  min-height: 100vh;
-  padding: 20px;
-
-  @media (max-width: 768px) {
-    padding: 10px;
-  }
-`;
-
-const IconWrapper = styled.div`
+const ConfirmModalContainer = styled(motion.div)`
+  background-color: white;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: 10px 15px;
-  border-radius: 10px;
-  gap: 12px;
-  margin-bottom: 20px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    padding: 8px;
-    gap: 10px;
-  }
+  flex-direction: column;
+  gap: 16px;
+  z-index: 2100;
 `;
 
-const EmployeeAvatars = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex-wrap: wrap;
-
-  @media (max-width: 768px) {
-    justify-content: center;
-  }
-`;
-
-const EmployeeAvatar = styled.div`
-  width: 30px;
-  height: 30px;
-  cursor: pointer;
-  transition: transform 0.2s;
-
-  &:hover {
-    transform: scale(1.1);
-  }
-
-  @media (max-width: 480px) {
-    width: 25px;
-    height: 25px;
-  }
-`;
-
-const IconGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 15px;
-
-  @media (max-width: 768px) {
-    gap: 10px;
-  }
-`;
-
-const CalendarIcon = styled(FaCalendarAlt)`
-  color: white;
-  font-size: 1.6rem;
-  cursor: pointer;
-  transition: transform 0.2s ease-in-out;
-  margin-right: 10px;
-  border-radius: 8px;
-
-  /* Default desktop/tablet size */
-  width: 30px;
-  height: 30px;
-
-  &:hover {
-    transform: scale(1.1);
-  }
-
-  /* -----------------------------------------
-     Mobile View (≤480px)
-     ----------------------------------------- */
-  @media (max-width: 480px) {
-    width: 40px;        /* Slightly larger for touch */
-    height: 40px;
-    font-size: 1.8rem;
-    margin-right: 0px;
-
-    padding: 6px;       /* Touch-friendly padding */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 12px; /* More rounded on mobile */
-  }
-`;
-
-
-const EmployeeCardsHeader = styled.div`
+const ConfirmModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
 
   h3 {
-    color: white;
     margin: 0;
-    font-size: 1rem;
-
-    @media (max-width: 480px) {
-      font-size: 0.9rem;
-    }
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0f172a;
   }
 `;
 
-const EmployeeCardsList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-`;
-
-const EmployeeCardItem = styled.li`
-  color: white;
-  padding: 8px 0;
-  font-size: 0.9rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 0.85rem;
-    padding: 6px 0;
-  }
-`;
-
-const CalendarContainer = styled.div`
-  position: fixed;
-  top: 90px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80vw;
-  height: 80vh;
-  background-color: #fff;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 10;
-  overflow: hidden;
-  padding: 10px;
-
-  @media (max-width: 768px) {
-    width: 95vw;
-    height: 70vh;
-    top: 80px;
-    padding: 5px;
-  }
-
-  @media (max-width: 480px) {
-    width: 98vw;
-    height: 65vh;
-    top: 70px;
-  }
-`;
-
-const Board = styled.div`
-  display: flex;
-  justify-content: space-around;
-  padding: 20px;
-  gap: 15px;
-  overflow-x: auto;
-
-  @media (max-width: 1024px) {
-    padding: 15px;
-    gap: 10px;
-  }
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    padding: 10px;
-  }
-`;
-
-const ColumnWrapper = styled.div`
-  width: 250px;
-  min-width: 250px;
-  padding: 10px;
-  border-radius: 8px;
-  min-height: 400px;
-  background-color: ${(props) => props.backgroundColor || "#F1F2F4"};
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-
-  @media (max-width: 1024px) {
-    width: 220px;
-    min-width: 220px;
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-    min-width: unset;
-    min-height: auto;
-    margin-bottom: 15px;
-  }
-`;
-
-const ColumnTitle = styled.h3`
-  text-align: center;
-  margin-bottom: 15px;
-  font-size: 1.1rem;
-  color: #333;
-
-  @media (max-width: 480px) {
-    font-size: 1rem;
-    margin-bottom: 10px;
-  }
-`;
-
-const CardContainer = styled.div`
-  margin-bottom: 15px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-
-  @media (max-width: 480px) {
-    padding: 8px;
-    margin-bottom: 12px;
-  }
-`;
-
-const CardRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-`;
-
-const RemoveButton = styled.button`
+const ConfirmCloseButton = styled.button`
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 1.1rem;
   cursor: pointer;
-  color: #888;
-  padding: 0;
-  min-width: 20px;
-  flex-shrink: 0;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 0.2s;
 
   &:hover {
-    color: #ff0000;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 18px;
+    background: #f1f5f9;
+    color: var(--text-main);
   }
 `;
 
-const MemberList = styled.div`
+const ConfirmModalBody = styled.div`
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.5;
+`;
+
+const ConfirmButtonGroup = styled.div`
   display: flex;
+  justify-content: flex-end;
+  gap: 12px;
   margin-top: 8px;
-  cursor: pointer;
-  flex-wrap: wrap;
-  gap: 5px;
 `;
 
-const MemberItem = styled.div`
-  position: relative;
-  display: inline-block;
-`;
-
-const MemberImage = styled.img`
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 2px solid white;
-  object-fit: cover;
-  cursor: pointer;
-
-  @media (max-width: 480px) {
-    width: 25px;
-    height: 25px;
-  }
-`;
-
-const MemberInitial = styled.div`
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: ${(props) => props.bgColor || "#4a90e2"};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
-  color: #fff;
-
-  @media (max-width: 480px) {
-    width: 25px;
-    height: 25px;
-    font-size: 12px;
-  }
-`;
-
-const NoMembers = styled.p`
-  font-size: 12px;
-  color: #888;
-  margin: 0;
-`;
-
-const AddCardContainer = styled.div`
-  margin-top: 10px;
-`;
-
-const AddCardInput = styled.input`
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-
-  @media (max-width: 480px) {
-    padding: 6px;
-    font-size: 13px;
-  }
-`;
-
-const AddCardActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-`;
-
-const AddCardButton = styled.button`
-  padding: 8px 15px;
-  background-color: #5cb85c;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-
-  &:hover {
-    background-color: #4cae4c;
-  }
-
-  @media (max-width: 480px) {
-    padding: 6px 12px;
-    font-size: 13px;
-  }
-`;
-
-const AddInitialCardButton = styled.button`
-  width: 100%;
-  padding: 8px;
-  background-color: #5cb85c;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-
-  &:hover {
-    background-color: #4cae4c;
-  }
-
-  @media (max-width: 480px) {
-    padding: 6px;
-    font-size: 13px;
-  }
-`;
-
-const CancelButton = styled.button`
+const ConfirmCancelButton = styled.button`
   background: transparent;
-  border: none;
-  color: red;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 0;
-
-  &:hover {
-    color: darkred;
-  }
-`;
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 20px;
-
-  @media (max-width: 768px) {
-    padding: 10px;
-  }
-`;
-
-const ModalContainer = styled.div`
-  background-color: #f0f1f4;
-  width: 90%;
-  max-width: 900px;
-  padding: 20px;
-  position: relative;
-  max-height: 90vh;
-  overflow-y: auto;
-  border-radius: 15px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-
-  @media (max-width: 768px) {
-    width: 95%;
-    padding: 15px;
-    max-height: 85vh;
-  }
-
-  @media (max-width: 480px) {
-    width: 98%;
-    padding: 10px;
-    border-radius: 10px;
-  }
-`;
-
-const ModalContent = styled.div`
-  display: flex;
-  gap: 20px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 15px;
-  }
-`;
-
-const ModalLeft = styled.div`
-  flex: 1;
-
-  @media (max-width: 768px) {
-    width: 100%;
-  }
-`;
-
-const ModalRight = styled.div`
-  flex: 0 0 250px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-
-  @media (max-width: 768px) {
-    flex: unset;
-    width: 100%;
-  }
-`;
-
-const CardNameSection = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
-  flex-wrap: wrap;
-  gap: 10px;
-
-  @media (max-width: 480px) {
-    margin-bottom: 10px;
-  }
-`;
-
-const CardNameInput = styled.input`
-  flex: 1;
-  font-size: 1.5rem;
-  padding: 5px;
-  border: 2px solid #4a90e2;
-  border-radius: 4px;
-
-  @media (max-width: 768px) {
-    font-size: 1.3rem;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 1.1rem;
-    width: 100%;
-  }
-`;
-
-const CardNameText = styled.span`
-  cursor: pointer;
-  font-size: 1.5rem;
-  font-weight: 500;
-
-  @media (max-width: 768px) {
-    font-size: 1.3rem;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 1.1rem;
-  }
-`;
-
-const MembersAndDates = styled.div`
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 15px;
-  }
-`;
-
-const MembersSection = styled.div`
-  flex: 1;
-`;
-
-const DatesSection = styled.div`
-  flex: 1;
-`;
-
-const Label = styled.label`
-  display: block;
-  font-size: 16px;
+  border: 1px solid #d1d5db;
+  color: #4b5563;
+  padding: 8px 16px;
+  border-radius: 8px;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
-
-  @media (max-width: 480px) {
-    font-size: 14px;
-  }
-`;
-
-const MembersContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-`;
-
-const MemberCircle = styled.div`
-  width: 35px;
-  height: 35px;
-  background-color: ${(props) => props.bgColor || "#4a90e2"};
-  color: white;
-  font-weight: bold;
-  font-size: 16px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 50%;
-  text-transform: uppercase;
-
-  @media (max-width: 480px) {
-    width: 30px;
-    height: 30px;
-    font-size: 14px;
-  }
-`;
-
-const CreatedBySection = styled.div`
-  margin-bottom: 20px;
-
-  @media (max-width: 480px) {
-    margin-bottom: 15px;
-  }
-`;
-
-const CreatedByText = styled.p`
-  font-size: 15px;
-  color: #333;
-  background: #fff;
-  padding: 8px 12px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-
-  @media (max-width: 480px) {
-    font-size: 14px;
-    padding: 6px 10px;
-  }
-`;
-
-const DatesWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  @media (max-width: 480px) {
-    gap: 6px;
-  }
-`;
-
-const DateItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 14px;
-
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
-`;
-
-const DateValue = styled.span`
-  color: ${(props) => (props.isOverdue ? "red" : "inherit")};
-  font-weight: ${(props) => (props.isOverdue ? "bold" : "normal")};
-`;
-
-const CloseIcon = styled.div`
-  position: absolute;
-  top: 2px;
-  right: 5px;
-  font-size: 24px;
+  font-size: 0.9rem;
   cursor: pointer;
-  color: red;
-  z-index: 10;
+  transition: all 0.2s;
 
   &:hover {
-    color: darkred;
-  }
-
-  @media (max-width: 480px) {
-    top: 8px;
-    right: 8px;
-    font-size: 20px;
+    background-color: #f3f4f6;
   }
 `;
 
-const EmployeeCardsWrapper = styled.div`
-  position: absolute;
-  top: ${(props) => props.top}px;
-  left: ${(props) => props.left}px;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  background-color: rgba(0, 0, 0, 0.8);
-  padding: 15px;
+const ConfirmDeleteButton = styled.button`
+  background: #ef4444;
+  border: none;
+  color: white;
+  padding: 8px 16px;
   border-radius: 8px;
-  width: 300px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
 
-  @media (max-width: 768px) {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 350px;
+  &:hover {
+    background: #dc2626;
   }
 `;
-
-const EmployeeCardsContainer = styled.div`
-  width: 100%;
-`;
-
-const styles = {
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: "5px",
-    padding: "10px",
-    textAlign: "left",
-    boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
-    cursor: "pointer",
-    flex: 1,
-  },
-  cardContent: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-};
 
 export default DragAndDropCards;

@@ -40,7 +40,7 @@ const Container = styled.div`
   padding: ${(props) => (props.isMobile ? "1rem" : "2rem")};
   max-width: 1200px;
   margin: ${(props) => (props.isMobile ? "0" : "0 auto")};
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: var(--bg-primary);
   border-radius: ${(props) => (props.isMobile ? "0" : "16px")};
   min-height: 100vh;
   animation: ${fadeIn} 0.6s ease-out;
@@ -62,14 +62,10 @@ const Header = styled.div`
 `;
 
 const Title = styled.h2`
-  color: #2c3e50;
+  color: var(--text-main);
   font-size: ${(props) => (props.isMobile ? "1.75rem" : "2.5rem")};
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, #0f0c0dff 0%, #181213ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 
   @media (max-width: 768px) {
     font-size: 1.75rem;
@@ -84,9 +80,10 @@ const SearchSection = styled.div`
   gap: ${(props) => (props.isMobile ? "0.75rem" : "1rem")};
   margin-bottom: ${(props) => (props.isMobile ? "1.5rem" : "2rem")};
   padding: ${(props) => (props.isMobile ? "1rem" : "1.5rem")};
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
   flex-direction: ${(props) => (props.isMobile ? "column" : "row")};
 
   @media (max-width: 768px) {
@@ -98,22 +95,23 @@ const SearchSection = styled.div`
 
 const SearchInput = styled.input`
   padding: ${(props) => (props.isMobile ? "14px 16px" : "12px 16px")};
-  border: 2px solid #e1e5e9;
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   width: ${(props) => (props.isMobile ? "100%" : "300px")};
   font-size: ${(props) => (props.isMobile ? "16px" : "1rem")};
-  background: #f8f9fa;
+  background: var(--bg-primary);
+  color: var(--text-main);
   transition: all 0.3s ease;
 
   &:focus {
     outline: none;
-    border-color: #eb5679;
-    box-shadow: 0 0 0 3px rgba(235, 86, 121, 0.1);
-    background: white;
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background: var(--bg-secondary);
   }
 
   &::placeholder {
-    color: #adb5bd;
+    color: var(--text-light);
     font-size: ${(props) => (props.isMobile ? "14px" : "inherit")};
   }
 
@@ -137,20 +135,97 @@ const DateFilterWrapper = styled.div`
   }
 `;
 
+// Multi-select board filter
+const BoardFilterWrapper = styled.div`
+  position: relative;
+  width: ${(props) => (props.isMobile ? "100%" : "200px")};
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const BoardFilterButton = styled.button`
+  width: 100%;
+  padding: ${(props) => (props.isMobile ? "14px 16px" : "12px 16px")};
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-main);
+  font-size: ${(props) => (props.isMobile ? "16px" : "1rem")};
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+`;
+
+const BoardDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 200;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px 0;
+
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
+`;
+
+const BoardOption = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--primary-accent);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+`;
+
 const DateFilter = styled.input`
   padding: ${(props) => (props.isMobile ? "14px 16px" : "12px 16px")};
-  border: 2px solid #e1e5e9;
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   font-size: ${(props) => (props.isMobile ? "16px" : "1rem")};
-  background: #f8f9fa;
+  background: var(--bg-primary);
+  color: var(--text-main);
   transition: all 0.3s ease;
   width: ${(props) => (props.isMobile ? "100%" : "auto")};
 
   &:focus {
     outline: none;
-    border-color: #eb5679;
-    box-shadow: 0 0 0 3px rgba(235, 86, 121, 0.1);
-    background: white;
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background: var(--bg-secondary);
   }
 
   @media (max-width: 768px) {
@@ -197,9 +272,10 @@ const ActionSection = styled.div`
   gap: ${(props) => (props.isMobile ? "0.75rem" : "1rem")};
   margin-bottom: ${(props) => (props.isMobile ? "1.5rem" : "2rem")};
   padding: ${(props) => (props.isMobile ? "0.75rem" : "1rem")};
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
@@ -214,7 +290,7 @@ const ActionSection = styled.div`
 
 const ActionButton = styled.button`
   padding: ${(props) => (props.isMobile ? "12px 20px" : "10px 16px")};
-  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -229,7 +305,7 @@ const ActionButton = styled.button`
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(235, 86, 121, 0.3);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.2);
   }
 
   &:active {
@@ -244,10 +320,11 @@ const ActionButton = styled.button`
 `;
 
 const TableWrapper = styled.div`
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
   overflow: ${(props) => (props.isMobile ? "visible" : "hidden")};
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
   margin-top: 2rem;
 
   @media (max-width: 768px) {
@@ -271,7 +348,7 @@ const Table = styled.table`
 
 const Th = styled.th`
   padding: 1.2rem 1rem;
-  background: linear-gradient(135deg, #ff9a9e 0%, #fca6a9ff 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
   color: white;
   text-align: left;
   font-weight: 600;
@@ -293,7 +370,8 @@ const Th = styled.th`
 
 const Td = styled.td`
   padding: 1rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-main);
   vertical-align: top;
 `;
 
@@ -301,11 +379,11 @@ const Tr = styled.tr`
   transition: all 0.3s ease;
 
   &:nth-child(even) {
-    background-color: #f8f9fa;
+    background-color: var(--bg-primary);
   }
 
   &:hover {
-    background-color: #e3f2fd !important;
+    background-color: rgba(99, 102, 241, 0.1) !important;
   }
 
   &:last-child td {
@@ -315,12 +393,12 @@ const Tr = styled.tr`
 
 const BoardCell = styled(Td)`
   font-weight: 600;
-  color: #f6676eff;
+  color: var(--primary-accent);
 `;
 
 const CardCell = styled(Td)`
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-main);
 `;
 
 const MemberList = styled.div`
@@ -331,8 +409,8 @@ const MemberList = styled.div`
 
 const MemberBadge = styled.span`
   display: inline-block;
-  background: #fce4ec;
-  color: #c2185b;
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary-accent);
   padding: ${(props) => (props.isMobile ? "0.5rem 1rem" : "0.4rem 0.8rem")};
   border-radius: 6px;
   font-size: ${(props) => (props.isMobile ? "0.85rem" : "0.8rem")};
@@ -346,7 +424,7 @@ const MemberBadge = styled.span`
 
 const ViewButton = styled.button`
   padding: ${(props) => (props.isMobile ? "10px 16px" : "8px 16px")};
-  background: linear-gradient(135deg, #ff9a9e 0%, #fca6a9ff 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
   color: white;
   border: none;
   border-radius: 6px;
@@ -361,7 +439,7 @@ const ViewButton = styled.button`
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(235, 86, 121, 0.3);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.2);
   }
 
   &:active {
@@ -387,16 +465,17 @@ const CardList = styled.div`
 `;
 
 const Card = styled.div`
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-left: 4px solid var(--primary-accent);
   transition: all 0.3s ease;
-  border-left: 4px solid #ff9a9e;
 
   &:active {
     transform: scale(0.98);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   }
 `;
 
@@ -414,7 +493,7 @@ const CardTitle = styled.div`
 
 const CardBoardName = styled.div`
   font-size: 0.75rem;
-  color: #f6676eff;
+  color: var(--primary-accent);
   text-transform: uppercase;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -424,7 +503,7 @@ const CardBoardName = styled.div`
 const CardTaskName = styled.div`
   font-size: 1rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-main);
   word-break: break-word;
 `;
 
@@ -438,7 +517,7 @@ const CardSection = styled.div`
 
 const CardLabel = styled.div`
   font-size: 0.7rem;
-  color: #6c757d;
+  color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -447,7 +526,7 @@ const CardLabel = styled.div`
 
 const CardValue = styled.div`
   font-size: 0.9rem;
-  color: #495057;
+  color: var(--text-main);
   font-weight: 500;
 `;
 
@@ -463,7 +542,7 @@ const DateColumn = styled.div`
 
 const OverdueBadge = styled.span`
   display: inline-block;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
   padding: 0.4rem 0.8rem;
   border-radius: 6px;
@@ -494,7 +573,7 @@ const Modal = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background: white;
+  background: var(--bg-secondary);
   border-radius: ${(props) => (props.isMobile ? "16px 16px 0 0" : "12px")};
   max-width: ${(props) => (props.isMobile ? "100%" : "600px")};
   width: 100%;
@@ -502,6 +581,7 @@ const ModalContent = styled.div`
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: ${slideUp} 0.3s ease-out;
+  border: 1px solid var(--border-subtle);
 
   @media (max-width: 768px) {
     border-radius: 16px 16px 0 0;
@@ -513,22 +593,22 @@ const ModalContent = styled.div`
   }
 
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--bg-primary);
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #eb5679;
+    background: var(--primary-accent);
     border-radius: 4px;
 
     &:hover {
-      background: #d6156c;
+      background: var(--primary-accent);
     }
   }
 `;
 
 const ModalHeader = styled.div`
   padding: ${(props) => (props.isMobile ? "1.25rem" : "1.5rem")};
-  background: linear-gradient(135deg, #fe9194ff 0%, #fca6a9ff 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -625,7 +705,7 @@ const SectionLabel = styled.label`
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #6c757d;
+  color: var(--text-muted);
 
   @media (max-width: 768px) {
     font-size: 0.7rem;
@@ -652,7 +732,7 @@ const DateBox = styled.div`
 const DateValue = styled.div`
   font-size: ${(props) => (props.isMobile ? "0.95rem" : "1rem")};
   font-weight: 600;
-  color: #eb5679;
+  color: var(--primary-accent);
 
   @media (max-width: 768px) {
     font-size: 0.95rem;
@@ -660,27 +740,28 @@ const DateValue = styled.div`
 `;
 
 const DescriptionSection = styled.div`
-  background: #f8f9fa;
+  background: var(--bg-primary);
   border-radius: 8px;
   padding: ${(props) => (props.isMobile ? "1rem" : "0.8rem")};
   max-height: ${(props) => (props.isMobile ? "200px" : "150px")};
   overflow-y: auto;
+  border: 1px solid var(--border-subtle);
 
   &::-webkit-scrollbar {
     width: 6px;
   }
 
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--bg-secondary);
     border-radius: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #eb5679;
+    background: var(--primary-accent);
     border-radius: 4px;
 
     &:hover {
-      background: #d6156c;
+      background: var(--primary-accent);
     }
   }
 
@@ -692,7 +773,7 @@ const DescriptionSection = styled.div`
 
 const DescriptionText = styled.div`
   font-size: ${(props) => (props.isMobile ? "0.95rem" : "0.9rem")};
-  color: #495057;
+  color: var(--text-main);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
@@ -703,27 +784,28 @@ const DescriptionText = styled.div`
 `;
 
 const CommentSection = styled.div`
-  background: #f8f9fa;
+  background: var(--bg-primary);
   border-radius: 8px;
   padding: ${(props) => (props.isMobile ? "1.25rem" : "1rem")};
   max-height: ${(props) => (props.isMobile ? "300px" : "250px")};
   overflow-y: auto;
+  border: 1px solid var(--border-subtle);
 
   &::-webkit-scrollbar {
     width: 6px;
   }
 
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--bg-secondary);
     border-radius: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #eb5679;
+    background: var(--primary-accent);
     border-radius: 4px;
 
     &:hover {
-      background: #d6156c;
+      background: var(--primary-accent);
     }
   }
 
@@ -736,7 +818,7 @@ const CommentSection = styled.div`
 const Comment = styled.div`
   margin-bottom: 1rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--border-subtle);
 
   &:last-child {
     margin-bottom: 0;
@@ -747,7 +829,7 @@ const Comment = styled.div`
 const CommentAuthor = styled.div`
   font-size: ${(props) => (props.isMobile ? "0.85rem" : "0.8rem")};
   font-weight: 700;
-  color: #eb5679;
+  color: var(--primary-accent);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 0.3rem;
@@ -759,7 +841,7 @@ const CommentAuthor = styled.div`
 
 const CommentText = styled.div`
   font-size: ${(props) => (props.isMobile ? "0.95rem" : "0.9rem")};
-  color: #495057;
+  color: var(--text-main);
   line-height: 1.5;
   margin-bottom: 0.3rem;
 
@@ -770,7 +852,7 @@ const CommentText = styled.div`
 
 const CommentTime = styled.div`
   font-size: ${(props) => (props.isMobile ? "0.8rem" : "0.75rem")};
-  color: #adb5bd;
+  color: var(--text-muted);
 
   @media (max-width: 768px) {
     font-size: 0.8rem;
@@ -780,9 +862,10 @@ const CommentTime = styled.div`
 const NoDataWrapper = styled.div`
   text-align: center;
   padding: ${(props) => (props.isMobile ? "2rem 1rem" : "3rem 2rem")};
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
 
   @media (max-width: 768px) {
     padding: 2rem 1rem;
@@ -792,6 +875,7 @@ const NoDataWrapper = styled.div`
 const NoDataIcon = styled.div`
   font-size: ${(props) => (props.isMobile ? "3rem" : "4rem")};
   margin-bottom: 1rem;
+  color: var(--border-subtle);
 
   @media (max-width: 768px) {
     font-size: 3rem;
@@ -800,7 +884,7 @@ const NoDataIcon = styled.div`
 
 const NoDataMessage = styled.p`
   font-size: ${(props) => (props.isMobile ? "1rem" : "1.2rem")};
-  color: #6c757d;
+  color: var(--text-muted);
   margin: 0;
   font-weight: 500;
 
@@ -818,6 +902,8 @@ const TaskDeadline = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const [isMobileView, setIsMobileView] = useState(isMobile());
+  const [selectedBoards, setSelectedBoards] = useState([]);
+  const [boardDropdownOpen, setBoardDropdownOpen] = useState(false);
   const role = localStorage.getItem("role");
   const employeeId = localStorage.getItem("employeeId");
 
@@ -885,6 +971,12 @@ const TaskDeadline = () => {
       });
     }
 
+    if (selectedBoards.length > 0) {
+      filtered = filtered.filter((card) =>
+        selectedBoards.includes(card.boardName)
+      );
+    }
+
     if (fromDate) {
       filtered = filtered.filter(
         (card) => new Date(card.enddate) >= new Date(fromDate)
@@ -898,17 +990,35 @@ const TaskDeadline = () => {
     }
 
     setFilteredCards(filtered);
-  }, [searchQuery, fromDate, toDate, overdueCards]);
+  }, [searchQuery, fromDate, toDate, selectedBoards, overdueCards]);
 
   const handleClear = () => {
     setSearchQuery("");
     setFromDate("");
     setToDate("");
+    setSelectedBoards([]);
     toast.info("Filters cleared", { 
       autoClose: 1500,
       position: isMobileView ? "top-center" : "top-right",
     });
   };
+
+  const uniqueBoards = [...new Set(overdueCards.map((c) => c.boardName).filter(Boolean))];
+
+  const toggleBoard = (boardName) => {
+    setSelectedBoards((prev) =>
+      prev.includes(boardName)
+        ? prev.filter((b) => b !== boardName)
+        : [...prev, boardName]
+    );
+  };
+
+  const boardFilterLabel =
+    selectedBoards.length === 0
+      ? "All Boards"
+      : selectedBoards.length === 1
+      ? selectedBoards[0]
+      : `${selectedBoards.length} Boards`;
 
   const handleViewDetails = (card) => {
     setSelectedCard(card);
@@ -940,7 +1050,7 @@ const TaskDeadline = () => {
               color: #2c3e50;
             }
             h1 {
-              color: #ff9a9e;
+              color: #4f46e5;
               text-align: center;
               margin-bottom: 0.5rem;
             }
@@ -955,7 +1065,7 @@ const TaskDeadline = () => {
               margin-top: 1rem;
             }
             th {
-              background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+              background: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%);
               color: white;
               padding: 1rem;
               text-align: left;
@@ -1073,6 +1183,38 @@ const TaskDeadline = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
+
+        {/* Board multi-select */}
+        <BoardFilterWrapper isMobile={isMobileView}>
+          <BoardFilterButton
+            isMobile={isMobileView}
+            onClick={() => setBoardDropdownOpen((o) => !o)}
+            title="Filter by Board"
+          >
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{boardFilterLabel}</span>
+            <span style={{ marginLeft: 6, flexShrink: 0 }}>{boardDropdownOpen ? "▲" : "▼"}</span>
+          </BoardFilterButton>
+          {boardDropdownOpen && (
+            <BoardDropdown>
+              {uniqueBoards.length === 0 ? (
+                <BoardOption style={{ color: "var(--text-muted)", cursor: "default" }}>
+                  No boards available
+                </BoardOption>
+              ) : (
+                uniqueBoards.map((board) => (
+                  <BoardOption key={board}>
+                    <input
+                      type="checkbox"
+                      checked={selectedBoards.includes(board)}
+                      onChange={() => toggleBoard(board)}
+                    />
+                    {board}
+                  </BoardOption>
+                ))
+              )}
+            </BoardDropdown>
+          )}
+        </BoardFilterWrapper>
 
         <DateFilterWrapper isMobile={isMobileView}>
           <DateFilter

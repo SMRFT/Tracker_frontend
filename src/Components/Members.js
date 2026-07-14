@@ -9,15 +9,15 @@ import apiRequest from "./apiRequest";
 
 // --- THEME CONSTANTS ---
 const THEME = {
-  gradient: "linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)",
-  primaryColor: "#ff9a9e",
-  secondaryColor: "#fad0c4",
-  textMain: "#2d3748",
-  textLight: "#718096",
-  bg: "#fff5f7", // Very subtle warm pink/white background
-  white: "#ffffff",
-  shadow: "0 10px 30px -10px rgba(255, 154, 158, 0.3)",
-  cardShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)",
+  gradient: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+  primaryColor: "var(--primary-accent)",
+  secondaryColor: "var(--primary-hover)",
+  textMain: "var(--text-main)",
+  textLight: "var(--text-muted)",
+  bg: "var(--bg-primary)",
+  white: "var(--bg-secondary)",
+  shadow: "0 10px 30px -10px rgba(99, 102, 241, 0.15)",
+  cardShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02)",
 };
 
 // --- STYLED COMPONENTS ---
@@ -83,22 +83,22 @@ const SearchBar = styled.div`
 const SearchInput = styled.input`
   width: 100%;
   padding: 0.8rem 1rem 0.8rem 2.8rem;
-  border-radius: 50px; // Pill shape
-  border: 2px solid transparent;
-  background-color: ${THEME.white};
+  border-radius: 50px;
+  border: 2px solid var(--border-subtle);
+  background-color: var(--bg-secondary);
   font-size: 0.95rem;
-  color: ${THEME.textMain};
+  color: var(--text-main);
   box-shadow: ${THEME.cardShadow};
   transition: all 0.3s ease;
 
   &:focus {
     outline: none;
-    border-color: #ff9a9e;
-    box-shadow: 0 0 0 4px rgba(255, 154, 158, 0.15);
+    border-color: ${THEME.primaryColor};
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
   }
 
   &::placeholder {
-    color: #cbd5e0;
+    color: var(--text-light);
   }
 `;
 
@@ -107,16 +107,17 @@ const SearchIcon = styled.div`
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #ff9a9e;
+  color: ${THEME.primaryColor};
   font-size: 1.1rem;
 `;
 
 const ViewToggle = styled.div`
   display: flex;
-  background: ${THEME.white};
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 4px;
   box-shadow: ${THEME.cardShadow};
+  border: 1px solid var(--border-subtle);
 `;
 
 const ViewButton = styled(motion.button)`
@@ -170,7 +171,7 @@ const StatCard = styled(motion.div)`
   padding: 1.5rem;
   border-radius: 20px;
   box-shadow: ${THEME.cardShadow};
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -211,7 +212,7 @@ const TableContainer = styled(motion.div)`
   border-radius: 24px;
   box-shadow: ${THEME.shadow};
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.8);
+  border: 1px solid var(--border-subtle);
 `;
 
 const Table = styled.table`
@@ -221,15 +222,15 @@ const Table = styled.table`
 `;
 
 const TableHeader = styled.thead`
-  background: #fff;
+  background: var(--bg-secondary);
 `;
 
 const TableRow = styled(motion.tr)`
-  background: #fff;
+  background: var(--bg-secondary);
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: #fff9fa; // Very subtle pink tint on hover
+    background-color: var(--bg-primary); // Subtle slate-50 tint
     transform: scale(1.002);
   }
 `;
@@ -238,11 +239,11 @@ const TableHeaderCell = styled.th`
   padding: 1.25rem 1.5rem;
   text-align: left;
   font-weight: 700;
-  color: ${THEME.textLight};
+  color: var(--text-muted);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 2px solid ${THEME.bg};
+  border-bottom: 2px solid var(--border-subtle);
 `;
 
 const TableCell = styled.td`
@@ -250,7 +251,7 @@ const TableCell = styled.td`
   font-size: 0.95rem;
   color: ${THEME.textMain};
   vertical-align: middle;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-subtle);
 
   ${TableRow}:last-child & {
     border-bottom: none;
@@ -262,16 +263,15 @@ const Avatar = styled.div`
   width: ${(props) => props.size || "40px"};
   height: ${(props) => props.size || "40px"};
   border-radius: 50%;
-  // THE REQUESTED GRADIENT LOGIC
-  background: ${(props) => props.bgColor || "linear-gradient(135deg, #ff9a9e, #fad0c4)"};
+  background: ${(props) => props.bgColor || THEME.gradient};
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: ${(props) => props.fontSize || "0.9rem"};
   font-weight: 700;
   color: white;
-  box-shadow: 0 4px 10px rgba(255, 154, 158, 0.4);
-  border: 2px solid white;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+  border: 2px solid var(--bg-secondary);
 `;
 
 const EmployeeInfo = styled.div`
@@ -302,7 +302,7 @@ const CompactGrid = styled(motion.div)`
 `;
 
 const GridCard = styled(motion.div)`
-  background: ${THEME.white};
+  background: var(--bg-secondary);
   border-radius: 24px;
   padding: 1.5rem;
   display: flex;
@@ -310,16 +310,16 @@ const GridCard = styled(motion.div)`
   align-items: center;
   text-align: center;
   box-shadow: ${THEME.cardShadow};
-  border: 1px solid transparent;
+  border: 1px solid var(--border-subtle);
   transition: all 0.3s ease;
   cursor: pointer;
   position: relative;
   overflow: hidden;
 
-  // Add a subtle gradient border effect on hover
   &:hover {
     transform: translateY(-5px);
     box-shadow: ${THEME.shadow};
+    border-color: var(--primary-accent);
   }
 `;
 
@@ -329,7 +329,7 @@ const GridCardHeader = styled.div`
   left: 0;
   right: 0;
   height: 60px;
-  background: linear-gradient(135deg, #fff0f3 0%, #fff 100%);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, var(--bg-primary) 100%);
   z-index: 0;
 `;
 
@@ -371,7 +371,7 @@ const PaginationButton = styled.button`
   align-items: center;
   justify-content: center;
   border: none;
-  background: ${(props) => (props.active ? THEME.gradient : "white")};
+  background: ${(props) => (props.active ? THEME.gradient : "var(--bg-secondary)")};
   color: ${(props) => (props.active ? "white" : THEME.textMain)};
   border-radius: 50%; // Circle buttons
   cursor: pointer;
@@ -387,20 +387,21 @@ const PaginationButton = styled.button`
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background: #edf2f7;
+    background: var(--bg-primary);
   }
 `;
 
 const EmptyState = styled.div`
   text-align: center;
   padding: 4rem 2rem;
-  background: ${THEME.white};
+  background: var(--bg-secondary);
   border-radius: 24px;
   box-shadow: ${THEME.cardShadow};
-  color: ${THEME.textLight};
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
 
   h3 {
-    color: ${THEME.textMain};
+    color: var(--text-main);
     margin: 1rem 0 0.5rem;
   }
 `;
@@ -551,11 +552,11 @@ const Members = () => {
                 </EmployeeInfo>
               </TableCell>
               <TableCell>
-                <Chip bg="#fff0f3" color="#ff9a9e">#{employee.employeeId}</Chip>
+                <Chip bg="rgba(99, 102, 241, 0.08)" color="#6366f1">#{employee.employeeId}</Chip>
               </TableCell>
               <TableCell>{employee.department || "N/A"}</TableCell>
               <TableCell>
-                 <Chip bg="#edf2f7" color="#4a5568">{employee.designation || "N/A"}</Chip>
+                 <Chip bg="var(--bg-primary)" color="var(--text-muted)">{employee.designation || "N/A"}</Chip>
               </TableCell>
             </TableRow>
           ))}
@@ -586,7 +587,7 @@ const Members = () => {
             <GridName>{employee.employeeName}</GridName>
             <GridRole>{employee.designation || "Team Member"}</GridRole>
             
-            <Chip bg="#fff0f3" color="#ff9a9e" style={{ marginTop: '0.5rem' }}>
+            <Chip bg="rgba(99, 102, 241, 0.08)" color="#6366f1" style={{ marginTop: '0.5rem' }}>
               {employee.department || "General"}
             </Chip>
           </CardContent>
@@ -665,7 +666,7 @@ const Members = () => {
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
-              style={{ textAlign: "center", padding: "4rem", color: "#ff9a9e" }}
+              style={{ textAlign: "center", padding: "4rem", color: THEME.primaryColor }}
             >
               Loading...
             </motion.div>
@@ -676,7 +677,7 @@ const Members = () => {
             </motion.div>
           ) : (
             <EmptyState>
-              <FiUser size={64} style={{ color: "#fad0c4", marginBottom: "1rem" }} />
+              <FiUser size={64} style={{ color: "#cbd5e1", marginBottom: "1rem" }} />
               <h3>No members found</h3>
               <p>Try adjusting your search or add a new member to the team.</p>
             </EmptyState>

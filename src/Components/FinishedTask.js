@@ -43,10 +43,10 @@ const Container = styled.div`
   padding: ${(props) => (props.isMobile ? "1rem" : "2rem")};
   max-width: 1200px;
   margin: ${(props) => (props.isMobile ? "0" : "0 auto")};
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: var(--bg-primary);
   border-radius: ${(props) => (props.isMobile ? "0" : "16px")};
   box-shadow: ${(props) =>
-    props.isMobile ? "none" : "0 10px 30px rgba(0, 0, 0, 0.1)"};
+    props.isMobile ? "none" : "0 10px 30px rgba(0, 0, 0, 0.05)"};
   animation: ${fadeIn} 0.6s ease-out;
   min-height: ${(props) => (props.isMobile ? "100vh" : "auto")};
 
@@ -68,14 +68,10 @@ const Header = styled.div`
 `;
 
 const Title = styled.h2`
-  color: #2c3e50;
+  color: var(--text-main);
   font-size: ${(props) => (props.isMobile ? "1.75rem" : "2.5rem")};
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, #0f0c0dff 0%, #181213ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 
   @media (max-width: 768px) {
     font-size: 1.75rem;
@@ -87,9 +83,10 @@ const FilterSection = styled.div`
   gap: ${(props) => (props.isMobile ? "1rem" : "1.5rem")};
   margin-bottom: ${(props) => (props.isMobile ? "1.5rem" : "2rem")};
   padding: ${(props) => (props.isMobile ? "1rem" : "1.5rem")};
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
@@ -106,22 +103,24 @@ const FilterSection = styled.div`
 
 const SearchInput = styled.input`
   padding: ${(props) => (props.isMobile ? "12px 14px" : "10px 14px")};
-  border: 2px solid #e1e5e9;
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   width: ${(props) => (props.isMobile ? "100%" : "350px")};
-  background: #f8f9fa;
+  background: var(--bg-primary);
+  color: var(--text-main);
   transition: 0.3s;
   font-size: ${(props) => (props.isMobile ? "16px" : "1rem")};
   height: ${(props) => (props.isMobile ? "48px" : "50px")};
 
   &:focus {
     outline: none;
-    border-color: hsla(347, 39%, 73%, 1);
-    box-shadow: 0 0 0 3px rgba(243, 88, 109, 0.1);
-    background: white;
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background: var(--bg-secondary);
   }
 
   &::placeholder {
+    color: var(--text-light);
     font-size: ${(props) => (props.isMobile ? "14px" : "1rem")};
   }
 
@@ -143,12 +142,12 @@ const MemberList = styled.div`
 `;
 
 const MemberItem = styled.div`
-  background: #fce4ec;
-  color: hsla(349, 95%, 77%, 1);
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary-accent);
   padding: ${(props) => (props.isMobile ? "0.5rem 1rem" : "0.4rem 0.8rem")};
   border-radius: 6px;
   font-size: ${(props) => (props.isMobile ? "0.85rem" : "0.8rem")};
-  font-weight: 500;
+  font-weight: 600;
   display: inline-block;
   white-space: nowrap;
 
@@ -163,9 +162,10 @@ const ActionSection = styled.div`
   gap: ${(props) => (props.isMobile ? "0.75rem" : "1rem")};
   margin-bottom: ${(props) => (props.isMobile ? "1.5rem" : "2rem")};
   padding: ${(props) => (props.isMobile ? "0.75rem" : "1rem")};
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
@@ -193,6 +193,80 @@ const DateFilterWrapper = styled.div`
   }
 `;
 
+// Multi-select board filter
+const BoardFilterWrapper = styled.div`
+  position: relative;
+  width: ${(props) => (props.isMobile ? "100%" : "200px")};
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const BoardFilterButton = styled.button`
+  width: 100%;
+  padding: ${(props) => (props.isMobile ? "12px 14px" : "10px 14px")};
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-main);
+  font-size: ${(props) => (props.isMobile ? "16px" : "1rem")};
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+  height: ${(props) => (props.isMobile ? "48px" : "50px")};
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+`;
+
+const BoardDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 200;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px 0;
+
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
+`;
+
+const BoardOption = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--primary-accent);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+`;
+
 const DatePickerWrapper = styled.div`
   position: relative;
   z-index: 100;
@@ -204,7 +278,7 @@ const DatePickerWrapper = styled.div`
   label {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #6c757d;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -216,28 +290,28 @@ const DatePickerWrapper = styled.div`
   .react-datepicker__input-container input {
     width: ${(props) => (props.isMobile ? "100%" : "180px")};
     padding: ${(props) => (props.isMobile ? "14px 16px" : "12px 16px")};
-    border: 2px solid #e1e5e9;
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
     font-size: ${(props) => (props.isMobile ? "16px" : "0.95rem")};
     transition: all 0.3s ease;
-    background: #f8f9fa;
-    color: #2c3e50;
+    background: var(--bg-primary);
+    color: var(--text-main);
     font-weight: 500;
 
     &::placeholder {
-      color: #adb5bd;
+      color: var(--text-light);
       font-size: ${(props) => (props.isMobile ? "14px" : "inherit")};
     }
 
     &:focus {
       outline: none;
-      border-color: #ff9a9e;
-      box-shadow: 0 0 0 3px rgba(235, 86, 121, 0.1);
-      background: white;
+      border-color: var(--primary-accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      background: var(--bg-secondary);
     }
 
     &:hover {
-      border-color: #fad0c4;
+      border-color: var(--primary-accent);
     }
   }
 
@@ -254,7 +328,7 @@ const DatePickerWrapper = styled.div`
   }
 
   .react-datepicker__header {
-    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
     border-bottom: none;
     border-radius: 6px 6px 0 0;
     padding: ${(props) => (props.isMobile ? "12px 0" : "8px 0")};
@@ -269,7 +343,7 @@ const DatePickerWrapper = styled.div`
 
   .react-datepicker__day--selected,
   .react-datepicker__day--in-selecting-range {
-    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
     color: white;
   }
 
@@ -291,7 +365,7 @@ const DatePickerWrapper = styled.div`
 
 const Button = styled.button`
   padding: ${(props) => (props.isMobile ? "12px 20px" : "10px 16px")};
-  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -306,7 +380,7 @@ const Button = styled.button`
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(235, 86, 121, 0.3);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.2);
   }
 
   &:active {
@@ -331,7 +405,7 @@ const ClearButton = styled(Button)`
 
 const ViewButton = styled.button`
   padding: ${(props) => (props.isMobile ? "10px 16px" : "8px 14px")};
-  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
   color: white;
   border: none;
   border-radius: 6px;
@@ -346,7 +420,7 @@ const ViewButton = styled.button`
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(235, 86, 121, 0.3);
+    box-shadow: 0 6px 12px rgba(99, 102, 241, 0.2);
   }
 
   &:active {
@@ -360,10 +434,11 @@ const ViewButton = styled.button`
 `;
 
 const TableWrapper = styled.div`
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
   overflow: ${(props) => (props.isMobile ? "visible" : "hidden")};
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
   animation: ${fadeIn} 0.8s ease-out;
   position: relative;
   z-index: 1;
@@ -389,7 +464,7 @@ const Table = styled.table`
 
 const Th = styled.th`
   padding: 1.2rem 1rem;
-  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
   color: white;
   text-align: left;
   font-weight: 600;
@@ -411,7 +486,8 @@ const Th = styled.th`
 
 const Td = styled.td`
   padding: 1rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-main);
   vertical-align: top;
   transition: background-color 0.2s ease;
 `;
@@ -420,13 +496,13 @@ const Tr = styled.tr`
   transition: all 0.3s ease;
 
   &:nth-child(even) {
-    background-color: #f8f9fa;
+    background-color: var(--bg-primary);
   }
 
   &:hover {
-    background-color: #e3f2fd !important;
+    background-color: rgba(99, 102, 241, 0.1) !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
 
   &:last-child td {
@@ -446,15 +522,16 @@ const CardList = styled.div`
 `;
 
 const Card = styled.div`
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
   transition: all 0.3s ease;
 
   &:active {
     transform: scale(0.98);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   }
 `;
 
@@ -472,7 +549,7 @@ const CardTitle = styled.div`
 
 const CardBoardName = styled.div`
   font-size: 0.75rem;
-  color: #6c757d;
+  color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -482,7 +559,7 @@ const CardBoardName = styled.div`
 const CardTaskName = styled.div`
   font-size: 1rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-main);
   word-break: break-word;
 `;
 
@@ -496,7 +573,7 @@ const CardSection = styled.div`
 
 const CardLabel = styled.div`
   font-size: 0.7rem;
-  color: #6c757d;
+  color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -505,7 +582,7 @@ const CardLabel = styled.div`
 
 const CardValue = styled.div`
   font-size: 0.9rem;
-  color: #495057;
+  color: var(--text-main);
   font-weight: 500;
 `;
 
@@ -522,9 +599,10 @@ const DateColumn = styled.div`
 const NoDataWrapper = styled.div`
   text-align: center;
   padding: ${(props) => (props.isMobile ? "2rem 1rem" : "3rem 2rem")};
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
 
   @media (max-width: 768px) {
     padding: 2rem 1rem;
@@ -533,7 +611,7 @@ const NoDataWrapper = styled.div`
 
 const NoDataMessage = styled.p`
   font-size: ${(props) => (props.isMobile ? "1rem" : "1.2rem")};
-  color: #6c757d;
+  color: var(--text-muted);
   margin: 1rem 0;
   font-weight: 500;
 
@@ -544,7 +622,7 @@ const NoDataMessage = styled.p`
 
 const NoDataIcon = styled.div`
   font-size: ${(props) => (props.isMobile ? "3rem" : "4rem")};
-  color: #dee2e6;
+  color: var(--border-subtle);
   margin-bottom: 1rem;
 
   @media (max-width: 768px) {
@@ -557,9 +635,10 @@ const LoadingWrapper = styled.div`
   justify-content: center;
   align-items: center;
   padding: ${(props) => (props.isMobile ? "2rem" : "3rem")};
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-subtle);
 
   @media (max-width: 768px) {
     padding: 2rem;
@@ -569,8 +648,8 @@ const LoadingWrapper = styled.div`
 const LoadingSpinner = styled.div`
   width: ${(props) => (props.isMobile ? "35px" : "40px")};
   height: ${(props) => (props.isMobile ? "35px" : "40px")};
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #667eea;
+  border: 4px solid var(--border-subtle);
+  border-top: 4px solid var(--primary-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 
@@ -592,7 +671,7 @@ const LoadingSpinner = styled.div`
 const Badge = styled.span`
   display: inline-block;
   padding: ${(props) => (props.isMobile ? "0.75rem 1.5rem" : "0.6rem 1.2rem")};
-  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
   color: white;
   border-radius: 20px;
   font-size: ${(props) => (props.isMobile ? "0.9rem" : "0.8rem")};
@@ -631,7 +710,7 @@ const Modal = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background: white;
+  background: var(--bg-secondary);
   border-radius: ${(props) => (props.isMobile ? "16px 16px 0 0" : "12px")};
   max-width: ${(props) => (props.isMobile ? "100%" : "700px")};
   width: 100%;
@@ -639,6 +718,7 @@ const ModalContent = styled.div`
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: ${slideUp} 0.3s ease-out;
+  border: 1px solid var(--border-subtle);
 
   @media (max-width: 768px) {
     border-radius: 16px 16px 0 0;
@@ -654,18 +734,18 @@ const ModalContent = styled.div`
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #eb5679;
+    background: #6366f1;
     border-radius: 4px;
 
     &:hover {
-      background: #d6156c;
+      background: #4f46e5;
     }
   }
 `;
 
 const ModalHeader = styled.div`
   padding: ${(props) => (props.isMobile ? "1.25rem" : "1.5rem")};
-  background: linear-gradient(135deg, #e87e9cff 0%, #fad0c4 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -762,7 +842,7 @@ const SectionLabel = styled.label`
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #6c757d;
+  color: var(--text-muted);
 
   @media (max-width: 768px) {
     font-size: 0.7rem;
@@ -789,7 +869,7 @@ const DateBox = styled.div`
 const DateValue = styled.div`
   font-size: ${(props) => (props.isMobile ? "0.95rem" : "1rem")};
   font-weight: 600;
-  color: rgba(243, 13, 67, 1);
+  color: var(--primary-accent);
 
   @media (max-width: 768px) {
     font-size: 0.95rem;
@@ -797,28 +877,29 @@ const DateValue = styled.div`
 `;
 
 const DescriptionBox = styled.div`
-  background: #f8f9fa;
+  background: var(--bg-primary);
   border-radius: 8px;
   padding: ${(props) => (props.isMobile ? "1rem" : "0.8rem")};
   max-height: ${(props) => (props.isMobile ? "200px" : "150px")};
   overflow-y: auto;
   font-size: ${(props) => (props.isMobile ? "0.95rem" : "0.9rem")};
-  color: #495057;
+  color: var(--text-main);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  border: 1px solid var(--border-subtle);
 
   &::-webkit-scrollbar {
     width: 6px;
   }
 
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--bg-secondary);
     border-radius: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(238, 21, 72, 1);
+    background: var(--primary-accent);
     border-radius: 4px;
   }
 
@@ -830,23 +911,24 @@ const DescriptionBox = styled.div`
 `;
 
 const CommentsBox = styled.div`
-  background: #f8f9fa;
+  background: var(--bg-primary);
   border-radius: 8px;
   padding: ${(props) => (props.isMobile ? "1.25rem" : "1rem")};
   max-height: ${(props) => (props.isMobile ? "300px" : "250px")};
   overflow-y: auto;
+  border: 1px solid var(--border-subtle);
 
   &::-webkit-scrollbar {
     width: 6px;
   }
 
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--bg-secondary);
     border-radius: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #eb5679;
+    background: var(--primary-accent);
     border-radius: 4px;
   }
 
@@ -859,7 +941,7 @@ const CommentsBox = styled.div`
 const CommentItem = styled.div`
   margin-bottom: 1rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--border-subtle);
 
   &:last-child {
     margin-bottom: 0;
@@ -870,7 +952,7 @@ const CommentItem = styled.div`
 const CommentAuthor = styled.div`
   font-size: ${(props) => (props.isMobile ? "0.85rem" : "0.8rem")};
   font-weight: 700;
-  color: #eb5679;
+  color: var(--primary-accent);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 0.3rem;
@@ -882,7 +964,7 @@ const CommentAuthor = styled.div`
 
 const CommentText = styled.div`
   font-size: ${(props) => (props.isMobile ? "0.95rem" : "0.9rem")};
-  color: #495057;
+  color: var(--text-main);
   line-height: 1.5;
   margin-bottom: 0.3rem;
 
@@ -893,7 +975,7 @@ const CommentText = styled.div`
 
 const CommentTime = styled.div`
   font-size: ${(props) => (props.isMobile ? "0.8rem" : "0.75rem")};
-  color: #adb5bd;
+  color: var(--text-muted);
 
   @media (max-width: 768px) {
     font-size: 0.8rem;
@@ -913,6 +995,8 @@ const FinishedTask = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const [isMobileView, setIsMobileView] = useState(isMobile());
+  const [selectedBoards, setSelectedBoards] = useState([]);
+  const [boardDropdownOpen, setBoardDropdownOpen] = useState(false);
 
   const role = localStorage.getItem("role");
   const employeeId = localStorage.getItem("employeeId");
@@ -948,7 +1032,6 @@ const FinishedTask = () => {
 
       if (data.length === 0) {
         toast.info("No finished cards found for selected range", { autoClose: 2000 });
-        onclose();
       }
     } catch (error) {
       toast.error("Failed to fetch finished cards");
@@ -964,26 +1047,36 @@ const FinishedTask = () => {
   }, [employeeId, role, from, to, fetchFinishedCards]);
 
   useEffect(() => {
-    if (!searchTerm.trim()) {
+    if (!searchTerm.trim() && selectedBoards.length === 0) {
       setFilteredCards(finishedCards);
       return;
     }
 
-    const lower = searchTerm.toLowerCase();
-    const filtered = finishedCards.filter(
-      (card) =>
-        card.cardName?.toLowerCase().includes(lower) ||
-        card.boardName?.toLowerCase().includes(lower) ||
-        card.employeeId?.toLowerCase().includes(lower) ||
-        card.members?.some(
-          (m) =>
-            m.employeeName?.toLowerCase().includes(lower) ||
-            m.employeeId?.toLowerCase().includes(lower)
-        )
-    );
+    let filtered = finishedCards;
+
+    if (searchTerm.trim()) {
+      const lower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (card) =>
+          card.cardName?.toLowerCase().includes(lower) ||
+          card.boardName?.toLowerCase().includes(lower) ||
+          card.employeeId?.toLowerCase().includes(lower) ||
+          card.members?.some(
+            (m) =>
+              m.employeeName?.toLowerCase().includes(lower) ||
+              m.employeeId?.toLowerCase().includes(lower)
+          )
+      );
+    }
+
+    if (selectedBoards.length > 0) {
+      filtered = filtered.filter((card) =>
+        selectedBoards.includes(card.boardName)
+      );
+    }
 
     setFilteredCards(filtered);
-  }, [searchTerm, finishedCards]);
+  }, [searchTerm, selectedBoards, finishedCards]);
 
   const formatDate = (dateString) =>
     dateString
@@ -996,6 +1089,7 @@ const FinishedTask = () => {
 
   const handleClear = () => {
     setSearchTerm("");
+    setSelectedBoards([]);
     const newFrom = new Date();
     const newTo = new Date();
     newFrom.setDate(newTo.getDate() - 7);
@@ -1003,6 +1097,23 @@ const FinishedTask = () => {
     setTo(newTo);
     toast.info("Filters cleared", { autoClose: 1500 });
   };
+
+  const uniqueBoards = [...new Set(finishedCards.map((c) => c.boardName).filter(Boolean))];
+
+  const toggleBoard = (boardName) => {
+    setSelectedBoards((prev) =>
+      prev.includes(boardName)
+        ? prev.filter((b) => b !== boardName)
+        : [...prev, boardName]
+    );
+  };
+
+  const boardFilterLabel =
+    selectedBoards.length === 0
+      ? "All Boards"
+      : selectedBoards.length === 1
+      ? selectedBoards[0]
+      : `${selectedBoards.length} Boards`;
 
   const handlePrint = () => {
     const printWindow = window.open("", "_blank");
@@ -1181,6 +1292,38 @@ const FinishedTask = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+
+        {/* Board multi-select */}
+        <BoardFilterWrapper isMobile={isMobileView}>
+          <BoardFilterButton
+            isMobile={isMobileView}
+            onClick={() => setBoardDropdownOpen((o) => !o)}
+            title="Filter by Board"
+          >
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{boardFilterLabel}</span>
+            <span style={{ marginLeft: 6, flexShrink: 0 }}>{boardDropdownOpen ? "▲" : "▼"}</span>
+          </BoardFilterButton>
+          {boardDropdownOpen && (
+            <BoardDropdown>
+              {uniqueBoards.length === 0 ? (
+                <BoardOption style={{ color: "var(--text-muted)", cursor: "default" }}>
+                  No boards available
+                </BoardOption>
+              ) : (
+                uniqueBoards.map((board) => (
+                  <BoardOption key={board}>
+                    <input
+                      type="checkbox"
+                      checked={selectedBoards.includes(board)}
+                      onChange={() => toggleBoard(board)}
+                    />
+                    {board}
+                  </BoardOption>
+                ))
+              )}
+            </BoardDropdown>
+          )}
+        </BoardFilterWrapper>
 
         <DateFilterWrapper isMobile={isMobileView}>
           <DatePickerWrapper isMobile={isMobileView}>
