@@ -30,6 +30,10 @@ const PageContainer = styled.div`
   font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   display: flex;
   flex-direction: column;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
 `;
 
 const ContentWrapper = styled(motion.div)`
@@ -68,6 +72,10 @@ const Header = styled.header`
   flex-wrap: wrap;
   gap: 1.5rem;
   flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    margin-bottom: 1.5rem;
+  }
 `;
 
 const TitleGroup = styled.div`
@@ -96,6 +104,10 @@ const HeaderActions = styled.div`
   gap: 1rem;
   align-items: center;
   flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
 
 const SearchBar = styled.div`
@@ -185,41 +197,34 @@ const ActionButton = styled(motion.button)`
   }
 `;
 
-// Modern Stats Cards
+// Modern Stats Cards (compact, sits right next to the search bar)
 const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   flex-shrink: 0;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
 
 const StatCard = styled(motion.div)`
   background: ${THEME.white};
-  padding: 1.5rem;
-  border-radius: 20px;
+  padding: 0.5rem 0.9rem;
+  border-radius: 12px;
   box-shadow: ${THEME.cardShadow};
   border: 1px solid var(--border-subtle);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 0.4rem;
   position: relative;
   overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: ${THEME.gradient};
-  }
 `;
 
 const StatNumber = styled.span`
-  font-size: 2.5rem;
+  font-size: 1.1rem;
   font-weight: 800;
   background: ${THEME.gradient};
   -webkit-background-clip: text;
@@ -228,10 +233,10 @@ const StatNumber = styled.span`
 `;
 
 const StatLabel = styled.span`
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: ${THEME.textLight};
   font-weight: 500;
-  margin-top: 0.25rem;
+  white-space: nowrap;
 `;
 
 // Table Components
@@ -239,12 +244,22 @@ const TableContainer = styled(motion.div)`
   background: ${THEME.white};
   border-radius: 24px;
   box-shadow: ${THEME.shadow};
-  overflow: hidden;
   border: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 99px;
+  }
 `;
 
 const Table = styled.table`
   width: 100%;
+  min-width: 640px;
   border-collapse: separate;
   border-spacing: 0;
 `;
@@ -272,6 +287,11 @@ const TableHeaderCell = styled.th`
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 2px solid var(--border-subtle);
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
 `;
 
 const TableCell = styled.td`
@@ -283,6 +303,10 @@ const TableCell = styled.td`
 
   ${TableRow}:last-child & {
     border-bottom: none;
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem;
   }
 `;
 
@@ -327,6 +351,11 @@ const CompactGrid = styled(motion.div)`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1.5rem;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 `;
 
 const GridCard = styled(motion.div)`
@@ -645,7 +674,18 @@ const Members = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </SearchBar>
-            
+
+            <StatsGrid>
+              <StatCard>
+                <StatNumber>{employees.length}</StatNumber>
+                <StatLabel>Total</StatLabel>
+              </StatCard>
+              <StatCard>
+                <StatNumber>{filteredEmployees.length}</StatNumber>
+                <StatLabel>Visible</StatLabel>
+              </StatCard>
+            </StatsGrid>
+
             <ViewToggle>
               <ViewButton
                 active={viewType === "table"}
@@ -673,21 +713,6 @@ const Members = () => {
             </ActionButton> */}
           </HeaderActions>
         </Header>
-
-        <StatsGrid>
-          <StatCard whileHover={{ y: -5 }}>
-            <StatNumber>{employees.length}</StatNumber>
-            <StatLabel>Total Members</StatLabel>
-          </StatCard>
-          <StatCard whileHover={{ y: -5 }}>
-            <StatNumber>{filteredEmployees.length}</StatNumber>
-            <StatLabel>Currently Visible</StatLabel>
-          </StatCard>
-          <StatCard whileHover={{ y: -5 }}>
-            <StatNumber>{Math.ceil(filteredEmployees.length / itemsPerPage)}</StatNumber>
-            <StatLabel>Total Pages</StatLabel>
-          </StatCard>
-        </StatsGrid>
 
         <ScrollArea>
           <AnimatePresence mode="wait">

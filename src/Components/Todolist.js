@@ -69,6 +69,13 @@ const COLUMN_ACCENT_COLORS = {
   done: "#10b981",
 };
 
+const COLUMN_TITLES = {
+  do: "Do",
+  doing: "Doing",
+  hold: "Hold",
+  done: "Done",
+};
+
 const EMPLOYEE_CARDS_POPUP_WIDTH = 290;
 const VIEWPORT_EDGE_MARGIN = 12;
 
@@ -430,7 +437,7 @@ const AddCardInput = styled.textarea`
   border-radius: 10px;
   font-size: 0.85rem;
   color: var(--text-main);
-  background: white;
+  background: var(--bg-primary);
   resize: none;
   min-height: 60px;
   font-family: inherit;
@@ -479,7 +486,7 @@ const AddCardCancelBtn = styled.button`
   border-radius: 4px;
 
   &:hover {
-    background: #e2e8f0;
+    background: var(--border-subtle);
     color: var(--text-main);
   }
 `;
@@ -501,9 +508,9 @@ const AddInitialCardButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background: #e2e8f0;
+    background: var(--border-subtle);
     color: var(--text-main);
-    border-color: #cbd5e1;
+    border-color: var(--text-light);
   }
 `;
 
@@ -1090,6 +1097,19 @@ const DragAndDropCards = () => {
     }
     updatedColumns[toColumnId].splice(toIndex, 0, movedCard);
     setColumns(updatedColumns);
+
+    if (fromColumnId !== toColumnId) {
+      const fromTitle = COLUMN_TITLES[fromColumnId] || fromColumnId;
+      const toTitle = COLUMN_TITLES[toColumnId] || toColumnId;
+      const accentColor = COLUMN_ACCENT_COLORS[toColumnId] || "var(--primary-accent)";
+      toast.info(`"${movedCard.cardName}" moved from ${fromTitle} to ${toTitle}`, {
+        autoClose: 2000,
+        style: { borderLeft: `4px solid ${accentColor}` },
+        progressStyle: { background: accentColor },
+        icon: <span style={{ color: accentColor, fontSize: "1.1rem" }}>●</span>,
+      });
+    }
+
     const userRole = localStorage.getItem("role");
     try {
       const result = await apiRequest(
