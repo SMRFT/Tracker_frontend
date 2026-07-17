@@ -1,6 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import styled from "styled-components";
 import apiRequest from "./apiRequest";
+import { FiSearch } from "react-icons/fi";
+
+const isMobile = () =>
+  typeof window !== "undefined" && window.innerWidth <= 768;
 
 const Container = styled.div`
   padding: 40px;
@@ -9,6 +13,10 @@ const Container = styled.div`
   overflow: hidden;
   display: flex;
   flex-direction: column;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
 `;
 
 const ContentWrapper = styled.div`
@@ -43,57 +51,84 @@ const Header = styled.div`
   margin-bottom: 40px;
   text-align: center;
   flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    margin-bottom: 20px;
+  }
 `;
 
 const Title = styled.h1`
   color: var(--text-main);
-  font-size: 2.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  margin: 0 0 10px 0;
+  margin: 0 0 6px 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 15px;
+  gap: 10px;
+
+  @media (max-width: 768px) {
+    font-size: 1.4rem;
+    gap: 8px;
+  }
 `;
 
 const Subtitle = styled.p`
   color: var(--text-muted);
   font-size: 1.1rem;
   margin: 0;
+
+  @media (max-width: 768px) {
+    font-size: 0.9rem;
+  }
 `;
 
 const FilterCard = styled.div`
   background: var(--bg-secondary);
   border-radius: 16px;
-  padding: 30px;
-  margin-bottom: 30px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--border-subtle);
   flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    padding: 14px;
+    margin-bottom: 14px;
+  }
 `;
 
 const FilterRow = styled.div`
   display: flex;
-  gap: 20px;
+  gap: 14px;
   align-items: flex-end;
   justify-content: center;
   flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    gap: 10px;
+  }
 `;
 
 // Multi-select board filter
 const BoardFilterWrapper = styled.div`
   position: relative;
-  min-width: 180px;
+  min-width: 150px;
+
+  @media (max-width: 480px) {
+    min-width: 100%;
+    width: 100%;
+  }
 `;
 
 const BoardFilterButton = styled.button`
   width: 100%;
-  padding: 12px 16px;
+  padding: 9px 12px;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--bg-primary);
   color: var(--text-main);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
@@ -150,91 +185,147 @@ const BoardOption = styled.label`
   }
 `;
 
+const SearchInputWrapper = styled.div`
+  position: relative;
+  min-width: 200px;
+
+  @media (max-width: 480px) {
+    min-width: 100%;
+    width: 100%;
+  }
+`;
+
+const SearchIcon = styled.div`
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  font-size: 0.95rem;
+  pointer-events: none;
+`;
+
+const SearchInput = styled.input`
+  padding: 9px 12px 9px 34px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  width: 100%;
+  background: var(--bg-primary);
+  color: var(--text-main);
+  transition: 0.3s;
+  font-size: 0.85rem;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background: var(--bg-secondary);
+  }
+
+  &::placeholder {
+    color: var(--text-light);
+  }
+`;
+
 const FilterGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 `;
 
 const FilterLabel = styled.label`
   font-weight: 600;
-  color: var(--text-main);
-  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 `;
 
 const DateInput = styled.input`
-  padding: 12px 16px;
+  padding: 9px 12px;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  font-size: 0.95rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
   font-family: inherit;
   transition: all 0.3s ease;
-  min-width: 180px;
+  min-width: 150px;
   background: var(--bg-primary);
   color: var(--text-main);
-  
+
   &:focus {
     outline: none;
     border-color: var(--primary-accent);
     background: var(--bg-secondary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   }
-  
+
   &::-webkit-calendar-picker-indicator {
     cursor: pointer;
     filter: brightness(0.8);
   }
+
+  @media (max-width: 480px) {
+    min-width: 100%;
+    width: 100%;
+  }
 `;
 
 const FilterButton = styled.button`
-  padding: 12px 32px;
+  padding: 9px 22px;
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
-  
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
   }
-  
+
   &:active {
     transform: translateY(0);
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
   }
 `;
 
 const ResetButton = styled.button`
-  padding: 12px 32px;
+  padding: 9px 22px;
   background: var(--bg-secondary);
   color: var(--primary-accent);
   border: 2px solid var(--primary-accent);
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   transition: all 0.3s ease;
-  
+
   &:hover {
     background: rgba(99, 102, 241, 0.1);
     transform: translateY(-2px);
   }
-  
+
   &:active {
     transform: translateY(0);
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
   }
 `;
 
 const ResultCount = styled.div`
   text-align: center;
-  margin-bottom: 20px;
-  font-size: 1rem;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
   color: var(--text-muted);
   font-weight: 500;
   flex-shrink: 0;
@@ -242,14 +333,14 @@ const ResultCount = styled.div`
   span {
     color: var(--primary-accent);
     font-weight: 700;
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
 `;
 
 const TableCard = styled.div`
   background: var(--bg-secondary);
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--border-subtle);
   overflow: hidden;
 `;
@@ -274,81 +365,115 @@ const TableWrapper = styled.div`
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
+  min-width: 760px;
+  font-size: 0.85rem;
 `;
 
 const TableHead = styled.thead`
-  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  background: var(--bg-secondary);
 `;
 
 const TableRow = styled.tr`
-  transition: all 0.3s ease;
-  
+  transition: background-color 0.2s ease;
+
   &:hover {
-    background: rgba(99, 102, 241, 0.1);
-    transform: scale(1.01);
+    background: rgba(99, 102, 241, 0.08);
   }
 `;
 
 const TableHeader = styled.th`
-  padding: 20px 16px;
+  padding: 0.7rem 0.85rem;
   text-align: left;
-  color: white;
-  font-weight: 600;
-  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  letter-spacing: 0.05em;
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-subtle);
 `;
 
 const TableCell = styled.td`
-  padding: 20px 16px;
+  padding: 0.65rem 0.85rem;
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-main);
-  font-size: 0.95rem;
+`;
+
+// Mobile card list (replaces the wide table on small screens)
+const CardList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const DeletedCardItem = styled.div`
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+`;
+
+const DeletedCardName = styled.div`
+  font-weight: 700;
+  color: var(--text-main);
+  font-size: 1.05rem;
+  margin-bottom: 10px;
+`;
+
+const DeletedCardMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-bottom: 12px;
+`;
+
+const DeletedCardMetaItem = styled.div`
+  font-size: 0.85rem;
+  color: var(--text-muted);
+
+  strong {
+    color: var(--text-main);
+    font-weight: 600;
+  }
+`;
+
+const DeletedCardActions = styled.div`
+  display: flex;
+  gap: 8px;
 `;
 
 const ViewButton = styled.button`
-  padding: 10px 24px;
-  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  padding: 7px 14px;
+  background: var(--primary-accent);
   color: white;
   border: none;
-  border-radius: 25px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
-  
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  flex: ${(props) => (props.fluid ? "1" : "initial")};
+
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
-  }
-  
-  &:active {
-    transform: translateY(0);
+    filter: brightness(1.08);
   }
 `;
 
 const RestoreButton = styled.button`
-  padding: 10px 24px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  padding: 7px 14px;
+  background: #10b981;
   color: white;
   border: none;
-  border-radius: 25px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
-  
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  flex: ${(props) => (props.fluid ? "1" : "initial")};
+
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
-  }
-  
-  &:active {
-    transform: translateY(0);
+    filter: brightness(1.08);
   }
 `;
 
@@ -421,6 +546,12 @@ const ModalHeader = styled.div`
   position: sticky;
   top: 0;
   z-index: 10;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
 `;
 
 const ModalTitle = styled.h2`
@@ -428,6 +559,10 @@ const ModalTitle = styled.h2`
   color: white;
   font-size: 1.8rem;
   font-weight: 700;
+
+  @media (max-width: 768px) {
+    font-size: 1.3rem;
+  }
 `;
 
 const CloseButton = styled.button`
@@ -448,6 +583,10 @@ const CloseButton = styled.button`
 
 const ModalBody = styled.div`
   padding: 30px;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
 `;
 
 const DetailSection = styled.div`
@@ -680,10 +819,15 @@ export default function DeletedCards() {
   const [filteredCards, setFilteredCards] = useState([]);
   const [selectedBoards, setSelectedBoards] = useState([]);
   const [boardDropdownOpen, setBoardDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isMobileView, setIsMobileView] = useState(isMobile());
 
   useEffect(() => {
-    loadDeletedCards();
     setDefaultDates();
+
+    const handleResize = () => setIsMobileView(isMobile());
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const setDefaultDates = () => {
@@ -701,23 +845,34 @@ export default function DeletedCards() {
     setToDate(end);
   };
 
-  const loadDeletedCards = async () => {
+  const loadDeletedCards = useCallback(async () => {
+    if (!fromDate || !toDate) return;
+    setLoading(true);
     try {
-      const url = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL + "deleted_cards/";
+      const url = `${process.env.REACT_APP_BACKEND_TRACKER_BASE_URL}deleted_cards/?from=${fromDate}&to=${toDate}`;
       const response = await apiRequest(url, "GET");
 
       if (response.success) {
         setDeletedCards(response.data);
-        setFilteredCards(response.data);
+      } else if (response.data && Array.isArray(response.data)) {
+        // Direct array response fallback
+        setDeletedCards(response.data);
       } else {
         console.error("Failed to load deleted cards:", response.error);
+        setDeletedCards([]);
       }
     } catch (error) {
       console.error("Error loading deleted cards:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [fromDate, toDate]);
+
+  useEffect(() => {
+    if (fromDate && toDate) {
+      loadDeletedCards();
+    }
+  }, [fromDate, toDate, loadDeletedCards]);
 
   const triggerRestore = (cardId) => {
     setCardToRestore(cardId);
@@ -746,28 +901,23 @@ export default function DeletedCards() {
     }
   };
 
-  const applyFilter = () => {
-    if (!fromDate || !toDate) {
-      alert("Please select both From and To dates");
-      return;
+  const applyFilter = useCallback(() => {
+    let filtered = deletedCards;
+
+    if (searchTerm.trim()) {
+      const lower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (card) =>
+          card.cardName?.toLowerCase().includes(lower) ||
+          card.boardName?.toLowerCase().includes(lower) ||
+          card.employeeId?.toLowerCase().includes(lower) ||
+          card.members?.some(
+            (m) =>
+              m.employeeName?.toLowerCase().includes(lower) ||
+              m.employeeId?.toLowerCase().includes(lower)
+          )
+      );
     }
-
-    const from = new Date(fromDate);
-    from.setHours(0, 0, 0, 0);
-    
-    const to = new Date(toDate);
-    to.setHours(23, 59, 59, 999);
-
-    if (from > to) {
-      alert("From Date cannot be later than To Date");
-      return;
-    }
-
-    let filtered = deletedCards.filter((card) => {
-      if (!card.lastmodified_date) return false;
-      const deletedDate = new Date(card.lastmodified_date);
-      return deletedDate >= from && deletedDate <= to;
-    });
 
     if (selectedBoards.length > 0) {
       filtered = filtered.filter((card) =>
@@ -776,11 +926,12 @@ export default function DeletedCards() {
     }
 
     setFilteredCards(filtered);
-  };
+  }, [deletedCards, searchTerm, selectedBoards]);
 
   const resetFilter = () => {
     setDefaultDates();
     setSelectedBoards([]);
+    setSearchTerm("");
     setFilteredCards(deletedCards);
   };
 
@@ -802,11 +953,8 @@ export default function DeletedCards() {
       : `${selectedBoards.length} Boards`;
 
   useEffect(() => {
-    if (deletedCards.length > 0 && fromDate && toDate) {
-      applyFilter();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromDate, toDate]);
+    applyFilter();
+  }, [applyFilter]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "—";
@@ -894,13 +1042,24 @@ export default function DeletedCards() {
               </BoardFilterWrapper>
             </FilterGroup>
 
-            <FilterButton onClick={applyFilter}>
-              Apply Filter
-            </FilterButton>
+            <FilterGroup>
+              <FilterLabel>🔍 Search</FilterLabel>
+              <SearchInputWrapper>
+                <SearchIcon>
+                  <FiSearch />
+                </SearchIcon>
+                <SearchInput
+                  type="text"
+                  placeholder="Search cards..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </SearchInputWrapper>
+            </FilterGroup>
 
-            <ResetButton onClick={resetFilter}>
-              Reset
-            </ResetButton>
+            <FilterButton onClick={resetFilter}>
+              Reset Filters
+            </FilterButton>
           </FilterRow>
         </FilterCard>
 
@@ -914,6 +1073,29 @@ export default function DeletedCards() {
             <h3>No Deleted Cards Found</h3>
             <p>No cards were deleted in the selected date range</p>
           </EmptyState>
+        ) : isMobileView ? (
+          <CardList>
+            {filteredCards.map((card) => (
+              <DeletedCardItem key={card.cardId}>
+                <DeletedCardName>{card.cardName}</DeletedCardName>
+                <DeletedCardMeta>
+                  <DeletedCardMetaItem><strong>Board:</strong> {card.boardName}</DeletedCardMetaItem>
+                  <DeletedCardMetaItem><Badge color="#ff9800">{card.columnId}</Badge></DeletedCardMetaItem>
+                  <DeletedCardMetaItem><strong>Created By:</strong> {card.created_by_name || "Unknown"}</DeletedCardMetaItem>
+                  <DeletedCardMetaItem><strong>Deleted By:</strong> {card.lastmodified_by_name || "Unknown"}</DeletedCardMetaItem>
+                  <DeletedCardMetaItem><strong>Deleted On:</strong> {formatDate(card.lastmodified_date)}</DeletedCardMetaItem>
+                </DeletedCardMeta>
+                <DeletedCardActions>
+                  <ViewButton fluid onClick={() => setSelectedCard(card)}>
+                    View Details
+                  </ViewButton>
+                  <RestoreButton fluid onClick={() => triggerRestore(card.cardId)}>
+                    Restore
+                  </RestoreButton>
+                </DeletedCardActions>
+              </DeletedCardItem>
+            ))}
+          </CardList>
         ) : (
           <TableCard>
             <TableWrapper>

@@ -69,6 +69,13 @@ const COLUMN_ACCENT_COLORS = {
   done: "#10b981",
 };
 
+const COLUMN_TITLES = {
+  do: "Do",
+  doing: "Doing",
+  hold: "Hold",
+  done: "Done",
+};
+
 const EMPLOYEE_CARDS_POPUP_WIDTH = 290;
 const VIEWPORT_EDGE_MARGIN = 12;
 
@@ -85,11 +92,12 @@ const getClampedPopupPosition = (rect) => {
 
 const TodolistContainer = styled.div`
   background-color: var(--bg-primary);
-  height: calc(100vh - 60px);
+  height: calc(100vh - 40px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 2rem;
+  padding: 1rem 2rem;
+  margin-top: -10px;
   font-family: 'Inter', sans-serif;
 
   @media (max-width: 768px) {
@@ -97,22 +105,29 @@ const TodolistContainer = styled.div`
     min-height: 100vh;
     overflow: visible;
     padding: 1rem;
-    margin-top: 50px;
+    margin-top: 20px;
   }
 `;
 
 const HeaderBanner = styled.div`
   background: ${(props) => props.bannerColor || "linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)"};
-  border-radius: 16px;
-  padding: 1.75rem 2.25rem;
+  border-radius: 12px;
+  padding: 1.25rem 2rem;
   color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
   flex-wrap: wrap;
   gap: 1.5rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.25rem;
+    gap: 1rem;
+  }
 `;
 
 const HeaderLeft = styled.div`
@@ -203,8 +218,8 @@ const CalendarIconButton = styled.button`
 
 const BoardGrid = styled.div`
   display: flex;
-  gap: 1.5rem;
-  padding-bottom: 2rem;
+  gap: 1.25rem;
+  padding-bottom: 1.5rem;
   overflow-x: auto;
   overflow-y: hidden;
   align-items: flex-start;
@@ -227,10 +242,10 @@ const BoardGrid = styled.div`
 `;
 
 const ColumnWrapper = styled.div`
-  width: 290px;
-  min-width: 290px;
-  padding: 16px;
-  border-radius: 16px;
+  width: 280px;
+  min-width: 280px;
+  padding: 10px;
+  border-radius: 14px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
   display: flex;
@@ -430,7 +445,7 @@ const AddCardInput = styled.textarea`
   border-radius: 10px;
   font-size: 0.85rem;
   color: var(--text-main);
-  background: white;
+  background: var(--bg-primary);
   resize: none;
   min-height: 60px;
   font-family: inherit;
@@ -479,7 +494,7 @@ const AddCardCancelBtn = styled.button`
   border-radius: 4px;
 
   &:hover {
-    background: #e2e8f0;
+    background: var(--border-subtle);
     color: var(--text-main);
   }
 `;
@@ -501,9 +516,9 @@ const AddInitialCardButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background: #e2e8f0;
+    background: var(--border-subtle);
     color: var(--text-main);
-    border-color: #cbd5e1;
+    border-color: var(--text-light);
   }
 `;
 
@@ -870,25 +885,6 @@ const Column = React.memo(function Column({
         <CountBadge>{cards.length}</CountBadge>
       </ColumnHeader>
 
-      <CardsList>
-        {cards.map((card, index) => (
-          <Card
-            key={card.cardId}
-            id={card.cardId}
-            index={index}
-            columnId={id}
-            text={card.cardName}
-            createdByName={card.created_by_name}
-            enddate={card.enddate}
-            columnTitle={title}
-            openModal={openModal}
-            members={cardMembers[card.cardId] || []}
-            trackerBaseUrl={trackerBaseUrl}
-            onRequestDelete={onRequestDelete}
-          />
-        ))}
-      </CardsList>
-
       {showAddCardButton &&
         (localStorage.getItem("role") === "Admin" ||
           localStorage.getItem("role") === "HOD" ||
@@ -901,6 +897,10 @@ const Column = React.memo(function Column({
                   value={inputValue}
                   onChange={handleInputChange}
                   autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleAddCard();
+                    if (e.key === "Escape") setIsAddingCard(false);
+                  }}
                 />
                 <AddCardActions>
                   <AddCardBtn onClick={handleAddCard}>
@@ -919,6 +919,25 @@ const Column = React.memo(function Column({
             )}
           </AddCardContainer>
         )}
+
+      <CardsList>
+        {cards.map((card, index) => (
+          <Card
+            key={card.cardId}
+            id={card.cardId}
+            index={index}
+            columnId={id}
+            text={card.cardName}
+            createdByName={card.created_by_name}
+            enddate={card.enddate}
+            columnTitle={title}
+            openModal={openModal}
+            members={cardMembers[card.cardId] || []}
+            trackerBaseUrl={trackerBaseUrl}
+            onRequestDelete={onRequestDelete}
+          />
+        ))}
+      </CardsList>
     </ColumnWrapper>
   );
 });
@@ -1090,6 +1109,19 @@ const DragAndDropCards = () => {
     }
     updatedColumns[toColumnId].splice(toIndex, 0, movedCard);
     setColumns(updatedColumns);
+
+    if (fromColumnId !== toColumnId) {
+      const fromTitle = COLUMN_TITLES[fromColumnId] || fromColumnId;
+      const toTitle = COLUMN_TITLES[toColumnId] || toColumnId;
+      const accentColor = COLUMN_ACCENT_COLORS[toColumnId] || "var(--primary-accent)";
+      toast.info(`"${movedCard.cardName}" moved from ${fromTitle} to ${toTitle}`, {
+        autoClose: 2000,
+        style: { borderLeft: `4px solid ${accentColor}` },
+        progressStyle: { background: accentColor },
+        icon: <span style={{ color: accentColor, fontSize: "1.1rem" }}>●</span>,
+      });
+    }
+
     const userRole = localStorage.getItem("role");
     try {
       const result = await apiRequest(
@@ -1100,9 +1132,17 @@ const DragAndDropCards = () => {
 
       if (!result.success) {
         console.error("Error updating card column:", result.error);
+        toast.error("Permission denied: Creator or member access required.", {
+          autoClose: 3000,
+          style: { fontSize: "14px", borderRadius: "10px", padding: "12px", borderLeft: "4px solid #ef4444" }
+        });
+        // Revert the optimistic update
+        fetchCardsWithMembers(boardId);
       }
     } catch (error) {
       console.error("Error updating card column:", error);
+      toast.error("Failed to move card.");
+      fetchCardsWithMembers(boardId);
     }
   }, [columns, boardId, Trackerbaseurl]);
 

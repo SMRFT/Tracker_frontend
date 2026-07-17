@@ -693,6 +693,14 @@ const handleSaveActivity = async () => {
     formData.append("date", date);
     formData.append("time", time);
 
+    const mentionedEmployees = [];
+    boardMembers.forEach(member => {
+      if (commentText.includes(`@${member.employeeName}`)) {
+        mentionedEmployees.push(member);
+      }
+    });
+    formData.append("mentionedEmployees", JSON.stringify(mentionedEmployees));
+
     if (selectedFile) {
       formData.append("file", selectedFile); // ✅ binary
     }

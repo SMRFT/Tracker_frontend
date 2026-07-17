@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import styled, { keyframes } from "styled-components";
+import { FiSearch } from "react-icons/fi";
 import apiRequest from "./apiRequest";
 import * as XLSX from "xlsx";
 
@@ -85,12 +86,12 @@ const Header = styled.div`
 
 const Title = styled.h2`
   color: var(--text-main);
-  font-size: ${(props) => (props.isMobile ? "1.75rem" : "2.5rem")};
+  font-size: ${(props) => (props.isMobile ? "1.4rem" : "1.75rem")};
   font-weight: 700;
   margin: 0;
 
   @media (max-width: 768px) {
-    font-size: 1.75rem;
+    font-size: 1.4rem;
   }
 `;
 
@@ -99,9 +100,9 @@ const SearchSection = styled.div`
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: ${(props) => (props.isMobile ? "0.75rem" : "1rem")};
-  margin-bottom: ${(props) => (props.isMobile ? "1.5rem" : "2rem")};
-  padding: ${(props) => (props.isMobile ? "1rem" : "1.5rem")};
+  gap: ${(props) => (props.isMobile ? "0.6rem" : "0.75rem")};
+  margin-bottom: ${(props) => (props.isMobile ? "1.25rem" : "1.25rem")};
+  padding: ${(props) => (props.isMobile ? "0.75rem" : "0.85rem 1rem")};
   background: var(--bg-secondary);
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
@@ -111,17 +112,36 @@ const SearchSection = styled.div`
 
   @media (max-width: 768px) {
     flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem;
+    gap: 0.6rem;
+    padding: 0.75rem;
   }
 `;
 
+const SearchInputWrapper = styled.div`
+  position: relative;
+  width: ${(props) => (props.isMobile ? "100%" : "240px")};
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const SearchIcon = styled.div`
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  font-size: 0.95rem;
+  pointer-events: none;
+`;
+
 const SearchInput = styled.input`
-  padding: ${(props) => (props.isMobile ? "14px 16px" : "12px 16px")};
+  padding: ${(props) => (props.isMobile ? "12px 14px 12px 36px" : "9px 12px 9px 34px")};
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  width: ${(props) => (props.isMobile ? "100%" : "300px")};
-  font-size: ${(props) => (props.isMobile ? "16px" : "1rem")};
+  width: 100%;
+  font-size: ${(props) => (props.isMobile ? "16px" : "0.9rem")};
   background: var(--bg-primary);
   color: var(--text-main);
   transition: all 0.3s ease;
@@ -135,12 +155,11 @@ const SearchInput = styled.input`
 
   &::placeholder {
     color: var(--text-light);
-    font-size: ${(props) => (props.isMobile ? "14px" : "inherit")};
+    font-size: ${(props) => (props.isMobile ? "14px" : "0.85rem")};
   }
 
   @media (max-width: 768px) {
-    width: 100%;
-    padding: 14px 16px;
+    padding: 12px 14px 12px 36px;
     font-size: 16px;
   }
 `;
@@ -161,7 +180,7 @@ const DateFilterWrapper = styled.div`
 // Multi-select board filter
 const BoardFilterWrapper = styled.div`
   position: relative;
-  width: ${(props) => (props.isMobile ? "100%" : "200px")};
+  width: ${(props) => (props.isMobile ? "100%" : "160px")};
 
   @media (max-width: 768px) {
     width: 100%;
@@ -170,12 +189,12 @@ const BoardFilterWrapper = styled.div`
 
 const BoardFilterButton = styled.button`
   width: 100%;
-  padding: ${(props) => (props.isMobile ? "14px 16px" : "12px 16px")};
+  padding: ${(props) => (props.isMobile ? "12px 14px" : "9px 12px")};
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   background: var(--bg-primary);
   color: var(--text-main);
-  font-size: ${(props) => (props.isMobile ? "16px" : "1rem")};
+  font-size: ${(props) => (props.isMobile ? "16px" : "0.9rem")};
   text-align: left;
   cursor: pointer;
   display: flex;
@@ -235,10 +254,10 @@ const BoardOption = styled.label`
 `;
 
 const DateFilter = styled.input`
-  padding: ${(props) => (props.isMobile ? "14px 16px" : "12px 16px")};
+  padding: ${(props) => (props.isMobile ? "12px 14px" : "9px 12px")};
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  font-size: ${(props) => (props.isMobile ? "16px" : "1rem")};
+  font-size: ${(props) => (props.isMobile ? "16px" : "0.9rem")};
   background: var(--bg-primary);
   color: var(--text-main);
   transition: all 0.3s ease;
@@ -253,23 +272,22 @@ const DateFilter = styled.input`
 
   @media (max-width: 768px) {
     width: 100%;
-    padding: 14px 16px;
+    padding: 12px 14px;
     font-size: 16px;
   }
 `;
 
 const ClearButton = styled.button`
-  padding: ${(props) => (props.isMobile ? "14px 24px" : "12px 24px")};
+  padding: ${(props) => (props.isMobile ? "12px 20px" : "9px 16px")};
   background: #6c757d;
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: ${(props) => (props.isMobile ? "1rem" : "0.9rem")};
+  font-size: ${(props) => (props.isMobile ? "0.95rem" : "0.85rem")};
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   white-space: nowrap;
   width: ${(props) => (props.isMobile ? "100%" : "auto")};
 
@@ -285,45 +303,22 @@ const ClearButton = styled.button`
 
   @media (max-width: 768px) {
     width: 100%;
-    padding: 14px 24px;
-    font-size: 1rem;
-  }
-`;
-
-const ActionSection = styled.div`
-  display: flex;
-  gap: ${(props) => (props.isMobile ? "0.75rem" : "1rem")};
-  margin-bottom: ${(props) => (props.isMobile ? "1.5rem" : "2rem")};
-  padding: ${(props) => (props.isMobile ? "0.75rem" : "1rem")};
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--border-subtle);
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  flex-direction: ${(props) => (props.isMobile ? "column" : "row")};
-  flex-shrink: 0;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.75rem;
+    padding: 12px 20px;
+    font-size: 0.95rem;
   }
 `;
 
 const ActionButton = styled.button`
-  padding: ${(props) => (props.isMobile ? "12px 20px" : "10px 16px")};
+  padding: ${(props) => (props.isMobile ? "11px 18px" : "8px 14px")};
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: ${(props) => (props.isMobile ? "1rem" : "0.9rem")};
+  font-size: ${(props) => (props.isMobile ? "0.95rem" : "0.85rem")};
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   white-space: nowrap;
   width: ${(props) => (props.isMobile ? "100%" : "auto")};
 
@@ -338,18 +333,18 @@ const ActionButton = styled.button`
 
   @media (max-width: 768px) {
     width: 100%;
-    padding: 12px 20px;
-    font-size: 1rem;
+    padding: 11px 18px;
+    font-size: 0.95rem;
   }
 `;
 
 const TableWrapper = styled.div`
   background: var(--bg-secondary);
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: ${(props) => (props.isMobile ? "visible" : "hidden")};
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
   border: 1px solid var(--border-subtle);
-  margin-top: 2rem;
+  margin-top: 1rem;
 
   @media (max-width: 768px) {
     overflow: visible;
@@ -362,7 +357,7 @@ const TableWrapper = styled.div`
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   display: ${(props) => (props.isMobile ? "none" : "table")};
 
   @media (max-width: 768px) {
@@ -371,29 +366,22 @@ const Table = styled.table`
 `;
 
 const Th = styled.th`
-  padding: 1.2rem 1rem;
-  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-  color: white;
+  padding: 0.7rem 0.85rem;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
   text-align: left;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--border-subtle);
   position: sticky;
   top: 0;
   z-index: 10;
-
-  &:first-child {
-    border-top-left-radius: 12px;
-  }
-
-  &:last-child {
-    border-top-right-radius: 12px;
-  }
 `;
 
 const Td = styled.td`
-  padding: 1rem;
+  padding: 0.65rem 0.85rem;
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-main);
   vertical-align: top;
@@ -1200,13 +1188,18 @@ const TaskDeadline = () => {
       </Header>
 
       <SearchSection isMobile={isMobileView}>
-        <SearchInput
-          isMobile={isMobileView}
-          type="text"
-          placeholder="Search by member, card, board, or employee ID..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <SearchInputWrapper isMobile={isMobileView}>
+          <SearchIcon>
+            <FiSearch />
+          </SearchIcon>
+          <SearchInput
+            isMobile={isMobileView}
+            type="text"
+            placeholder="Search member, card, board, ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </SearchInputWrapper>
 
         {/* Board multi-select */}
         <BoardFilterWrapper isMobile={isMobileView}>
@@ -1263,16 +1256,14 @@ const TaskDeadline = () => {
         <ClearButton isMobile={isMobileView} onClick={handleClear}>
           Clear
         </ClearButton>
-      </SearchSection>
 
-      <ActionSection isMobile={isMobileView}>
         <ActionButton isMobile={isMobileView} onClick={handlePrint}>
           Print
         </ActionButton>
         <ActionButton isMobile={isMobileView} onClick={handleExportExcel}>
           Export Excel
         </ActionButton>
-      </ActionSection>
+      </SearchSection>
 
       <ScrollArea>
       {isLoading ? (
