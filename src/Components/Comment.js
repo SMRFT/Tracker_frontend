@@ -34,7 +34,7 @@ const ActivityInput = styled.textarea`
   width: 100%;
   height: 60px;
   padding: 10px;
-  padding-right: 40px; /* Space for the attachment button */
+  padding-right: 90px; /* Space for attachment and save buttons */
   border-radius: 4px;
   border: 1px solid var(--border-subtle);
   font-size: 14px;
@@ -78,23 +78,39 @@ const Button = styled.button`
   }
 `;
 
+const InlineSaveButton = styled(Button)`
+  position: absolute;
+  right: 6px;
+  bottom: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 10;
+  background-color: var(--primary-accent, #4f46e5);
+
+  &:hover {
+    background-color: var(--primary-hover, #4338ca);
+  }
+`;
+
 const AttachButton = styled.button`
   background: none;
   border: none;
-  color: #7f8c8d;
-  font-size: 1.2rem;
+  color: var(--text-muted);
+  font-size: 1.1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   padding: 5px;
   border-radius: 50%;
   position: absolute;
-  right: 10px;
-  bottom: 8px;
+  right: 60px;
+  bottom: 7px;
   z-index: 10;
+  transition: all 0.2s ease;
   &:hover {
-    background-color: #ecf0f1;
-    color: #3498db;
+    background-color: var(--bg-primary);
+    color: var(--text-main);
   }
 `;
 
@@ -127,13 +143,19 @@ const HiddenInput = styled.input`
 `;
 
 const CommentsSection = styled.div`
-  margin-top: 20px;
-  padding: 10px;
+  margin-top: 16px;
   border-radius: 8px;
-  max-width: 600px;
   width: 100%;
   max-height: 400px;
   overflow-y: auto;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 4px;
+  }
 `;
 
 const CommentItem = styled.div`
@@ -144,44 +166,56 @@ const CommentItem = styled.div`
 `;
 
 const Avatar = styled.div`
-  margin-right: 15px;
-  font-size: 2rem;
-  color: #3498db;
+  margin-right: 12px;
+  font-size: 2.2rem;
+  color: var(--primary-accent, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-secondary);
 `;
 
 const CommentContent = styled.div`
-  background-color: var(--bg-primary);
+  background-color: var(--bg-secondary);
   color: var(--text-main);
-  padding: 10px;
-  border-radius: 6px;
+  padding: 14px 16px;
+  border-radius: 0 16px 16px 16px;
   width: 100%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 `;
 
 const CommentText = styled.div`
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
   white-space: pre-wrap;
+  color: var(--text-main);
 
   .mention-tag {
     color: var(--primary-accent);
     font-weight: 600;
-    background-color: rgba(79, 70, 229, 0.1);
-    padding: 0 4px;
-    border-radius: 4px;
+    background-color: var(--bg-primary);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 0.9rem;
   }
 `;
 
 const CommentAuthor = styled.span`
-  font-weight: bold;
-  margin-right: 5px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-main);
 `;
 
 const CommentDate = styled.small`
   color: var(--text-muted);
-  font-size: 0.8rem;
-  margin-left: 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
 `;
 
 const ActionIcons = styled.div`
@@ -401,8 +435,8 @@ const MentionsList = styled.ul`
   position: absolute;
   top: 75px; 
   left: 0;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   list-style: none;
   padding: 0;
@@ -417,14 +451,15 @@ const MentionsList = styled.ul`
 const MentionItem = styled.li`
   padding: 8px 12px;
   cursor: pointer;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
+  color: var(--text-main);
   
   &:hover {
-    background-color: #f1f2f6;
+    background-color: var(--bg-primary);
   }
   &:last-child {
     border-bottom: none;
@@ -546,7 +581,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     const value = e.target.value;
     setCommentText(value);
 
-    const match = value.match(/@(\w*)$/);
+    const match = value.match(/@([\w.]*)$/);
     if (match) {
         setMentionQuery(match[1].toLowerCase());
         setShowMentions(true);
@@ -556,7 +591,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   };
 
   const handleSelectMember = (memberName) => {
-    const newText = commentText.replace(/@(\w*)$/, `@${memberName} `);
+    const newText = commentText.replace(/@([\w.]*)$/, `@${memberName} `);
     setCommentText(newText);
     setShowMentions(false);
     
@@ -858,10 +893,10 @@ const getFileUrl = (comment) => {
 
   const renderCommentWithTags = (text) => {
     if (!text) return null;
-    const parts = text.split(/(@\w+)/g);
+    const parts = text.split(/(@[\w.]+)/g);
 
     return parts.map((part, i) => {
-        if (part.match(/^@\w+/)) {
+        if (part.match(/^@[\w.]+/)) {
             return <span key={i} className="mention-tag">{part}</span>;
         }
         return part;
@@ -890,6 +925,14 @@ const getFileUrl = (comment) => {
           >
             <FaPaperclip />
           </AttachButton>
+          <HiddenInput 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange}
+          />
+          <InlineSaveButton onClick={handleSaveActivity} disabled={isSubmitting}>
+            {isSubmitting ? "..." : "Save"}
+          </InlineSaveButton>
         </InputWrapper>
 
         {showMentions && filteredMembers.length > 0 && (
@@ -916,16 +959,6 @@ const getFileUrl = (comment) => {
           </FilePreview>
         )}
 
-        <Actions>
-          <HiddenInput 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange}
-          />
-          <Button onClick={handleSaveActivity} disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Comment"}
-          </Button>
-        </Actions>
       </Section>
 
       <CommentsSection>
@@ -959,10 +992,10 @@ const getFileUrl = (comment) => {
                     </>
                   ) : (
                     <>
-                      <p>
+                      <div style={{ margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <CommentAuthor>{comment.empname || "Anonymous"}</CommentAuthor>
                         <CommentDate>{comment.date} at {comment.time}</CommentDate>
-                      </p>
+                      </div>
                       
                       <CommentText>{renderCommentWithTags(comment.commenttext)}</CommentText>
 

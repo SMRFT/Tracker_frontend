@@ -572,14 +572,25 @@ const ModalCloseButton = styled.button`
 
 const ModalContent = styled.div`
   display: flex;
+  flex-direction: column;
   padding: 2rem;
   gap: 2rem;
   flex: 1;
   overflow-y: auto;
 
   @media (max-width: 768px) {
-    flex-direction: column;
     padding: 1.5rem;
+    gap: 1.5rem;
+  }
+`;
+
+const ModalTopRow = styled.div`
+  display: flex;
+  gap: 2rem;
+  flex-direction: row;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
     gap: 1.5rem;
   }
 `;
@@ -592,7 +603,7 @@ const ModalLeft = styled.div`
 `;
 
 const ModalRight = styled.div`
-  flex: 0 0 260px;
+  flex: 0 0 220px;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -1361,16 +1372,16 @@ const DragAndDropCards = () => {
       return updatedColumns;
     });
 
-    setEvents((prevEvents) => 
+    setEvents((prevEvents) =>
       prevEvents.map((event) => {
-        if (event.title === modalContent.cardName) { 
-           return { ...event, start: newStartDate, end: newEndDate };
+        if (event.title === modalContent.cardName) {
+          return { ...event, start: newStartDate, end: newEndDate };
         }
         return event;
       })
     );
-    
-    fetchCardsWithMembers(boardId); 
+
+    fetchCardsWithMembers(boardId);
   };
 
   const [avatarPosition, setAvatarPosition] = useState({ top: 0, left: 0 });
@@ -1383,7 +1394,7 @@ const DragAndDropCards = () => {
             <BoardTitle>{boardName || "Board Workspace"}</BoardTitle>
             <BoardSubtitle>HOD / Owner: {employeeName || "General"}</BoardSubtitle>
           </HeaderLeft>
-          
+
           <HeaderRight>
             <EmployeeAvatars>
               {members1.map((member) => {
@@ -1436,7 +1447,7 @@ const DragAndDropCards = () => {
               <EmployeeCardsContainer>
                 <EmployeeCardsHeader>
                   <h3>{selectedEmployee.employeeName}'s Tasks</h3>
-                  <ModalCloseButton 
+                  <ModalCloseButton
                     onClick={() => setSelectedEmployee(null)}
                     style={{ padding: '2px', color: 'white' }}
                   >
@@ -1565,131 +1576,133 @@ const DragAndDropCards = () => {
                 </ModalHeader>
 
                 <ModalContent>
-                  <ModalLeft>
-                    <DetailGroup>
-                      <DetailLabel>Assigned Members</DetailLabel>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                        {members.length > 0 ? (
-                          members.map((member, idx) => {
-                            let imageUrl = member.profilePicture;
-                            if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
-                              const cleanPath = imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl;
-                              imageUrl = `${Trackerbaseurl}${cleanPath}`;
-                            }
+                  <ModalTopRow>
+                    <ModalLeft>
+                      <DetailGroup>
+                        <DetailLabel>Assigned Members</DetailLabel>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                          {members.length > 0 ? (
+                            members.map((member, idx) => {
+                              let imageUrl = member.profilePicture;
+                              if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
+                                const cleanPath = imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl;
+                                imageUrl = `${Trackerbaseurl}${cleanPath}`;
+                              }
 
-                            return (
-                              <React.Fragment key={idx}>
-                                {imageUrl ? (
-                                  <CardMemberImage
-                                    src={imageUrl}
-                                    alt={member.employeeName}
-                                    title={member.employeeName}
-                                    style={{ width: '32px', height: '32px' }}
-                                    onError={(e) => {
-                                      e.target.style.display = 'none';
-                                    }}
-                                  />
-                                ) : (
-                                  <CardMemberAvatar
-                                    bgColor={getBackgroundColor(member.employeeName)}
-                                    title={member.employeeName}
-                                    style={{ width: '32px', height: '32px', fontSize: '0.85rem' }}
-                                  >
-                                    {member.employeeName.charAt(0).toUpperCase()}
-                                  </CardMemberAvatar>
-                                )}
-                              </React.Fragment>
-                            );
-                          })
-                        ) : (
-                          <span style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>No members assigned yet</span>
-                        )}
+                              return (
+                                <React.Fragment key={idx}>
+                                  {imageUrl ? (
+                                    <CardMemberImage
+                                      src={imageUrl}
+                                      alt={member.employeeName}
+                                      title={member.employeeName}
+                                      style={{ width: '32px', height: '32px' }}
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                      }}
+                                    />
+                                  ) : (
+                                    <CardMemberAvatar
+                                      bgColor={getBackgroundColor(member.employeeName)}
+                                      title={member.employeeName}
+                                      style={{ width: '32px', height: '32px', fontSize: '0.85rem' }}
+                                    >
+                                      {member.employeeName.charAt(0).toUpperCase()}
+                                    </CardMemberAvatar>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })
+                          ) : (
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>No members assigned yet</span>
+                          )}
+                        </div>
+                      </DetailGroup>
+
+                      <Description
+                        boardId={boardId}
+                        boardName={boardName}
+                        cardId={cardId}
+                        cardName={cardName}
+                      />
+                    </ModalLeft>
+
+                    <ModalRight>
+                      <DetailGroup>
+                        <DetailLabel>Status / Column</DetailLabel>
+                        <DetailValue style={{ textTransform: 'capitalize', fontWeight: 600, color: 'var(--primary-accent)' }}>
+                          {modalContent.boardName}
+                        </DetailValue>
+                      </DetailGroup>
+
+                      <DetailGroup>
+                        <DetailLabel>Timeline</DetailLabel>
+                        <DateBoxWrapper>
+                          <DateRow>
+                            <strong>Start:</strong>
+                            <span style={{ fontWeight: 600 }}>
+                              {modalContent.startdate
+                                ? modalContent.startdate.toLocaleDateString()
+                                : "—"}
+                            </span>
+                          </DateRow>
+                          <DateRow>
+                            <strong>Due Date:</strong>
+                            <span
+                              style={{
+                                fontWeight: 600,
+                                color: modalContent.enddate && isOverdue(modalContent.enddate, modalContent.columnId) ? "#ef4444" : "inherit"
+                              }}
+                            >
+                              {modalContent.enddate
+                                ? modalContent.enddate.toLocaleDateString()
+                                : "—"}
+                            </span>
+                          </DateRow>
+                        </DateBoxWrapper>
+                      </DetailGroup>
+
+                      <div style={{ display: 'flex', gap: '24px' }}>
+                        <DetailGroup style={{ flex: 1 }}>
+                          <DetailLabel>Created By</DetailLabel>
+                          <DetailValue style={{ fontWeight: 500 }}>
+                            {modalContent.created_by_name || "Unknown"}
+                          </DetailValue>
+                        </DetailGroup>
+                        <DetailGroup style={{ flex: 1 }}>
+                          <DetailLabel>Created At</DetailLabel>
+                          <DetailValue style={{ fontWeight: 500 }}>
+                            {modalContent.created_date
+                              ? new Date(modalContent.created_date).toLocaleDateString()
+                              : "—"}
+                          </DetailValue>
+                        </DetailGroup>
                       </div>
-                    </DetailGroup>
 
-                    <Description
-                      boardId={boardId}
-                      boardName={boardName}
-                      cardId={cardId}
-                      cardName={cardName}
-                    />
+                      <Addmembers
+                        cardId={cardId}
+                        boardId={boardId}
+                        cardName={cardName}
+                        onMemberUpdate={() =>
+                          fetchMembers(cardId, boardId, cardName)
+                        }
+                      />
 
-                    <Comment
-                      boardId={boardId}
-                      boardName={boardName}
-                      cardId={cardId}
-                    />
-                  </ModalLeft>
+                      <DateComponent
+                        cardId={cardId}
+                        boardId={boardId}
+                        employeeId={employeeId}
+                        existingStartDate={modalContent.startdate}
+                        onDateUpdate={handleInstantDateUpdate}
+                      />
+                    </ModalRight>
+                  </ModalTopRow>
 
-                  <ModalRight>
-                    <DetailGroup>
-                      <DetailLabel>Status / Column</DetailLabel>
-                      <DetailValue style={{ textTransform: 'capitalize', fontWeight: 600, color: 'var(--primary-accent)' }}>
-                        {modalContent.boardName}
-                      </DetailValue>
-                    </DetailGroup>
-                    
-                    <DetailGroup>
-                      <DetailLabel>Timeline</DetailLabel>
-                      <DateBoxWrapper>
-                        <DateRow>
-                          <strong>Start:</strong>
-                          <span style={{ fontWeight: 600 }}>
-                            {modalContent.startdate
-                              ? modalContent.startdate.toLocaleDateString()
-                              : "—"}
-                          </span>
-                        </DateRow>
-                        <DateRow>
-                          <strong>Due Date:</strong>
-                          <span 
-                            style={{ 
-                              fontWeight: 600, 
-                              color: modalContent.enddate && isOverdue(modalContent.enddate, modalContent.columnId) ? "#ef4444" : "inherit" 
-                            }}
-                          >
-                            {modalContent.enddate
-                              ? modalContent.enddate.toLocaleDateString()
-                              : "—"}
-                          </span>
-                        </DateRow>
-                      </DateBoxWrapper>
-                    </DetailGroup>
-
-                    <div style={{ display: 'flex', gap: '24px' }}>
-                      <DetailGroup style={{ flex: 1 }}>
-                        <DetailLabel>Created By</DetailLabel>
-                        <DetailValue style={{ fontWeight: 500 }}>
-                          {modalContent.created_by_name || "Unknown"}
-                        </DetailValue>
-                      </DetailGroup>
-                      <DetailGroup style={{ flex: 1 }}>
-                        <DetailLabel>Created At</DetailLabel>
-                        <DetailValue style={{ fontWeight: 500 }}>
-                          {modalContent.created_date
-                            ? new Date(modalContent.created_date).toLocaleDateString()
-                            : "—"}
-                        </DetailValue>
-                      </DetailGroup>
-                    </div>
-
-                    <Addmembers
-                      cardId={cardId}
-                      boardId={boardId}
-                      cardName={cardName}
-                      onMemberUpdate={() =>
-                        fetchMembers(cardId, boardId, cardName)
-                      }
-                    />
-                    
-                    <DateComponent
-                      cardId={cardId}
-                      boardId={boardId}
-                      employeeId={employeeId}
-                      existingStartDate={modalContent.startdate}
-                      onDateUpdate={handleInstantDateUpdate}
-                    />
-                  </ModalRight>
+                  <Comment
+                    boardId={boardId}
+                    boardName={boardName}
+                    cardId={cardId}
+                  />
                 </ModalContent>
               </ModalContainer>
             </ModalOverlay>

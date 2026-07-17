@@ -919,7 +919,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
                     </div>
                   )}
                 </div>
-                <div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <SecondaryButton
                     onClick={() => {
                       setEditing(false);
