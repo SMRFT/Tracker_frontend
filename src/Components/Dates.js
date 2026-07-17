@@ -50,23 +50,26 @@ const IconWrapper = styled.div`
 `;
 
 const Button = styled.button`
-  margin-top: 15px;
-  padding: 10px 20px;
-  background-color: #4caf50;
+  width: 100%;
+  padding: 10px 16px;
+  background-color: #6366f1;
   color: white;
   border: none;
-  border-radius: 8px;
-  width: 150px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
+  font-size: 0.9rem;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  float: right;
-  transition: background-color 0.3s ease;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+  
   &:hover {
-    background-color: #45a049;
+    background-color: #4f46e5;
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25);
+    transform: translateY(-1px);
   }
 `;
 
