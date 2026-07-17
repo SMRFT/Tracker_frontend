@@ -3,8 +3,31 @@ import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faTimes, faInbox } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faTimes, faInbox, faCheckCircle, faClock } from "@fortawesome/free-solid-svg-icons";
 import apiRequest from "./apiRequest";
+
+// Helper for relative time
+const getRelativeTime = (dateString) => {
+  if (!dateString) return "";
+  // If date doesn't contain timezone info, assume UTC by appending 'Z'
+  const safeDateString = dateString.endsWith('Z') || dateString.includes('+') ? dateString : `${dateString}Z`;
+  const date = new Date(safeDateString);
+  const now = new Date();
+  let diffInSeconds = Math.floor((now - date) / 1000);
+  
+  // Handle slight future mismatches
+  if (diffInSeconds < 0) diffInSeconds = 0;
+  
+  if (diffInSeconds < 60) return 'Just now';
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}h ago`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays}d ago`;
+  
+  return date.toLocaleDateString();
+};
 
 // Styled Components
 const NotificationIcon = styled.div`
@@ -65,19 +88,18 @@ const Overlay = styled(motion.div)`
 
 const NotificationModal = styled(motion.div)`
   position: fixed;
-  top: 0;
-  right: 0;
+  top: 70px;
+  right: 24px;
   width: 100%;
-  max-width: 400px;
-  height: 100vh;
+  max-width: 360px;
+  max-height: calc(100vh - 90px);
   background-color: var(--bg-secondary);
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   z-index: 2050;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--border-subtle);
-  border-top-left-radius: 24px;
-  border-bottom-left-radius: 24px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
   overflow: hidden;
 `;
 
@@ -90,7 +112,7 @@ const Header = styled.div`
   background: var(--bg-secondary);
 
   h2 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     color: var(--text-main);
     font-weight: 700;
     margin: 0;
@@ -117,13 +139,30 @@ const CloseButton = styled.button`
   }
 `;
 
+const ClearButton = styled.button`
+  background: rgba(239, 68, 68, 0.1);
+  border: none;
+  color: #ef4444;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: auto;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.2);
+  }
+`;
+
 const NotificationList = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   background: var(--bg-primary);
 
   &::-webkit-scrollbar {
@@ -131,15 +170,15 @@ const NotificationList = styled.div`
   }
 
   &::-webkit-scrollbar-track {
-    background: var(--bg-primary);
+    background: transparent;
   }
 
   &::-webkit-scrollbar-thumb {
     background: var(--border-subtle);
-    border-radius: 3px;
+    border-radius: 4px;
 
     &:hover {
-      background: var(--text-light);
+      background: #cbd5e1;
     }
   }
 `;
@@ -148,53 +187,154 @@ const NotificationCard = styled.div`
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  padding: 16px;
+  padding: 10px 12px;
   position: relative;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-    border-color: var(--primary-accent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    border-color: var(--text-muted);
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: ${props => props.$unread ? '#4f46e5' : 'transparent'};
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
   }
 `;
 
-const UnreadIndicator = styled.div`
+const CardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+`;
+
+const TimeText = styled.span`
+  font-size: 0.65rem;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+`;
+
+const ClearSingleBtn = styled.button`
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: var(--bg-primary);
+    color: var(--danger);
+  }
+`;
+
+const ConfirmDialogOverlay = styled(motion.div)`
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 8px;
-  height: 8px;
-  background-color: #4f46e5;
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(79, 70, 229, 0.6);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 20px;
+`;
+
+const ConfirmDialog = styled(motion.div)`
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-subtle);
+  text-align: center;
+  width: 100%;
+  max-width: 280px;
+
+  h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.95rem;
+    color: var(--text-main);
+  }
+
+  p {
+    margin: 0 0 20px 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+`;
+
+const DialogActions = styled.div`
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+
+  button {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+  }
+
+  .cancel-btn {
+    background: var(--bg-secondary);
+    color: var(--text-main);
+    border: 1px solid var(--border-subtle);
+    &:hover { filter: brightness(0.95); }
+  }
+
+  .confirm-btn {
+    background: var(--danger);
+    color: white;
+    &:hover { filter: brightness(0.9); }
+  }
 `;
 
 const MessageText = styled.p`
   margin: 0;
-  font-size: 0.925rem;
+  font-size: 0.8rem;
   color: var(--text-main);
-  line-height: 1.5;
+  line-height: 1.4;
   font-weight: 500;
-  padding-right: 16px;
 `;
 
 const CardContext = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
-  color: #4f46e5;
-  background: rgba(79, 70, 229, 0.15);
-  padding: 4px 8px;
+  gap: 4px;
+  font-size: 0.65rem;
+  color: var(--primary-accent);
+  background: var(--bg-primary);
+  padding: 3px 8px;
   border-radius: 6px;
   align-self: flex-start;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 `;
 
 const EmptyState = styled.div`
@@ -222,8 +362,9 @@ const EmptyState = styled.div`
 
 const Notification = () => {
   const [notifications, setNotifications] = useState([]);
-  const [showModal, setShowModal] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
 
   useEffect(() => {
@@ -239,12 +380,16 @@ const Notification = () => {
           (notification) => !notification.is_read
         );
         setUnreadCount(unreadNotifications.length);
-      } else {
-        console.error("Failed to fetch notifications:", response.error);
       }
     };
 
+    // Initial fetch
     fetchNotifications();
+
+    // Auto-fetch every 30 seconds
+    const intervalId = setInterval(fetchNotifications, 30000);
+
+    return () => clearInterval(intervalId);
   }, [Trackerbaseurl]);
 
   const markNotificationsAsRead = async () => {
@@ -265,12 +410,53 @@ const Notification = () => {
     }
   };
 
+  const handleClearAll = () => {
+    setShowConfirm(true);
+  };
+
+  const confirmClearAll = () => {
+    setShowConfirm(false);
+    clearNotifications();
+  };
+
+  const cancelClearAll = () => {
+    setShowConfirm(false);
+  };
+
+  const clearNotifications = async () => {
+    const response = await apiRequest(
+      `${Trackerbaseurl}notifications/clear/`,
+      "DELETE"
+    );
+
+    if (response.success) {
+      setNotifications([]);
+      setUnreadCount(0);
+    } else {
+      console.error("Failed to clear notifications:", response.error);
+    }
+  };
+
+  const clearSingleNotification = async (notificationId) => {
+    const response = await apiRequest(
+      `${Trackerbaseurl}notifications/clear/${notificationId}/`,
+      "DELETE"
+    );
+
+    if (response.success) {
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } else {
+      console.error("Failed to clear notification:", response.error);
+    }
+  };
+
   const toggleModal = () => {
     const willOpen = !showModal;
     setShowModal(willOpen);
 
+    // Only clear the badge locally for now; DB remains unread until explicitly cleared
     if (willOpen) {
-      markNotificationsAsRead();
       setUnreadCount(0);
     }
   };
@@ -293,13 +479,18 @@ const Notification = () => {
                 onClick={toggleModal}
               />
               <NotificationModal
-                initial={{ x: "100%" }}
-                animate={{ x: 0 }}
-                exit={{ x: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
               >
                 <Header>
                   <h2>Notifications</h2>
+                  {notifications.length > 0 && (
+                    <ClearButton onClick={handleClearAll}>
+                      Clear All
+                    </ClearButton>
+                  )}
                   <CloseButton onClick={toggleModal}>
                     <FontAwesomeIcon icon={faTimes} />
                   </CloseButton>
@@ -307,8 +498,22 @@ const Notification = () => {
                 <NotificationList>
                   {notifications.length > 0 ? (
                     notifications.map((notification) => (
-                      <NotificationCard key={notification.cardId}>
-                        {!notification.is_read && <UnreadIndicator />}
+                      <NotificationCard key={notification.id} $unread={!notification.is_read}>
+                        <CardHeader>
+                          <TimeText>
+                            <FontAwesomeIcon icon={faClock} /> 
+                            {getRelativeTime(notification.created_date)}
+                          </TimeText>
+                          <ClearSingleBtn 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearSingleNotification(notification.id);
+                            }}
+                            title="Clear"
+                          >
+                            <FontAwesomeIcon icon={faTimes} />
+                          </ClearSingleBtn>
+                        </CardHeader>
                         <MessageText>{notification.message}</MessageText>
                         {notification.cardName && (
                           <CardContext>Card: {notification.cardName}</CardContext>
@@ -316,12 +521,38 @@ const Notification = () => {
                       </NotificationCard>
                     ))
                   ) : (
-                    <EmptyState>
-                      <FontAwesomeIcon icon={faInbox} className="icon" />
-                      <p>You have no notifications yet</p>
-                    </EmptyState>
+                    <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0', fontSize: '0.9rem' }}>
+                      <FontAwesomeIcon icon={faBell} style={{ fontSize: '2rem', marginBottom: '12px', opacity: 0.5 }} />
+                      <br />
+                      No notifications yet
+                    </div>
                   )}
                 </NotificationList>
+
+                {/* Custom Confirmation Popup */}
+                <AnimatePresence>
+                  {showConfirm && (
+                    <ConfirmDialogOverlay
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <ConfirmDialog
+                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                      >
+                        <h3>Clear All Notifications?</h3>
+                        <p>This action cannot be undone.</p>
+                        <DialogActions>
+                          <button className="cancel-btn" onClick={cancelClearAll}>Cancel</button>
+                          <button className="confirm-btn" onClick={confirmClearAll}>Yes, Clear</button>
+                        </DialogActions>
+                      </ConfirmDialog>
+                    </ConfirmDialogOverlay>
+                  )}
+                </AnimatePresence>
               </NotificationModal>
             </>
           )}

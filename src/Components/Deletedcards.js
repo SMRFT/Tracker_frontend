@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import styled from "styled-components";
 import apiRequest from "./apiRequest";
+import { FiSearch } from "react-icons/fi";
 
 const isMobile = () =>
   typeof window !== "undefined" && window.innerWidth <= 768;
@@ -181,6 +182,49 @@ const BoardOption = styled.label`
     height: 15px;
     cursor: pointer;
     flex-shrink: 0;
+  }
+`;
+
+const SearchInputWrapper = styled.div`
+  position: relative;
+  min-width: 200px;
+
+  @media (max-width: 480px) {
+    min-width: 100%;
+    width: 100%;
+  }
+`;
+
+const SearchIcon = styled.div`
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  font-size: 0.95rem;
+  pointer-events: none;
+`;
+
+const SearchInput = styled.input`
+  padding: 9px 12px 9px 34px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  width: 100%;
+  background: var(--bg-primary);
+  color: var(--text-main);
+  transition: 0.3s;
+  font-size: 0.85rem;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background: var(--bg-secondary);
+  }
+
+  &::placeholder {
+    color: var(--text-light);
   }
 `;
 
@@ -775,10 +819,10 @@ export default function DeletedCards() {
   const [filteredCards, setFilteredCards] = useState([]);
   const [selectedBoards, setSelectedBoards] = useState([]);
   const [boardDropdownOpen, setBoardDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isMobileView, setIsMobileView] = useState(isMobile());
 
   useEffect(() => {
-    loadDeletedCards();
     setDefaultDates();
 
     const handleResize = () => setIsMobileView(isMobile());
@@ -801,23 +845,34 @@ export default function DeletedCards() {
     setToDate(end);
   };
 
-  const loadDeletedCards = async () => {
+  const loadDeletedCards = useCallback(async () => {
+    if (!fromDate || !toDate) return;
+    setLoading(true);
     try {
-      const url = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL + "deleted_cards/";
+      const url = `${process.env.REACT_APP_BACKEND_TRACKER_BASE_URL}deleted_cards/?from=${fromDate}&to=${toDate}`;
       const response = await apiRequest(url, "GET");
 
       if (response.success) {
         setDeletedCards(response.data);
-        setFilteredCards(response.data);
+      } else if (response.data && Array.isArray(response.data)) {
+        // Direct array response fallback
+        setDeletedCards(response.data);
       } else {
         console.error("Failed to load deleted cards:", response.error);
+        setDeletedCards([]);
       }
     } catch (error) {
       console.error("Error loading deleted cards:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [fromDate, toDate]);
+
+  useEffect(() => {
+    if (fromDate && toDate) {
+      loadDeletedCards();
+    }
+  }, [fromDate, toDate, loadDeletedCards]);
 
   const triggerRestore = (cardId) => {
     setCardToRestore(cardId);
@@ -846,28 +901,23 @@ export default function DeletedCards() {
     }
   };
 
-  const applyFilter = () => {
-    if (!fromDate || !toDate) {
-      alert("Please select both From and To dates");
-      return;
+  const applyFilter = useCallback(() => {
+    let filtered = deletedCards;
+
+    if (searchTerm.trim()) {
+      const lower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (card) =>
+          card.cardName?.toLowerCase().includes(lower) ||
+          card.boardName?.toLowerCase().includes(lower) ||
+          card.employeeId?.toLowerCase().includes(lower) ||
+          card.members?.some(
+            (m) =>
+              m.employeeName?.toLowerCase().includes(lower) ||
+              m.employeeId?.toLowerCase().includes(lower)
+          )
+      );
     }
-
-    const from = new Date(fromDate);
-    from.setHours(0, 0, 0, 0);
-    
-    const to = new Date(toDate);
-    to.setHours(23, 59, 59, 999);
-
-    if (from > to) {
-      alert("From Date cannot be later than To Date");
-      return;
-    }
-
-    let filtered = deletedCards.filter((card) => {
-      if (!card.lastmodified_date) return false;
-      const deletedDate = new Date(card.lastmodified_date);
-      return deletedDate >= from && deletedDate <= to;
-    });
 
     if (selectedBoards.length > 0) {
       filtered = filtered.filter((card) =>
@@ -876,11 +926,12 @@ export default function DeletedCards() {
     }
 
     setFilteredCards(filtered);
-  };
+  }, [deletedCards, searchTerm, selectedBoards]);
 
   const resetFilter = () => {
     setDefaultDates();
     setSelectedBoards([]);
+    setSearchTerm("");
     setFilteredCards(deletedCards);
   };
 
@@ -902,11 +953,8 @@ export default function DeletedCards() {
       : `${selectedBoards.length} Boards`;
 
   useEffect(() => {
-    if (deletedCards.length > 0 && fromDate && toDate) {
-      applyFilter();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromDate, toDate]);
+    applyFilter();
+  }, [applyFilter]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "—";
@@ -994,13 +1042,24 @@ export default function DeletedCards() {
               </BoardFilterWrapper>
             </FilterGroup>
 
-            <FilterButton onClick={applyFilter}>
-              Apply Filter
-            </FilterButton>
+            <FilterGroup>
+              <FilterLabel>🔍 Search</FilterLabel>
+              <SearchInputWrapper>
+                <SearchIcon>
+                  <FiSearch />
+                </SearchIcon>
+                <SearchInput
+                  type="text"
+                  placeholder="Search cards..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </SearchInputWrapper>
+            </FilterGroup>
 
-            <ResetButton onClick={resetFilter}>
-              Reset
-            </ResetButton>
+            <FilterButton onClick={resetFilter}>
+              Reset Filters
+            </FilterButton>
           </FilterRow>
         </FilterCard>
 
