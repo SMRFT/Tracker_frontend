@@ -510,6 +510,7 @@ const Notification = () => {
                             navigate("/Todolist", {
                               state: {
                                 boardId: notification.boardId,
+                                boardName: notification.boardName,
                                 cardId: notification.cardId,
                                 autoOpenCardId: notification.cardId,
                               },
