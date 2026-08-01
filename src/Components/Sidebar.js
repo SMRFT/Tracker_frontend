@@ -505,7 +505,9 @@ const Sidebar = ({ boards, refreshBoards, isCollapsed, setIsCollapsed }) => {
         boardName: board.boardName,
         boardColor: board.boardColor,
         employeeId: employeeId,
-        employeeName: employeeName,
+        employeeName: board.employeeName || employeeName,
+        created_by_name: board.created_by_name || board.employeeName || board.created_by,
+        created_by: board.created_by,
       },
     });
     if (isMobileView) {

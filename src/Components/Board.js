@@ -576,6 +576,8 @@ const Board = ({ boards, refreshBoards, boardsLoading }) => {
         employeeId: employeeId,
         employeeName: board.employeeName,
         boardName: board.boardName,
+        created_by_name: board.created_by_name || board.employeeName || board.created_by,
+        created_by: board.created_by,
       },
     });
   };

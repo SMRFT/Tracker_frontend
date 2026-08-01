@@ -9,7 +9,7 @@ import {
   FaFileAlt,
   FaTimes,
   FaDownload,
-  FaEye 
+  FaEye
 } from "react-icons/fa";
 import "react-datepicker/dist/react-datepicker.css";
 import { toast } from "react-toastify";
@@ -485,9 +485,9 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   const [editCommentText, setEditCommentText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  
-  const [commentText, setCommentText] = useState(""); 
-  const [boardMembers, setBoardMembers] = useState([]); 
+
+  const [commentText, setCommentText] = useState("");
+  const [boardMembers, setBoardMembers] = useState([]);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
 
@@ -501,7 +501,34 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
 
   const [employeeId, setEmployeeId] = useState(null);
   const [employeeName, setEmployeeName] = useState(null);
+  const [showSmileyPicker, setShowSmileyPicker] = useState(false);
   const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
+  const handleReactToComment = async (comment, emoji) => {
+    try {
+      const currentEmpId = localStorage.getItem("employeeId") || employeeId;
+      const currentEmpName = localStorage.getItem("employeeName") || employeeName || "Anonymous";
+
+      const result = await apiRequest(
+        `${Trackerbaseurl}react_comment/`,
+        "POST",
+        {
+          cardId,
+          boardId,
+          commentId: comment.commentId,
+          commenttext: comment.commenttext,
+          emoji,
+          employeeId: currentEmpId,
+          employeeName: currentEmpName,
+        }
+      );
+      if (result.success) {
+        fetchComments();
+      }
+    } catch (err) {
+      console.error("Error reacting to comment:", err);
+    }
+  };
 
   useEffect(() => {
     if (!Trackerbaseurl) {
@@ -583,10 +610,10 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
 
     const match = value.match(/@([\w.]*)$/);
     if (match) {
-        setMentionQuery(match[1].toLowerCase());
-        setShowMentions(true);
+      setMentionQuery(match[1].toLowerCase());
+      setShowMentions(true);
     } else {
-        setShowMentions(false);
+      setShowMentions(false);
     }
   };
 
@@ -594,13 +621,13 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     const newText = commentText.replace(/@([\w.]*)$/, `@${memberName} `);
     setCommentText(newText);
     setShowMentions(false);
-    
+
     if (activityInputRef.current) {
-        activityInputRef.current.focus();
+      activityInputRef.current.focus();
     }
   };
 
-  const filteredMembers = boardMembers.filter(m => 
+  const filteredMembers = boardMembers.filter(m =>
     m.employeeName.toLowerCase().includes(mentionQuery)
   );
 
@@ -622,36 +649,54 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     }
   };
 
+  const getMimeTypeFromFileName = (fileName, serverMime) => {
+    if (serverMime && serverMime !== "" && serverMime !== "application/octet-stream") {
+      return serverMime;
+    }
+    const ext = fileName ? fileName.split(".").pop().toLowerCase() : "";
+    const mimeMap = {
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      webp: "image/webp",
+      svg: "image/svg+xml",
+      bmp: "image/bmp",
+      pdf: "application/pdf",
+      txt: "text/plain",
+    };
+    return mimeMap[ext] || serverMime || "application/octet-stream";
+  };
+
   const handlePreview = async (e, fileUrl, fileName) => {
     e.preventDefault();
     e.stopPropagation();
 
     setIsPreviewLoading(true);
-    setShowPreviewModal(true); 
+    setShowPreviewModal(true);
 
     try {
-      const token = localStorage.getItem("token");
-      
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+
       const response = await fetch(fileUrl, {
-        method: 'GET',
+        method: "GET",
         headers: {
-           // UPDATED: Removed "Bearer" prefix
-            Authorization: token ,
+          Authorization: token || "",
         },
       });
 
       if (!response.ok) throw new Error("Preview failed");
 
-      const blob = await response.blob();
-      const mimeType = blob.type || 'application/pdf';
+      const rawBlob = await response.blob();
+      const detectedMime = getMimeTypeFromFileName(fileName, rawBlob.type);
+      const blob = new Blob([rawBlob], { type: detectedMime });
       const objectUrl = window.URL.createObjectURL(blob);
 
       setPreviewData({
         url: objectUrl,
-        type: mimeType,
-        name: fileName
+        type: detectedMime,
+        name: fileName,
       });
-
     } catch (error) {
       console.error("Preview Error:", error);
       showErrorToast("Failed to load preview.");
@@ -664,7 +709,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   const closePreview = () => {
     setShowPreviewModal(false);
     if (previewData.url) {
-      window.URL.revokeObjectURL(previewData.url); 
+      window.URL.revokeObjectURL(previewData.url);
     }
     setPreviewData({ url: null, type: null, name: "" });
   };
@@ -674,102 +719,99 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     e.stopPropagation();
 
     try {
-        const token = localStorage.getItem("token"); 
-        
-        const response = await fetch(fileUrl, {
-            method: 'GET',
-            headers: {
-               // UPDATED: Removed "Bearer" prefix
-            Authorization: token ,
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
 
-            },
-        });
+      const response = await fetch(fileUrl, {
+        method: "GET",
+        headers: {
+          Authorization: token || "",
+        },
+      });
 
-        if (!response.ok) throw new Error("Download failed");
+      if (!response.ok) throw new Error("Download failed");
 
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', fileName); 
-        document.body.appendChild(link);
-        link.click();
-        
-        link.parentNode.removeChild(link);
-        window.URL.revokeObjectURL(url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName || "downloaded_file");
+      document.body.appendChild(link);
+      link.click();
 
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-        console.error("Download Error:", error);
-        showErrorToast("Failed to download file. Please check connection.");
+      console.error("Download Error:", error);
+      showErrorToast("Failed to download file. Please check connection.");
     }
   };
-  
-const handleSaveActivity = async () => {
-  if (isSubmitting) return;
 
-  if (!commentText.trim() && !selectedFile) {
-    showErrorToast("Please enter a comment or attach a file.");
-    return;
-  }
+  const handleSaveActivity = async () => {
+    if (isSubmitting) return;
 
-  setIsSubmitting(true);
-
-  try {
-    const currentDate = new Date();
-    const date = currentDate.toISOString().split("T")[0];
-    const time = currentDate.toTimeString().split(" ")[0];
-
-    const formData = new FormData();
-    formData.append("text", commentText.trim());
-    formData.append("cardId", String(cardId));
-    formData.append("boardId", String(boardId));
-    formData.append("employeeId", String(employeeId));
-    formData.append("employeeName", String(employeeName));
-    formData.append("date", date);
-    formData.append("time", time);
-
-    const mentionedEmployees = [];
-    boardMembers.forEach(member => {
-      if (commentText.includes(`@${member.employeeName}`)) {
-        mentionedEmployees.push(member);
-      }
-    });
-    formData.append("mentionedEmployees", JSON.stringify(mentionedEmployees));
-
-    if (selectedFile) {
-      formData.append("file", selectedFile); // ✅ binary
+    if (!commentText.trim() && !selectedFile) {
+      showErrorToast("Please enter a comment or attach a file.");
+      return;
     }
 
-    const response = await fetch(
-      `${Trackerbaseurl}save_comment/`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: localStorage.getItem("access_token"),
-          // ❌ DO NOT SET Content-Type
-        },
-        body: formData,
+    setIsSubmitting(true);
+
+    try {
+      const currentDate = new Date();
+      const date = currentDate.toISOString().split("T")[0];
+      const time = currentDate.toTimeString().split(" ")[0];
+
+      const formData = new FormData();
+      formData.append("text", commentText.trim());
+      formData.append("cardId", String(cardId));
+      formData.append("boardId", String(boardId));
+      formData.append("employeeId", String(employeeId));
+      formData.append("employeeName", String(employeeName));
+      formData.append("date", date);
+      formData.append("time", time);
+
+      const mentionedEmployees = [];
+      boardMembers.forEach(member => {
+        if (commentText.includes(`@${member.employeeName}`)) {
+          mentionedEmployees.push(member);
+        }
+      });
+      formData.append("mentionedEmployees", JSON.stringify(mentionedEmployees));
+
+      if (selectedFile) {
+        formData.append("file", selectedFile); // ✅ binary
       }
-    );
 
-    const result = await response.json();
+      const response = await fetch(
+        `${Trackerbaseurl}save_comment/`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: localStorage.getItem("access_token"),
+            // ❌ DO NOT SET Content-Type
+          },
+          body: formData,
+        }
+      );
 
-    if (response.ok && result.success) {
-      showSuccessToast("Comment posted successfully");
-      removeSelectedFile();
-      setCommentText("");
-      await fetchComments();
-    } else {
-      showErrorToast(result.error || "Failed to save comment");
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        showSuccessToast("Comment posted successfully");
+        removeSelectedFile();
+        setCommentText("");
+        await fetchComments();
+      } else {
+        showErrorToast(result.error || "Failed to save comment");
+      }
+
+    } catch (err) {
+      console.error(err);
+      showErrorToast("Server connection failed");
+    } finally {
+      setIsSubmitting(false);
     }
-
-  } catch (err) {
-    console.error(err);
-    showErrorToast("Server connection failed");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
 
   const handleDeleteComment = async () => {
@@ -859,75 +901,135 @@ const handleSaveActivity = async () => {
   };
 
   const joinUrl = (base, path) => {
-  if (!path) return "";
+    if (!path) return "";
 
-  // Absolute URL → return as-is
-  if (path.startsWith("http")) return path;
+    // Absolute URL → return as-is
+    if (path.startsWith("http")) return path;
 
-  const cleanBase = base.replace(/\/$/, "");
-  const cleanPath = path.replace(/^\//, "");
+    const cleanBase = base.replace(/\/$/, "");
+    const cleanPath = path.replace(/^\//, "");
 
-  return `${cleanBase}/${cleanPath}`;
-};
+    return `${cleanBase}/${cleanPath}`;
+  };
 
-const getFileUrl = (comment) => {
-  if (!comment) return "";
+  const getFileUrl = (comment) => {
+    if (!comment) return "";
 
-  // Preferred: GridFS file_id (BEST)
-  if (comment.file?.file_id) {
-    return `${Trackerbaseurl.replace(/\/$/, "")}/download_file/${comment.file.file_id}/`;
-  }
+    // Preferred: GridFS file_id (BEST)
+    if (comment.file?.file_id) {
+      return `${Trackerbaseurl.replace(/\/$/, "")}/download_file/${comment.file.file_id}/`;
+    }
 
-  // Legacy stored file_url (strip /tracker/)
-  if (comment.file_url) {
-    let path = comment.file_url;
+    // Legacy stored file_url (strip /tracker/)
+    if (comment.file_url) {
+      let path = comment.file_url;
 
-    // 🔥 CRITICAL FIX
-    path = path.replace(/^\/?tracker\//i, "");
+      // 🔥 CRITICAL FIX
+      path = path.replace(/^\/?tracker\//i, "");
 
-    return `${Trackerbaseurl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
-  }
+      return `${Trackerbaseurl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+    }
 
-  return "";
-};
+    return "";
+  };
 
   const renderCommentWithTags = (text) => {
     if (!text) return null;
     const parts = text.split(/(@[\w.]+)/g);
 
     return parts.map((part, i) => {
-        if (part.match(/^@[\w.]+/)) {
-            return <span key={i} className="mention-tag">{part}</span>;
-        }
-        return part;
+      if (part.match(/^@[\w.]+/)) {
+        return <span key={i} className="mention-tag">{part}</span>;
+      }
+      return part;
     });
   };
 
   return (
     <div>
       <Section>
-        <SectionTitle>
-          <RxActivityLog style={{ fontSize: "1rem", marginRight: "10px", fontWeight: "bold" }} />
-          Activity
+        <SectionTitle style={{ justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <RxActivityLog style={{ fontSize: "1rem", marginRight: "10px", fontWeight: "bold" }} />
+            Activity
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSmileyPicker(!showSmileyPicker)}
+            style={{
+              background: showSmileyPicker ? "rgba(79, 70, 229, 0.1)" : "var(--bg-secondary)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "6px",
+              padding: "4px 10px",
+              fontSize: "0.82rem",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "var(--text-main)",
+            }}
+          >
+            <span>😊</span>
+            <span>Add Smiley</span>
+          </button>
         </SectionTitle>
-        
+
+        {showSmileyPicker && (
+          <div
+            style={{
+              display: "flex",
+              gap: "6px",
+              margin: "6px 0 10px 0",
+              padding: "8px",
+              background: "var(--bg-primary)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "8px",
+              flexWrap: "wrap",
+              alignItems: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            }}
+          >
+            {["😊", "👍", "❤️", "🎉", "🚀", "🔥", "👏", "💡", "😂", "💯", "📌", "😍", "🥳", "🙌"].map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => {
+                  setCommentText((prev) => prev + " " + emoji);
+                  if (activityInputRef.current) activityInputRef.current.focus();
+                }}
+                style={{
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: "14px",
+                  padding: "4px 8px",
+                  fontSize: "1rem",
+                  cursor: "pointer",
+                }}
+                title={`Insert ${emoji}`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
+
         <InputWrapper>
           <ActivityInput
             placeholder="Add a comment... Type '@' to tag a member (Ctrl+Enter to submit)"
             ref={activityInputRef}
-            value={commentText} 
-            onChange={handleInputChange} 
+            value={commentText}
+            onChange={handleInputChange}
             onKeyDown={handleKeyPress}
           />
-          <AttachButton 
-            onClick={() => fileInputRef.current.click()} 
+          <AttachButton
+            onClick={() => fileInputRef.current.click()}
             title="Attach a file"
           >
             <FaPaperclip />
           </AttachButton>
-          <HiddenInput 
-            type="file" 
-            ref={fileInputRef} 
+          <HiddenInput
+            type="file"
+            ref={fileInputRef}
             onChange={handleFileChange}
           />
           <InlineSaveButton onClick={handleSaveActivity} disabled={isSubmitting}>
@@ -936,17 +1038,17 @@ const getFileUrl = (comment) => {
         </InputWrapper>
 
         {showMentions && filteredMembers.length > 0 && (
-            <MentionsList>
-                {filteredMembers.map((member) => (
-                    <MentionItem 
-                        key={member.employeeId} 
-                        onClick={() => handleSelectMember(member.employeeName)}
-                    >
-                        <MemberInitial>{member.employeeName.charAt(0)}</MemberInitial>
-                        {member.employeeName}
-                    </MentionItem>
-                ))}
-            </MentionsList>
+          <MentionsList>
+            {filteredMembers.map((member) => (
+              <MentionItem
+                key={member.employeeId}
+                onClick={() => handleSelectMember(member.employeeName)}
+              >
+                <MemberInitial>{member.employeeName.charAt(0)}</MemberInitial>
+                {member.employeeName}
+              </MentionItem>
+            ))}
+          </MentionsList>
         )}
 
         {selectedFile && (
@@ -996,31 +1098,70 @@ const getFileUrl = (comment) => {
                         <CommentAuthor>{comment.empname || "Anonymous"}</CommentAuthor>
                         <CommentDate>{comment.date} at {comment.time}</CommentDate>
                       </div>
-                      
+
                       <CommentText>{renderCommentWithTags(comment.commenttext)}</CommentText>
+
+                      {/* Emoji Reaction Bar */}
+                      <div style={{ display: "flex", gap: "5px", marginTop: "6px", alignItems: "center", flexWrap: "wrap" }}>
+                        {["👍", "❤️", "😊", "🎉", "🔥"].map((emoji) => {
+                          const reactionsMap = comment.reactions || {};
+                          const userList = Array.isArray(reactionsMap[emoji]) ? reactionsMap[emoji] : [];
+                          const count = userList.length;
+                          const currentUserId = String(localStorage.getItem("employeeId") || employeeId);
+                          const hasReacted = userList.some((u) => String(u.employeeId) === currentUserId);
+                          const namesString = userList.map((u) => u.employeeName || u.empname || "User").join(", ");
+
+                          return (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => handleReactToComment(comment, emoji)}
+                              style={{
+                                background: hasReacted ? "rgba(79, 70, 229, 0.15)" : "var(--bg-secondary)",
+                                border: hasReacted ? "1px solid var(--primary-accent, #4f46e5)" : "1px solid var(--border-subtle)",
+                                borderRadius: "12px",
+                                padding: "2px 7px",
+                                fontSize: "0.82rem",
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                              }}
+                              title={count > 0 ? `Reacted by: ${namesString}` : `React with ${emoji}`}
+                            >
+                              <span>{emoji}</span>
+                              {count > 0 && (
+                                <span style={{ fontWeight: 600, fontSize: "0.75rem", color: "var(--primary-accent, #4f46e5)" }}>
+                                  {count}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
 
                       {fileUrl && (comment.file_url || comment.file_id) && (
                         <AttachedFile>
-                          <div style={{fontSize: '0.9rem', marginBottom: '5px', fontWeight: '500', color: '#555'}}>
-                             {fileName}
+                          <div style={{ fontSize: '0.9rem', marginBottom: '5px', fontWeight: '500', color: '#555' }}>
+                            {fileName}
                           </div>
 
                           {isImage(fileName) && (
-                             <div 
-                                onClick={(e) => handlePreview(e, fileUrl, fileName)} 
-                                style={{cursor: 'pointer'}} 
-                                title="Click to Preview"
-                             >
-                                <ImageThumbnail src={fileUrl} alt="attachment" />
-                             </div>
+                            <div
+                              onClick={(e) => handlePreview(e, fileUrl, fileName)}
+                              style={{ cursor: 'pointer' }}
+                              title="Click to Preview"
+                            >
+                              <ImageThumbnail src={fileUrl} alt="attachment" />
+                            </div>
                           )}
 
                           <FileActions>
                             <ActionLink onClick={(e) => handlePreview(e, fileUrl, fileName)} title="Preview File">
-                               <FaEye /> Preview
+                              <FaEye /> Preview
                             </ActionLink>
                             <ActionLink onClick={(e) => handleDownload(e, fileUrl, fileName)} title="Download File">
-                               <FaDownload /> Download
+                              <FaDownload /> Download
                             </ActionLink>
                           </FileActions>
                         </AttachedFile>
@@ -1071,22 +1212,22 @@ const getFileUrl = (comment) => {
         <PreviewOverlay onClick={closePreview}>
           <PreviewContainer onClick={(e) => e.stopPropagation()}>
             <PreviewHeader>
-                <span>{previewData.name || "File Preview"}</span>
-                <ClosePreviewButton onClick={closePreview}>
-                    <FaTimes />
-                </ClosePreviewButton>
+              <span>{previewData.name || "File Preview"}</span>
+              <ClosePreviewButton onClick={closePreview}>
+                <FaTimes />
+              </ClosePreviewButton>
             </PreviewHeader>
-            
+
             <PreviewBody>
-                {isPreviewLoading ? (
-                    <div style={{color: '#666', fontSize: '1.2rem'}}>Loading file...</div>
+              {isPreviewLoading ? (
+                <div style={{ color: '#666', fontSize: '1.2rem' }}>Loading file...</div>
+              ) : (
+                previewData.type && previewData.type.startsWith('image/') ? (
+                  <FullPreviewImage src={previewData.url} alt="Preview" />
                 ) : (
-                    previewData.type && previewData.type.startsWith('image/') ? (
-                        <FullPreviewImage src={previewData.url} alt="Preview" />
-                    ) : (
-                        <FullPreviewFrame src={previewData.url} title="File Preview" />
-                    )
-                )}
+                  <FullPreviewFrame src={previewData.url} title="File Preview" />
+                )
+              )}
             </PreviewBody>
           </PreviewContainer>
         </PreviewOverlay>

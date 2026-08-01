@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useDrag, useDrop } from "react-dnd";
 import { useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { FaCalendarAlt, FaRegCalendarAlt, FaRegComment, FaTimes, FaPlus, FaRegCreditCard } from "react-icons/fa";
+import { FaCalendarAlt, FaRegCalendarAlt, FaRegComment, FaTimes, FaPlus, FaRegCreditCard, FaCheckDouble, FaFilter } from "react-icons/fa";
 
 import DateComponent from "./Dates";
 import Addmembers from "./Addmembers";
@@ -242,8 +241,8 @@ const BoardGrid = styled.div`
 `;
 
 const ColumnWrapper = styled.div`
-  width: 280px;
-  min-width: 280px;
+  width: 295px;
+  min-width: 295px;
   padding: 10px;
   border-radius: 14px;
   background-color: var(--bg-secondary);
@@ -295,11 +294,51 @@ const CardsList = styled.div`
   padding: 2px;
 
   &::-webkit-scrollbar {
-    width: 4px;
+    width: 8px;
   }
   &::-webkit-scrollbar-thumb {
     background: var(--border-subtle);
     border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+  }
+`;
+
+const PriorityBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: ${(props) =>
+    props.priority === "High"
+      ? "rgba(239, 68, 68, 0.15)"
+      : props.priority === "Medium"
+        ? "rgba(245, 158, 11, 0.15)"
+        : "rgba(59, 130, 246, 0.15)"};
+  color: ${(props) =>
+    props.priority === "High"
+      ? "#ef4444"
+      : props.priority === "Medium"
+        ? "#f59e0b"
+        : "#3b82f6"};
+  border: 1px solid
+    ${(props) =>
+    props.priority === "High"
+      ? "rgba(239, 68, 68, 0.3)"
+      : props.priority === "Medium"
+        ? "rgba(245, 158, 11, 0.3)"
+        : "rgba(59, 130, 246, 0.3)"};
+  animation: ${(props) =>
+    props.priority === "High" ? "blinkPriority 1.2s infinite ease-in-out" : "none"};
+
+  @keyframes blinkPriority {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
   }
 `;
 
@@ -774,12 +813,18 @@ const Card = React.memo(function Card({
   columnId,
   text,
   createdByName,
+  created_date,
+  startdate,
+  enddate,
+  lastmodifiedByName,
+  lastmodifiedBy,
+  priority = "Low",
+  viewed_by = [],
   columnTitle,
   openModal,
   members = [],
   trackerBaseUrl,
   onRequestDelete,
-  enddate,
 }) {
   const [, drag] = useDrag({
     type: ItemType.CARD,
@@ -789,54 +834,109 @@ const Card = React.memo(function Card({
   const overdue = enddate && isOverdue(enddate, columnId);
 
   return (
-    <CardContainer ref={drag} accentColor={COLUMN_ACCENT_COLORS[columnId]}>
+    <CardContainer
+      ref={drag}
+      accentColor={COLUMN_ACCENT_COLORS[columnId]}
+      onClick={() => openModal(text, id, columnTitle)}
+      style={{ cursor: "pointer" }}
+    >
       <CardRow>
-        <CardBody onClick={() => openModal(text, id, columnTitle)}>
-          <CardText>{text || "Untitled Task"}</CardText>
+        <CardBody>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+            <CardText>{text || "Untitled Task"}</CardText>
+            <PriorityBadge priority={priority}>{priority}</PriorityBadge>
+          </div>
           {createdByName && (
             <CreatorInfo>
               By {createdByName}
             </CreatorInfo>
           )}
         </CardBody>
-        <RemoveButton onClick={() => onRequestDelete(id, columnId)}>
+        <RemoveButton
+          onClick={(e) => {
+            e.stopPropagation();
+            onRequestDelete(id, columnId);
+          }}
+        >
           ×
         </RemoveButton>
       </CardRow>
 
-      {(enddate || members.length > 0) && (
-        <CardFooter>
-          {enddate && (
-            <DateBadge isOverdue={overdue}>
-              <FaRegCalendarAlt size={10} />
-              <span>{formatCardDate(enddate)}</span>
-            </DateBadge>
-          )}
+      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        {created_date && (
+          <DateBadge title="Created Date">
+            <FaRegCalendarAlt size={10} />
+            <span>Created: {formatCardDate(created_date)}</span>
+          </DateBadge>
+        )}
 
-          <CardMemberList>
-            {members.slice(0, 3).map((member, idx) => (
-              <React.Fragment key={idx}>
-                {member.profilePicture ? (
-                  <CardMemberImage
-                    src={member.profilePicture.startsWith("http") || member.profilePicture.startsWith("data:") ? member.profilePicture : `${trackerBaseUrl}${member.profilePicture.startsWith("/") ? member.profilePicture.slice(1) : member.profilePicture}`}
-                    alt={member.employeeName}
-                    title={member.employeeName}
-                  />
-                ) : (
-                  <CardMemberAvatar
-                    bgColor={getBackgroundColor(member.employeeName)}
-                    title={member.employeeName}
-                  >
-                    {member.employeeName.charAt(0).toUpperCase()}
-                  </CardMemberAvatar>
-                )}
-              </React.Fragment>
-            ))}
-            {members.length > 3 && (
-              <CardMemberAvatar bgColor="#cbd5e1" title={`${members.length - 3} more`}>
-                +{members.length - 3}
-              </CardMemberAvatar>
+        {(startdate || enddate) && (
+          <div style={{ display: "flex", gap: "4px", alignItems: "center", flexWrap: "wrap", width: "100%" }}>
+            {startdate && (
+              <DateBadge title="Start Date" style={{ fontSize: "0.68rem", padding: "2px 5px", whiteSpace: "nowrap" }}>
+                <FaRegCalendarAlt size={9} />
+                <span>Start: {formatCardDate(startdate)}</span>
+              </DateBadge>
             )}
+            {enddate && (
+              <DateBadge isOverdue={overdue} title="Due Date" style={{ fontSize: "0.68rem", padding: "2px 5px", whiteSpace: "nowrap" }}>
+                <FaRegCalendarAlt size={9} />
+                <span>Due: {formatCardDate(enddate)}</span>
+              </DateBadge>
+            )}
+          </div>
+        )}
+
+        {(lastmodifiedByName || lastmodifiedBy) && (
+          <CreatorInfo style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px" }}>
+            Updated by: {lastmodifiedByName || lastmodifiedBy}
+          </CreatorInfo>
+        )}
+      </div>
+
+      {members.length > 0 && (
+        <CardFooter style={{ marginTop: "4px" }}>
+          <CardMemberList>
+            {members.slice(0, 4).map((member, idx) => {
+              const isViewed = viewed_by && (viewed_by.includes(String(member.employeeId)) || member.viewed);
+              return (
+                <div key={idx} style={{ position: "relative", display: "inline-flex", flexDirection: "column", alignItems: "center" }}>
+                  {member.profilePicture ? (
+                    <CardMemberImage
+                      src={member.profilePicture.startsWith("http") || member.profilePicture.startsWith("data:") ? member.profilePicture : `${trackerBaseUrl}${member.profilePicture.startsWith("/") ? member.profilePicture.slice(1) : member.profilePicture}`}
+                      alt={member.employeeName}
+                      title={`${member.employeeName}${isViewed ? " (Viewed)" : ""}`}
+                    />
+                  ) : (
+                    <CardMemberAvatar
+                      bgColor={getBackgroundColor(member.employeeName)}
+                      title={`${member.employeeName}${isViewed ? " (Viewed)" : ""}`}
+                    >
+                      {member.employeeName.charAt(0).toUpperCase()}
+                    </CardMemberAvatar>
+                  )}
+                  {isViewed && (
+                    <span
+                      title="Viewed card"
+                      style={{
+                        position: "absolute",
+                        bottom: "-2px",
+                        right: "-2px",
+                        background: "#ffffff",
+                        borderRadius: "50%",
+                        padding: "1px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                      }}
+                    >
+                      <FaCheckDouble size={9} style={{ color: "#10b981" }} />
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </CardMemberList>
         </CardFooter>
       )}
@@ -847,35 +947,51 @@ const Card = React.memo(function Card({
 const Column = React.memo(function Column({
   id,
   title,
-  cards = [],
+  cards,
   moveCard,
   openModal,
   addCard,
-  showAddCardButton = false,
   cardMembers,
   trackerBaseUrl,
   onRequestDelete,
+  showAddCardButton,
 }) {
   const [, drop] = useDrop({
     accept: ItemType.CARD,
-    hover: (item) => {
+    hover(item) {
       if (!item) return;
-      const { id: cardId, index: fromIndex, columnId: fromColumnId } = item;
-      const toIndex = cards.findIndex((card) => card.id === cardId);
+      const dragIndex = item.index;
+      const fromColumnId = item.columnId;
+
+      if (fromColumnId !== id) {
+        moveCard(dragIndex, fromColumnId, 0, id);
+        item.columnId = id;
+        item.index = 0;
+      }
+    },
+    drop(item) {
+      if (!item) return;
+      const fromIndex = item.index;
+      const fromColumnId = item.columnId;
+
       if (fromColumnId === id) {
-        if (toIndex !== -1 && fromIndex !== toIndex) {
-          moveCard(fromIndex, id, toIndex, id);
+        const toIndex = cards.findIndex((c) => c.cardId === item.id);
+        if (toIndex !== -1 && toIndex !== fromIndex) {
+          moveCard(fromIndex, fromColumnId, toIndex, id);
           item.index = toIndex;
         }
       } else {
         const toIndex = cards.length;
         moveCard(fromIndex, fromColumnId, toIndex, id);
         item.columnId = id;
+        item.index = toIndex;
       }
     },
   });
   const [inputValue, setInputValue] = useState("");
   const [isAddingCard, setIsAddingCard] = useState(false);
+
+  const [priorityValue, setPriorityValue] = useState("Low");
 
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
@@ -883,8 +999,9 @@ const Column = React.memo(function Column({
 
   const handleAddCard = () => {
     if (inputValue.trim()) {
-      addCard(id, inputValue);
+      addCard(id, inputValue, priorityValue);
       setInputValue("");
+      setPriorityValue("Low");
       setIsAddingCard(false);
     }
   };
@@ -934,13 +1051,19 @@ const Column = React.memo(function Column({
       <CardsList>
         {cards.map((card, index) => (
           <Card
-            key={card.cardId}
+            key={`${card.cardId}-${index}`}
             id={card.cardId}
             index={index}
             columnId={id}
             text={card.cardName}
             createdByName={card.created_by_name}
+            created_date={card.created_date}
+            startdate={card.startdate}
             enddate={card.enddate}
+            lastmodifiedByName={card.lastmodified_by_name}
+            lastmodifiedBy={card.lastmodified_by}
+            priority={card.priority || "Low"}
+            viewed_by={card.viewed_by || []}
             columnTitle={title}
             openModal={openModal}
             members={cardMembers[card.cardId] || []}
@@ -958,6 +1081,12 @@ const DragAndDropCards = () => {
   const location = useLocation();
   const { employeeId, employeeName, boardId, boardName, boardColor } =
     location.state || {};
+
+  const [selectedMemberFilter, setSelectedMemberFilter] = useState(null);
+  const [selectedPriorityFilter, setSelectedPriorityFilter] = useState("All");
+  const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
+  const initialModalValues = useRef(null);
+
   const [modalContent, setModalContent] = useState({
     cardName: "",
     cardId: "",
@@ -965,9 +1094,11 @@ const DragAndDropCards = () => {
     boardId: "",
     startdate: null,
     enddate: null,
+    priority: "Low",
     columnId: null,
     created_by_name: "",
     created_date: null,
+    viewed_by: [],
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editedCardName, setEditedCardName] = useState("");
@@ -986,9 +1117,24 @@ const DragAndDropCards = () => {
     setShowDeleteCardConfirm(true);
   }, []);
 
+  const checkHasUnsavedChanges = () => {
+    if (!initialModalValues.current) return false;
+    return JSON.stringify(modalContent) !== initialModalValues.current;
+  };
+
+  const handleRequestCloseModal = () => {
+    if (checkHasUnsavedChanges()) {
+      setShowUnsavedConfirm(true);
+    } else {
+      closeModal();
+    }
+  };
+
   const closeModal = () => {
     setIsEditing(false);
     setIsOpen(false);
+    setShowUnsavedConfirm(false);
+    initialModalValues.current = null;
   };
 
   const [columns, setColumns] = useState({
@@ -1030,6 +1176,21 @@ const DragAndDropCards = () => {
     }
   };
 
+  const handlePriorityChange = async (newPriority) => {
+    setModalContent((prev) => ({ ...prev, priority: newPriority }));
+    const userRole = localStorage.getItem("role");
+    try {
+      await apiRequest(
+        `${Trackerbaseurl}cards/${modalContent.cardId}/${boardId}/${userRole}/`,
+        "PATCH",
+        { priority: newPriority }
+      );
+      fetchCardsWithMembers(boardId);
+    } catch (error) {
+      console.error("Error updating priority:", error);
+    }
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [cardId, setCardId] = useState("");
   const [cardName, setCardName] = useState("");
@@ -1058,12 +1219,20 @@ const DragAndDropCards = () => {
       }
 
       const data = result.data;
-      const parsedData = data.map((card) => ({
-        ...card,
-        startdate: card.startdate ? parseISO(card.startdate) : null,
-        enddate: card.enddate ? parseISO(card.enddate) : null,
-        created_date: card.created_date ? parseISO(card.created_date) : null,
-      }));
+      const parsedData = data.map((card) => {
+        let p = card.priority;
+        if (!p || p === "None" || p === "null" || p === "undefined") {
+          p = "Low";
+        }
+        return {
+          ...card,
+          startdate: card.startdate ? parseISO(card.startdate) : null,
+          enddate: card.enddate ? parseISO(card.enddate) : null,
+          created_date: card.created_date ? parseISO(card.created_date) : null,
+          priority: p,
+          viewed_by: card.viewed_by || [],
+        };
+      });
 
       const updatedColumns = {
         do: parsedData.filter((card) => card.columnId === "do"),
@@ -1147,7 +1316,6 @@ const DragAndDropCards = () => {
           autoClose: 3000,
           style: { fontSize: "14px", borderRadius: "10px", padding: "12px", borderLeft: "4px solid #ef4444" }
         });
-        // Revert the optimistic update
         fetchCardsWithMembers(boardId);
       }
     } catch (error) {
@@ -1157,7 +1325,7 @@ const DragAndDropCards = () => {
     }
   }, [columns, boardId, Trackerbaseurl]);
 
-  const addCard = useCallback(async (columnId, text) => {
+  const addCard = useCallback(async (columnId, text, priority = "Low") => {
     const newCard = {
       cardName: text || `Task ${Date.now()}`,
       boardId,
@@ -1165,6 +1333,7 @@ const DragAndDropCards = () => {
       employeeId,
       employeeName,
       boardName,
+      priority: priority || "Low",
     };
     const userRole = localStorage.getItem("role");
 
@@ -1180,12 +1349,7 @@ const DragAndDropCards = () => {
         localStorage.setItem("cardId", data.cardId);
         localStorage.setItem("cardName", data.cardName);
 
-        const updatedColumns = { ...columns };
-        updatedColumns[columnId].push({
-          cardId: data.cardId,
-          cardName: data.cardName,
-        });
-        setColumns(updatedColumns);
+        fetchCardsWithMembers(boardId);
         setCardAdded(true);
       } else {
         console.error("Error adding card:", result.error);
@@ -1193,7 +1357,7 @@ const DragAndDropCards = () => {
     } catch (error) {
       console.error("Error saving card:", error);
     }
-  }, [columns, boardId, employeeId, employeeName, boardName, Trackerbaseurl]);
+  }, [boardId, employeeId, employeeName, boardName, Trackerbaseurl]);
 
   useEffect(() => {
     if (cardAdded) {
@@ -1207,25 +1371,37 @@ const DragAndDropCards = () => {
 
     const defaultStartDate = selectedCard?.startdate || null;
     const defaultEndDate = selectedCard?.enddate || null;
+    const defaultPriority = selectedCard?.priority || "Low";
 
     setCardName(cardName || "No Card Name");
     setCardId(cardId || null);
-    setModalContent({
+    const contentObj = {
       cardName: cardName || "No Card Name",
       cardId: cardId || null,
       boardName: colTitle || "No Board Name",
       boardId: boardId || null,
       startdate: defaultStartDate,
       enddate: defaultEndDate,
+      priority: defaultPriority,
       columnId: selectedCard?.columnId || null,
       created_by_name: selectedCard?.created_by_name || "System",
       created_date: selectedCard?.created_date || null,
-    });
+      viewed_by: selectedCard?.viewed_by || [],
+    };
+    setModalContent(contentObj);
+    initialModalValues.current = JSON.stringify(contentObj);
 
     setEditedCardName(cardName || "");
     setIsModalOpen(true);
     setIsOpen(true);
-  }, [cards, boardId]);
+
+    const currentEmpId = localStorage.getItem("employeeId");
+    if (currentEmpId && cardId) {
+      apiRequest(`${Trackerbaseurl}cards/${cardId}/mark-viewed/`, "POST")
+        .then(() => fetchCardsWithMembers(boardId))
+        .catch(() => { });
+    }
+  }, [cards, boardId, Trackerbaseurl]);
 
   const handleRemoveCard = async (targetCardId, colId) => {
     const userRole = localStorage.getItem("role");
@@ -1384,331 +1560,555 @@ const DragAndDropCards = () => {
     fetchCardsWithMembers(boardId);
   };
 
+  const filterCards = useCallback(
+    (cardList) => {
+      if (!cardList) return [];
+      return cardList.filter((card) => {
+        let matchesMember = true;
+        if (selectedMemberFilter) {
+          const membersList = cardMembers[card.cardId] || [];
+          matchesMember = membersList.some(
+            (m) => String(m.employeeId) === String(selectedMemberFilter)
+          );
+        }
+        let matchesPriority = true;
+        if (selectedPriorityFilter && selectedPriorityFilter !== "All") {
+          matchesPriority =
+            (card.priority || "Low").toLowerCase() ===
+            selectedPriorityFilter.toLowerCase();
+        }
+        return matchesMember && matchesPriority;
+      });
+    },
+    [selectedMemberFilter, selectedPriorityFilter, cardMembers]
+  );
+
+  const hasAutoOpenedRef = useRef(false);
+
+  useEffect(() => {
+    hasAutoOpenedRef.current = false;
+  }, [location.state?.autoOpenCardId, location.state?.cardId]);
+
+  useEffect(() => {
+    const targetCardId = location.state?.autoOpenCardId || location.state?.cardId;
+    if (targetCardId && cards.length > 0 && !hasAutoOpenedRef.current) {
+      const targetCard = cards.find(
+        (c) => String(c.cardId) === String(targetCardId)
+      );
+      if (targetCard) {
+        hasAutoOpenedRef.current = true;
+        openModal(
+          targetCard.cardName,
+          targetCard.cardId,
+          COLUMN_TITLES[targetCard.columnId] || targetCard.columnId
+        );
+        // Clear autoOpenCardId from React Router location state so card can be closed and page refresh won't re-open it
+        navigate(location.pathname, {
+          replace: true,
+          state: {
+            ...location.state,
+            autoOpenCardId: null,
+            cardId: null,
+          },
+        });
+      }
+    }
+  }, [location.state, cards, openModal, navigate, location.pathname]);
+
   const [avatarPosition, setAvatarPosition] = useState({ top: 0, left: 0 });
 
   return (
     <TodolistContainer>
-      <DndProvider backend={HTML5Backend}>
-        <HeaderBanner bannerColor={boardColor}>
-          <HeaderLeft>
-            <BoardTitle>{boardName || "Board Workspace"}</BoardTitle>
-            <BoardSubtitle>HOD / Owner: {employeeName || "General"}</BoardSubtitle>
-          </HeaderLeft>
+      <HeaderBanner bannerColor={boardColor}>
+        <HeaderLeft>
+          <BoardTitle>{boardName || "Board Workspace"}</BoardTitle>
+          <BoardSubtitle>
+            HOD / Owner: {location.state?.created_by_name || (location.state?.created_by && isNaN(location.state.created_by) ? location.state.created_by : null) || location.state?.employeeName || "General"}
+          </BoardSubtitle>
+        </HeaderLeft>
 
-          <HeaderRight>
-            <EmployeeAvatars>
-              {members1.map((member) => {
-                if (!member.employeeName || member.employeeName.trim() === "") {
-                  return null;
-                }
-                return (
-                  <EmployeeAvatar
-                    key={member.employeeId}
-                    title={member.employeeName}
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      fetchEmployeeCards(member, boardId, getClampedPopupPosition(rect));
+        <HeaderRight>
+          <EmployeeAvatars>
+            {members1.map((member) => {
+              if (!member.employeeName || member.employeeName.trim() === "") {
+                return null;
+              }
+              const isSelected = selectedMemberFilter === member.employeeId;
+              return (
+                <EmployeeAvatar
+                  key={member.employeeId}
+                  title={`${member.employeeName} (Click to filter board tasks)`}
+                  style={{
+                    borderColor: isSelected ? "#10b981" : "rgba(255, 255, 255, 0.8)",
+                    transform: isSelected ? "scale(1.15)" : "none",
+                    zIndex: isSelected ? 12 : 1,
+                  }}
+                  onClick={() => {
+                    setSelectedMemberFilter((prev) =>
+                      prev === member.employeeId ? null : member.employeeId
+                    );
+                  }}
+                >
+                  <img
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(member.employeeName)}&background=random&color=fff`}
+                    alt={member.employeeName}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "50%",
                     }}
-                  >
-                    <img
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(member.employeeName)}&background=random&color=fff`}
-                      alt={member.employeeName}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        borderRadius: "50%",
-                      }}
-                    />
-                  </EmployeeAvatar>
-                );
-              })}
-            </EmployeeAvatars>
+                  />
+                </EmployeeAvatar>
+              );
+            })}
+          </EmployeeAvatars>
 
-            <IconGroup>
-              <CalendarIconButton
-                onClick={() => setIsCalendarVisible(!isCalendarVisible)}
-                title="Toggle Calendar View"
+          <IconGroup style={{ gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", color: "white" }}>
+              <FaFilter size={11} />
+              <select
+                value={selectedPriorityFilter}
+                onChange={(e) => setSelectedPriorityFilter(e.target.value)}
+                title="Filter by Priority"
+                style={{
+                  background: "rgba(255, 255, 255, 0.18)",
+                  color: "white",
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                  borderRadius: "8px",
+                  padding: "3px 6px",
+                  fontSize: "0.78rem",
+                  fontWeight: "600",
+                  outline: "none",
+                  cursor: "pointer",
+                }}
               >
-                <FaCalendarAlt />
-              </CalendarIconButton>
-            </IconGroup>
-          </HeaderRight>
-        </HeaderBanner>
+                <option value="All" style={{ color: "#000" }}>All Priorities</option>
+                <option value="High" style={{ color: "#000" }}>High Priority</option>
+                <option value="Medium" style={{ color: "#000" }}>Medium Priority</option>
+                <option value="Low" style={{ color: "#000" }}>Low Priority</option>
+              </select>
+            </div>
 
-        <AnimatePresence>
-          {selectedEmployee && (
-            <EmployeeCardsWrapper
-              top={avatarPosition.top}
-              left={avatarPosition.left}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
+            <CalendarIconButton
+              onClick={() => setIsCalendarVisible(!isCalendarVisible)}
+              title="Toggle Calendar View"
             >
-              <EmployeeCardsContainer>
-                <EmployeeCardsHeader>
-                  <h3>{selectedEmployee.employeeName}'s Tasks</h3>
-                  <ModalCloseButton
-                    onClick={() => setSelectedEmployee(null)}
-                    style={{ padding: '2px', color: 'white' }}
-                  >
-                    <FaTimes size={14} />
-                  </ModalCloseButton>
-                </EmployeeCardsHeader>
+              <FaCalendarAlt />
+            </CalendarIconButton>
+          </IconGroup>
+        </HeaderRight>
+      </HeaderBanner>
 
-                <EmployeeCardsList>
-                  {employeeCards.map((card) => (
-                    <EmployeeCardItem key={card.cardId}>
-                      <strong>{card.cardName}</strong> (Column: {card.columnId})
-                    </EmployeeCardItem>
-                  ))}
-                </EmployeeCardsList>
-              </EmployeeCardsContainer>
-            </EmployeeCardsWrapper>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {isCalendarVisible && (
-            <CalendarContainer>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
-                <ModalCloseButton onClick={() => setIsCalendarVisible(false)}>
-                  <FaTimes />
-                </ModalCloseButton>
-              </div>
-              <Calendar
-                localizer={localizer}
-                events={events}
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: "calc(100% - 40px)", width: "100%" }}
+      {(selectedMemberFilter || (selectedPriorityFilter && selectedPriorityFilter !== "All")) && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: "8px",
+            marginBottom: "12px",
+            fontSize: "0.85rem",
+            color: "var(--text-main)",
+          }}
+        >
+          <span style={{ fontWeight: 600 }}>Active Filters:</span>
+          {selectedMemberFilter && (
+            <span
+              style={{
+                background: "rgba(16, 185, 129, 0.15)",
+                color: "#10b981",
+                padding: "2px 8px",
+                borderRadius: "12px",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              Member: {members1.find((m) => m.employeeId === selectedMemberFilter)?.employeeName || selectedMemberFilter}
+              <FaTimes
+                size={10}
+                style={{ cursor: "pointer" }}
+                onClick={() => setSelectedMemberFilter(null)}
               />
-            </CalendarContainer>
+            </span>
           )}
-        </AnimatePresence>
-
-        <BoardGrid>
-          <Column
-            id="do"
-            title="Do"
-            cards={columns.do}
-            moveCard={moveCard}
-            openModal={openModal}
-            addCard={addCard}
-            cardMembers={cardMembers}
-            trackerBaseUrl={Trackerbaseurl}
-            onRequestDelete={onRequestDeleteCard}
-            showAddCardButton={true}
-          />
-          <Column
-            id="doing"
-            title="Doing"
-            cards={columns.doing}
-            moveCard={moveCard}
-            openModal={openModal}
-            cardMembers={cardMembers}
-            trackerBaseUrl={Trackerbaseurl}
-            onRequestDelete={onRequestDeleteCard}
-          />
-          <Column
-            id="done"
-            title="Done"
-            cards={columns.done}
-            moveCard={moveCard}
-            openModal={openModal}
-            cardMembers={cardMembers}
-            trackerBaseUrl={Trackerbaseurl}
-            onRequestDelete={onRequestDeleteCard}
-          />
-          <Column
-            id="hold"
-            title="Hold"
-            cards={columns.hold}
-            moveCard={moveCard}
-            openModal={openModal}
-            cardMembers={cardMembers}
-            trackerBaseUrl={Trackerbaseurl}
-            onRequestDelete={onRequestDeleteCard}
-          />
-        </BoardGrid>
-
-        <AnimatePresence>
-          {isOpen && (
-            <ModalOverlay
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+          {selectedPriorityFilter && selectedPriorityFilter !== "All" && (
+            <span
+              style={{
+                background: "rgba(79, 70, 229, 0.15)",
+                color: "var(--primary-accent)",
+                padding: "2px 8px",
+                borderRadius: "12px",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
             >
-              <ModalContainer
-                initial={{ scale: 0.95, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.95, y: 20 }}
-                transition={{ type: "spring", damping: 25, stiffness: 350 }}
-              >
-                <ModalHeader>
-                  <ModalHeaderTitle>
-                    <FaRegCreditCard size={18} style={{ color: "var(--primary-accent)" }} />
-                    {isEditing ? (
-                      <CardNameInput
-                        type="text"
-                        value={editedCardName}
-                        onChange={(e) => setEditedCardName(e.target.value)}
-                        onBlur={() => {
+              Priority: {selectedPriorityFilter}
+              <FaTimes
+                size={10}
+                style={{ cursor: "pointer" }}
+                onClick={() => setSelectedPriorityFilter("All")}
+              />
+            </span>
+          )}
+          <button
+            onClick={() => {
+              setSelectedMemberFilter(null);
+              setSelectedPriorityFilter("All");
+            }}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--text-muted)",
+              fontSize: "0.8rem",
+              textDecoration: "underline",
+              cursor: "pointer",
+            }}
+          >
+            Clear All Filters
+          </button>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {selectedEmployee && (
+          <EmployeeCardsWrapper
+            top={avatarPosition.top}
+            left={avatarPosition.left}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+          >
+            <EmployeeCardsContainer>
+              <EmployeeCardsHeader>
+                <h3>{selectedEmployee.employeeName}'s Tasks</h3>
+                <ModalCloseButton
+                  onClick={() => setSelectedEmployee(null)}
+                  style={{ padding: '2px', color: 'white' }}
+                >
+                  <FaTimes size={14} />
+                </ModalCloseButton>
+              </EmployeeCardsHeader>
+
+              <EmployeeCardsList>
+                {employeeCards.map((card) => (
+                  <EmployeeCardItem key={card.cardId}>
+                    <strong>{card.cardName}</strong> (Column: {card.columnId})
+                  </EmployeeCardItem>
+                ))}
+              </EmployeeCardsList>
+            </EmployeeCardsContainer>
+          </EmployeeCardsWrapper>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isCalendarVisible && (
+          <CalendarContainer>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+              <ModalCloseButton onClick={() => setIsCalendarVisible(false)}>
+                <FaTimes />
+              </ModalCloseButton>
+            </div>
+            <Calendar
+              localizer={localizer}
+              events={events}
+              startAccessor="start"
+              endAccessor="end"
+              style={{ height: "calc(100% - 40px)", width: "100%" }}
+            />
+          </CalendarContainer>
+        )}
+      </AnimatePresence>
+
+      <BoardGrid>
+        <Column
+          id="do"
+          title="Do"
+          cards={filterCards(columns.do)}
+          moveCard={moveCard}
+          openModal={openModal}
+          addCard={addCard}
+          cardMembers={cardMembers}
+          trackerBaseUrl={Trackerbaseurl}
+          onRequestDelete={onRequestDeleteCard}
+          showAddCardButton={true}
+        />
+        <Column
+          id="doing"
+          title="Doing"
+          cards={filterCards(columns.doing)}
+          moveCard={moveCard}
+          openModal={openModal}
+          cardMembers={cardMembers}
+          trackerBaseUrl={Trackerbaseurl}
+          onRequestDelete={onRequestDeleteCard}
+        />
+        <Column
+          id="done"
+          title="Done"
+          cards={filterCards(columns.done)}
+          moveCard={moveCard}
+          openModal={openModal}
+          cardMembers={cardMembers}
+          trackerBaseUrl={Trackerbaseurl}
+          onRequestDelete={onRequestDeleteCard}
+        />
+        <Column
+          id="hold"
+          title="Hold"
+          cards={filterCards(columns.hold)}
+          moveCard={moveCard}
+          openModal={openModal}
+          cardMembers={cardMembers}
+          trackerBaseUrl={Trackerbaseurl}
+          onRequestDelete={onRequestDeleteCard}
+        />
+      </BoardGrid>
+
+      <AnimatePresence>
+        {isOpen && (
+          <ModalOverlay
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <ModalContainer
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 350 }}
+            >
+              <ModalHeader>
+                <ModalHeaderTitle>
+                  <FaRegCreditCard size={18} style={{ color: "var(--primary-accent)" }} />
+                  {isEditing ? (
+                    <CardNameInput
+                      type="text"
+                      value={editedCardName}
+                      onChange={(e) => setEditedCardName(e.target.value)}
+                      onBlur={() => {
+                        setIsEditing(false);
+                        handleEditCardName();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
                           setIsEditing(false);
                           handleEditCardName();
+                        }
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <CardNameText onClick={() => setIsEditing(true)}>
+                      {editedCardName}
+                    </CardNameText>
+                  )}
+                </ModalHeaderTitle>
+                <ModalCloseButton onClick={handleRequestCloseModal}>
+                  <FaTimes />
+                </ModalCloseButton>
+              </ModalHeader>
+
+              <ModalContent>
+                <ModalTopRow>
+                  <ModalLeft>
+                    <DetailGroup>
+                      <DetailLabel>Assigned Members</DetailLabel>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        {members.length > 0 ? (
+                          members.map((member, idx) => {
+                            const isViewed = modalContent.viewed_by && (modalContent.viewed_by.includes(String(member.employeeId)) || member.viewed);
+                            let imageUrl = member.profilePicture;
+                            if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
+                              const cleanPath = imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl;
+                              imageUrl = `${Trackerbaseurl}${cleanPath}`;
+                            }
+
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "6px",
+                                  background: "var(--bg-primary)",
+                                  padding: "4px 10px",
+                                  borderRadius: "20px",
+                                  border: "1px solid var(--border-subtle)",
+                                }}
+                              >
+                                {imageUrl ? (
+                                  <CardMemberImage
+                                    src={imageUrl}
+                                    alt={member.employeeName}
+                                    title={member.employeeName}
+                                    style={{ width: '24px', height: '24px' }}
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                    }}
+                                  />
+                                ) : (
+                                  <CardMemberAvatar
+                                    bgColor={getBackgroundColor(member.employeeName)}
+                                    title={member.employeeName}
+                                    style={{ width: '24px', height: '24px', fontSize: '0.75rem' }}
+                                  >
+                                    {member.employeeName.charAt(0).toUpperCase()}
+                                  </CardMemberAvatar>
+                                )}
+                                <span style={{ fontSize: "0.82rem", fontWeight: 500 }}>{member.employeeName}</span>
+                                {isViewed && (
+                                  <span title="Card viewed" style={{ display: "inline-flex", alignItems: "center", marginLeft: "2px" }}>
+                                    <FaCheckDouble size={11} style={{ color: "#10b981" }} />
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>No members assigned yet</span>
+                        )}
+                      </div>
+                    </DetailGroup>
+
+                    <Description
+                      boardId={boardId}
+                      boardName={boardName}
+                      cardId={cardId}
+                      cardName={cardName}
+                    />
+                  </ModalLeft>
+
+                  <ModalRight>
+                    <DetailGroup>
+                      <DetailLabel>Status / Column</DetailLabel>
+                      <DetailValue style={{ textTransform: 'capitalize', fontWeight: 600, color: 'var(--primary-accent)' }}>
+                        {modalContent.boardName}
+                      </DetailValue>
+                    </DetailGroup>
+
+                    <DetailGroup>
+                      <DetailLabel>Priority Status</DetailLabel>
+                      <select
+                        value={modalContent.priority || "Low"}
+                        onChange={(e) => handlePriorityChange(e.target.value)}
+                        style={{
+                          padding: "6px 10px",
+                          borderRadius: "8px",
+                          border: "1px solid var(--border-subtle)",
+                          background: "var(--bg-secondary)",
+                          color: "var(--text-main)",
+                          fontWeight: 600,
+                          fontSize: "0.85rem",
+                          outline: "none",
+                          cursor: "pointer",
                         }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            setIsEditing(false);
-                            handleEditCardName();
-                          }
-                        }}
-                        autoFocus
-                      />
-                    ) : (
-                      <CardNameText onClick={() => setIsEditing(true)}>
-                        {editedCardName}
-                      </CardNameText>
-                    )}
-                  </ModalHeaderTitle>
-                  <ModalCloseButton onClick={closeModal}>
-                    <FaTimes />
-                  </ModalCloseButton>
-                </ModalHeader>
+                      >
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                      </select>
+                    </DetailGroup>
 
-                <ModalContent>
-                  <ModalTopRow>
-                    <ModalLeft>
-                      <DetailGroup>
-                        <DetailLabel>Assigned Members</DetailLabel>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                          {members.length > 0 ? (
-                            members.map((member, idx) => {
-                              let imageUrl = member.profilePicture;
-                              if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
-                                const cleanPath = imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl;
-                                imageUrl = `${Trackerbaseurl}${cleanPath}`;
-                              }
+                    <DetailGroup>
+                      <DetailLabel>Timeline</DetailLabel>
+                      <DateBoxWrapper>
+                        <DateRow>
+                          <strong>Start:</strong>
+                          <span style={{ fontWeight: 600 }}>
+                            {modalContent.startdate
+                              ? modalContent.startdate.toLocaleDateString()
+                              : "—"}
+                          </span>
+                        </DateRow>
+                        <DateRow>
+                          <strong>Due Date:</strong>
+                          <span
+                            style={{
+                              fontWeight: 600,
+                              color: modalContent.enddate && isOverdue(modalContent.enddate, modalContent.columnId) ? "#ef4444" : "inherit"
+                            }}
+                          >
+                            {modalContent.enddate
+                              ? modalContent.enddate.toLocaleDateString()
+                              : "—"}
+                          </span>
+                        </DateRow>
+                      </DateBoxWrapper>
+                    </DetailGroup>
 
-                              return (
-                                <React.Fragment key={idx}>
-                                  {imageUrl ? (
-                                    <CardMemberImage
-                                      src={imageUrl}
-                                      alt={member.employeeName}
-                                      title={member.employeeName}
-                                      style={{ width: '32px', height: '32px' }}
-                                      onError={(e) => {
-                                        e.target.style.display = 'none';
-                                      }}
-                                    />
-                                  ) : (
-                                    <CardMemberAvatar
-                                      bgColor={getBackgroundColor(member.employeeName)}
-                                      title={member.employeeName}
-                                      style={{ width: '32px', height: '32px', fontSize: '0.85rem' }}
-                                    >
-                                      {member.employeeName.charAt(0).toUpperCase()}
-                                    </CardMemberAvatar>
-                                  )}
-                                </React.Fragment>
-                              );
-                            })
-                          ) : (
-                            <span style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>No members assigned yet</span>
-                          )}
-                        </div>
-                      </DetailGroup>
-
-                      <Description
-                        boardId={boardId}
-                        boardName={boardName}
-                        cardId={cardId}
-                        cardName={cardName}
-                      />
-                    </ModalLeft>
-
-                    <ModalRight>
-                      <DetailGroup>
-                        <DetailLabel>Status / Column</DetailLabel>
-                        <DetailValue style={{ textTransform: 'capitalize', fontWeight: 600, color: 'var(--primary-accent)' }}>
-                          {modalContent.boardName}
+                    <div style={{ display: 'flex', gap: '24px' }}>
+                      <DetailGroup style={{ flex: 1 }}>
+                        <DetailLabel>Created By</DetailLabel>
+                        <DetailValue style={{ fontWeight: 500 }}>
+                          {modalContent.created_by_name || "Unknown"}
                         </DetailValue>
                       </DetailGroup>
-
-                      <DetailGroup>
-                        <DetailLabel>Timeline</DetailLabel>
-                        <DateBoxWrapper>
-                          <DateRow>
-                            <strong>Start:</strong>
-                            <span style={{ fontWeight: 600 }}>
-                              {modalContent.startdate
-                                ? modalContent.startdate.toLocaleDateString()
-                                : "—"}
-                            </span>
-                          </DateRow>
-                          <DateRow>
-                            <strong>Due Date:</strong>
-                            <span
-                              style={{
-                                fontWeight: 600,
-                                color: modalContent.enddate && isOverdue(modalContent.enddate, modalContent.columnId) ? "#ef4444" : "inherit"
-                              }}
-                            >
-                              {modalContent.enddate
-                                ? modalContent.enddate.toLocaleDateString()
-                                : "—"}
-                            </span>
-                          </DateRow>
-                        </DateBoxWrapper>
+                      <DetailGroup style={{ flex: 1 }}>
+                        <DetailLabel>Created At</DetailLabel>
+                        <DetailValue style={{ fontWeight: 500 }}>
+                          {modalContent.created_date
+                            ? new Date(modalContent.created_date).toLocaleDateString()
+                            : "—"}
+                        </DetailValue>
                       </DetailGroup>
+                    </div>
 
-                      <div style={{ display: 'flex', gap: '24px' }}>
-                        <DetailGroup style={{ flex: 1 }}>
-                          <DetailLabel>Created By</DetailLabel>
-                          <DetailValue style={{ fontWeight: 500 }}>
-                            {modalContent.created_by_name || "Unknown"}
-                          </DetailValue>
-                        </DetailGroup>
-                        <DetailGroup style={{ flex: 1 }}>
-                          <DetailLabel>Created At</DetailLabel>
-                          <DetailValue style={{ fontWeight: 500 }}>
-                            {modalContent.created_date
-                              ? new Date(modalContent.created_date).toLocaleDateString()
-                              : "—"}
-                          </DetailValue>
-                        </DetailGroup>
-                      </div>
+                    <Addmembers
+                      cardId={cardId}
+                      boardId={boardId}
+                      cardName={cardName}
+                      onMemberUpdate={() =>
+                        fetchMembers(cardId, boardId, cardName)
+                      }
+                    />
 
-                      <Addmembers
-                        cardId={cardId}
-                        boardId={boardId}
-                        cardName={cardName}
-                        onMemberUpdate={() =>
-                          fetchMembers(cardId, boardId, cardName)
-                        }
-                      />
+                    <DateComponent
+                      cardId={cardId}
+                      boardId={boardId}
+                      employeeId={employeeId}
+                      existingStartDate={modalContent.startdate}
+                      onDateUpdate={handleInstantDateUpdate}
+                    />
+                  </ModalRight>
+                </ModalTopRow>
 
-                      <DateComponent
-                        cardId={cardId}
-                        boardId={boardId}
-                        employeeId={employeeId}
-                        existingStartDate={modalContent.startdate}
-                        onDateUpdate={handleInstantDateUpdate}
-                      />
-                    </ModalRight>
-                  </ModalTopRow>
+                <Comment
+                  boardId={boardId}
+                  boardName={boardName}
+                  cardId={cardId}
+                />
+              </ModalContent>
+            </ModalContainer>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
 
-                  <Comment
-                    boardId={boardId}
-                    boardName={boardName}
-                    cardId={cardId}
-                  />
-                </ModalContent>
-              </ModalContainer>
-            </ModalOverlay>
-          )}
-        </AnimatePresence>
-      </DndProvider>
+      {showUnsavedConfirm && (
+        <ModalOverlay onClick={() => setShowUnsavedConfirm(false)}>
+          <ConfirmModalContainer onClick={(e) => e.stopPropagation()}>
+            <ConfirmModalHeader>
+              <h3>Unsaved Changes</h3>
+              <ConfirmCloseButton onClick={() => setShowUnsavedConfirm(false)}>
+                <FaTimes />
+              </ConfirmCloseButton>
+            </ConfirmModalHeader>
+            <ConfirmModalBody>
+              Are you sure you want to close this card without updating / saving your changes?
+            </ConfirmModalBody>
+            <ConfirmButtonGroup>
+              <ConfirmCancelButton onClick={() => setShowUnsavedConfirm(false)}>Keep Editing</ConfirmCancelButton>
+              <ConfirmDeleteButton style={{ background: "#f59e0b" }} onClick={closeModal}>
+                Close Without Saving
+              </ConfirmDeleteButton>
+            </ConfirmButtonGroup>
+          </ConfirmModalContainer>
+        </ModalOverlay>
+      )}
 
       {showDeleteCardConfirm && (
         <ModalOverlay onClick={() => setShowDeleteCardConfirm(false)}>
