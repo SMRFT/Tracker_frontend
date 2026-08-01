@@ -9,6 +9,7 @@ import {
   FaImage,
   FaDownload,
   FaTrash,
+  FaEye,
 } from "react-icons/fa";
 import { RiArrowDropDownLine } from "react-icons/ri";
 import { GrTextAlignFull, GrAttachment } from "react-icons/gr";
@@ -42,7 +43,8 @@ const Section = styled.div`
   background: ${colors.cardBackground};
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 `;
 
 const SectionHeader = styled.div`
@@ -50,6 +52,8 @@ const SectionHeader = styled.div`
   display: flex;
   align-items: center;
   border-bottom: 1px solid ${colors.border};
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 `;
 
 const SectionTitle = styled.div`
@@ -62,6 +66,7 @@ const SectionTitle = styled.div`
 
 const SectionContent = styled.div`
   padding: 0;
+  overflow: visible;
 `;
 
 // Button Components
@@ -134,6 +139,9 @@ const Toolbar = styled.div`
   padding: 8px 16px;
   border-bottom: 1px solid ${colors.border};
   gap: 4px;
+  position: relative;
+  z-index: 50;
+  overflow: visible;
 `;
 
 const ToolbarButton = styled(IconButton)`
@@ -142,14 +150,16 @@ const ToolbarButton = styled(IconButton)`
 
 const Dropdown = styled.div`
   position: absolute;
-  top: 40px;
+  top: 100%;
   left: 0;
   background-color: ${colors.cardBackground};
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  border: 1px solid ${colors.border};
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
   min-width: 220px;
-  overflow: hidden;
+  max-height: 240px;
+  overflow-y: auto;
 `;
 
 const DropdownItem = styled.div`
@@ -399,8 +409,63 @@ const CloseToast = styled.button`
   }
 `;
 
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+  backdrop-filter: blur(4px);
+`;
+
+const PreviewModalContainer = styled.div`
+  background-color: ${colors.cardBackground};
+  width: 90vw;
+  max-width: 900px;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+`;
+
+const PreviewModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid ${colors.border};
+`;
+
+const PreviewTitle = styled.h3`
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: ${colors.text};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70%;
+`;
+
+const PreviewModalBody = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+  flex: 1;
+`;
+
 // Main Component
 const Description = ({ cardId, cardName, boardName, boardId }) => {
+  const [previewModalItem, setPreviewModalItem] = useState(null);
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [description, setDescription] = useState("");
   const [file, setFile] = useState(null);
@@ -454,54 +519,15 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
   };
 
   const applyHeading = (headingType) => {
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const selectedText = range.extractContents();
-      const headingElement = document.createElement(headingType);
-      headingElement.appendChild(selectedText);
-      range.insertNode(headingElement);
-
-      const newRange = document.createRange();
-      newRange.selectNodeContents(headingElement);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-    }
+    document.execCommand("formatBlock", false, headingType);
     setDropdownOpen(false);
   };
 
   const applyFormat = (format) => {
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const selectedText = range.extractContents();
-      let formatElement;
-
-      if (format === "bold") {
-        formatElement = document.createElement("strong");
-      } else if (format === "italic") {
-        formatElement = document.createElement("em");
-      }
-
-      if (
-        formatElement &&
-        range.startContainer.parentNode.tagName.toLowerCase() ===
-          formatElement.tagName.toLowerCase()
-      ) {
-        const parentNode = range.startContainer.parentNode;
-        const fragment = document.createDocumentFragment();
-        while (parentNode.firstChild) {
-          fragment.appendChild(parentNode.firstChild);
-        }
-        parentNode.parentNode.replaceChild(fragment, parentNode);
-      } else if (formatElement) {
-        formatElement.appendChild(selectedText);
-        range.insertNode(formatElement);
-        const newRange = document.createRange();
-        newRange.setStartAfter(formatElement);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-      }
+    if (format === "bold") {
+      document.execCommand("bold", false, null);
+    } else if (format === "italic") {
+      document.execCommand("italic", false, null);
     }
   };
 
@@ -536,7 +562,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
   };
 
   const handleSaveDescription = async () => {
-    const text = descriptionRef.current.textContent;
+    const text = descriptionRef.current ? descriptionRef.current.innerHTML : "";
 
     try {
       const response = await apiRequest(
@@ -647,21 +673,20 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
   };
 
   const fetchAndStoreImage = async (file) => {
-    if (!file || !file.filename) {
-      console.error("Invalid file object or missing filename:", file);
-      return;
-    }
+    if (!file || !file.filename) return;
 
     const filename = file.filename.trim();
     if (imagesFetched.current.has(filename)) return;
 
+    imagesFetched.current.add(filename);
+
     try {
       const imageResponse = await fetch(
-        `${Trackerbaseurl}get-files/?filename=${encodeURIComponent(filename)}`,
+        `${Trackerbaseurl}get-files/?filename=${encodeURIComponent(filename)}&cardId=${cardId}&boardId=${boardId}`,
         {
           method: "GET",
           headers: {
-            Authorization: localStorage.getItem("access_token"),
+            Authorization: localStorage.getItem("access_token") || "",
           },
         }
       );
@@ -670,6 +695,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
         const blob = await imageResponse.blob();
         const fileType =
           imageResponse.headers.get("content-type") ||
+          file.contentType ||
           "application/octet-stream";
 
         setImageArray((prevArray) => [
@@ -678,20 +704,17 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
             src: URL.createObjectURL(blob),
             filename: filename,
             type: fileType,
-            employeeName: file.employeeName,
+            employeeName: file.employeeName || "User",
             uploadDate: file.uploadDate,
           },
         ]);
-
-        imagesFetched.current.add(filename);
       } else {
-        throw new Error(
-          `HTTP ${imageResponse.status}: ${imageResponse.statusText}`
-        );
+        imagesFetched.current.delete(filename);
+        console.error(`Failed to fetch attachment ${filename}: HTTP ${imageResponse.status}`);
       }
     } catch (error) {
+      imagesFetched.current.delete(filename);
       console.error(`Error fetching image for ${filename}:`, error);
-      showToast(`Failed to load attachment: ${filename}`, "error");
     }
   };
 
@@ -728,17 +751,24 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
 
     if (uploadedItems.length === 0) return;
 
+    const currentEmpId = localStorage.getItem("employeeId") || "";
+    const currentEmpName = localStorage.getItem("employeeName") || employeeName || "";
+
     formData.append("cardId", cardId);
     formData.append("cardName", cardName);
     formData.append("boardId", boardId);
-    formData.append("employeeName", employeeName);
+    formData.append("employeeId", currentEmpId);
+    formData.append("employeeName", currentEmpName);
 
     try {
+      const token = localStorage.getItem("access_token");
+      const headers = {};
+      if (token) {
+        headers["Authorization"] = token;
+      }
       const response = await fetch(`${Trackerbaseurl}upload-content/`, {
         method: "POST",
-        headers: {
-          Authorization: localStorage.getItem("access_token"),
-        },
+        headers,
         body: formData,
       });
 
@@ -903,9 +933,32 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
                       style={{
                         fontSize: "12px",
                         color: colors.lightText,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        marginBottom: "4px",
                       }}
                     >
-                      Selected file: {file.name}
+                      <span>Selected file: {file.name}</span>
+                      <SecondaryButton
+                        style={{ padding: "2px 6px", fontSize: "11px" }}
+                        onClick={() =>
+                          setPreviewModalItem({
+                            src: URL.createObjectURL(file),
+                            filename: file.name,
+                            type: file.type,
+                          })
+                        }
+                      >
+                        <FaEye size={10} /> Preview
+                      </SecondaryButton>
+                      <IconButton
+                        title="Remove file"
+                        style={{ width: "20px", height: "20px", color: colors.danger }}
+                        onClick={() => setFile(null)}
+                      >
+                        <FaTimes size={12} />
+                      </IconButton>
                     </div>
                   )}
                   {image && (
@@ -913,9 +966,31 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
                       style={{
                         fontSize: "12px",
                         color: colors.lightText,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
                       }}
                     >
-                      Selected image: {image.name}
+                      <span>Selected image: {image.name}</span>
+                      <SecondaryButton
+                        style={{ padding: "2px 6px", fontSize: "11px" }}
+                        onClick={() =>
+                          setPreviewModalItem({
+                            src: URL.createObjectURL(image),
+                            filename: image.name,
+                            type: image.type,
+                          })
+                        }
+                      >
+                        <FaEye size={10} /> Preview
+                      </SecondaryButton>
+                      <IconButton
+                        title="Remove image"
+                        style={{ width: "20px", height: "20px", color: colors.danger }}
+                        onClick={() => setImage(null)}
+                      >
+                        <FaTimes size={12} />
+                      </IconButton>
                     </div>
                   )}
                 </div>
@@ -995,13 +1070,17 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
               <LoadingSpinner>Loading attachments...</LoadingSpinner>
             ) : (
               <AttachmentsList>
-                {imageArray.map((image, index) => (
+                {imageArray.map((imgItem, index) => (
                   <AttachmentItem key={index}>
-                    <AttachmentPreview>
-                      {image.type.startsWith("image/") ? (
+                    <AttachmentPreview
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setPreviewModalItem(imgItem)}
+                      title="Click to preview attachment"
+                    >
+                      {imgItem.type?.startsWith("image/") || imgItem.filename?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
                         <img
-                          src={image.src}
-                          alt={image.filename}
+                          src={imgItem.src}
+                          alt={imgItem.filename}
                           style={{
                             width: "60px",
                             height: "60px",
@@ -1009,7 +1088,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
                             borderRadius: "4px",
                           }}
                         />
-                      ) : image.filename.endsWith(".docx") ? (
+                      ) : imgItem.filename?.endsWith(".docx") ? (
                         <BsFiletypeDocx
                           style={{ fontSize: "3rem", color: "#4285F4" }}
                         />
@@ -1021,20 +1100,26 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
                     </AttachmentPreview>
 
                     <AttachmentInfo>
-                      <AttachmentFileName>{image.filename}</AttachmentFileName>
+                      <AttachmentFileName
+                        style={{ cursor: "pointer" }}
+                        onClick={() => setPreviewModalItem(imgItem)}
+                        title="Click to preview attachment"
+                      >
+                        {imgItem.filename}
+                      </AttachmentFileName>
                       <AttachmentMeta>
-                        Uploaded by: {image.employeeName} •{" "}
-                        {new Date(image.uploadDate).toLocaleString()}
+                        Uploaded by: {imgItem.employeeName} •{" "}
+                        {new Date(imgItem.uploadDate).toLocaleString()}
                       </AttachmentMeta>
                       <AttachmentActions>
                         <SecondaryButton
-                          onClick={() => handleDownload(image.filename)}
+                          onClick={() => setPreviewModalItem(imgItem)}
                         >
-                          <FaDownload size={12} /> Download
+                          <FaEye size={12} /> Preview
                         </SecondaryButton>
                         {hasAdminAccess() && (
                           <SecondaryButton
-                            onClick={() => handleDeleteFile(image.filename)}
+                            onClick={() => handleDeleteFile(imgItem.filename)}
                             style={{ color: colors.danger }}
                           >
                             <FaTrash size={12} /> Delete
@@ -1048,6 +1133,64 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
             )}
           </SectionContent>
         </Section>
+      )}
+
+      {/* Attachment Preview Modal */}
+      {previewModalItem && (
+        <ModalOverlay onClick={() => setPreviewModalItem(null)}>
+          <PreviewModalContainer onClick={(e) => e.stopPropagation()}>
+            <PreviewModalHeader>
+              <PreviewTitle>{previewModalItem.filename || previewModalItem.name}</PreviewTitle>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                {previewModalItem.filename && (
+                  <SecondaryButton
+                    onClick={() => handleDownload(previewModalItem.filename)}
+                    style={{
+                      background: colors.primary,
+                      color: "white",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    <FaDownload size={11} /> Download
+                  </SecondaryButton>
+                )}
+                <IconButton onClick={() => setPreviewModalItem(null)} style={{ color: colors.text }}>
+                  <FaTimes size={16} />
+                </IconButton>
+              </div>
+            </PreviewModalHeader>
+            <PreviewModalBody>
+              {previewModalItem.type?.startsWith("image/") || previewModalItem.filename?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
+                <img
+                  src={previewModalItem.src}
+                  alt={previewModalItem.filename || previewModalItem.name}
+                  style={{ maxWidth: "100%", maxHeight: "75vh", objectFit: "contain", borderRadius: "8px" }}
+                />
+              ) : previewModalItem.type === "application/pdf" || previewModalItem.filename?.endsWith(".pdf") ? (
+                <iframe
+                  src={previewModalItem.src}
+                  title={previewModalItem.filename || previewModalItem.name}
+                  style={{ width: "100%", height: "75vh", border: "none", borderRadius: "8px" }}
+                />
+              ) : (
+                <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                  <GrAttachment size={48} style={{ color: colors.lightText, marginBottom: "16px" }} />
+                  <h4 style={{ margin: "0 0 8px 0" }}>{previewModalItem.filename || previewModalItem.name}</h4>
+                  <p style={{ color: colors.lightText, fontSize: "14px" }}>
+                    Direct inline preview is not available for this file type. Click download to view.
+                  </p>
+                </div>
+              )}
+            </PreviewModalBody>
+          </PreviewModalContainer>
+        </ModalOverlay>
       )}
     </Container>
   );

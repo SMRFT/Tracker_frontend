@@ -6,7 +6,6 @@ import {
   useLocation,
 } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-import Register from "./Components/Register";
 import Board from "./Components/Board";
 import Todolist from "./Components/Todolist";
 import Sidebar from "./Components/Sidebar";
@@ -28,6 +27,9 @@ import { ToastContainer } from "react-toastify";
 import TaskDeadline from "./Components/TaskDeadline";
 import FinishedTask from "./Components/FinishedTask";
 import Deletedcards from "./Components/Deletedcards";
+
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 const Trackerbaseurl =
   process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
@@ -287,8 +289,7 @@ const ConfirmLogoutButton = styled.button`
 `;
 
 const AppContent = ({ boards, addBoard, refreshBoards, boardsLoading }) => {
-  const location = useLocation();
-  const sidebarVisible = !["/Register"].includes(location.pathname);
+  const sidebarVisible = true;
   const [hasAdminPrivileges, setHasAdminPrivileges] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -366,7 +367,6 @@ const AppContent = ({ boards, addBoard, refreshBoards, boardsLoading }) => {
           <Route path="/finished" element={<FinishedTask />} />
           <Route path="/deadlines" element={<TaskDeadline />} />
           <Route path="/SignOut" element={<SignOut />} />
-          <Route path="/Register" element={<Register />} />
           <Route path="/Todolist" element={<Todolist />} />
           <Route path="/Members" element={<Members />} />
           <Route path="/Deletedcards" element={<Deletedcards />} />
@@ -441,15 +441,17 @@ const App = () => {
   };
 
   return (
-    <Router basename={process.env.PUBLIC_URL}>
-      <AppContent boards={boards} addBoard={addBoard} refreshBoards={fetchBoards} boardsLoading={boardsLoading} />
-      <ToastContainer
-        autoClose={2000}
-        closeOnClick
-        closeButton
-        hideProgressBar
-      />
-    </Router>
+    <DndProvider backend={HTML5Backend}>
+      <Router basename={process.env.PUBLIC_URL}>
+        <AppContent boards={boards} addBoard={addBoard} refreshBoards={fetchBoards} boardsLoading={boardsLoading} />
+        <ToastContainer
+          autoClose={2000}
+          closeOnClick
+          closeButton
+          hideProgressBar
+        />
+      </Router>
+    </DndProvider>
   );
 };
 

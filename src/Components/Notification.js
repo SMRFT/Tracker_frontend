@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -361,6 +362,7 @@ const EmptyState = styled.div`
 `;
 
 const Notification = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
@@ -498,7 +500,23 @@ const Notification = () => {
                 <NotificationList>
                   {notifications.length > 0 ? (
                     notifications.map((notification) => (
-                      <NotificationCard key={notification.id} $unread={!notification.is_read}>
+                      <NotificationCard
+                        key={notification.id}
+                        $unread={!notification.is_read}
+                        style={{ cursor: notification.cardId ? "pointer" : "default" }}
+                        onClick={() => {
+                          if (notification.cardId) {
+                            setShowModal(false);
+                            navigate("/Todolist", {
+                              state: {
+                                boardId: notification.boardId,
+                                cardId: notification.cardId,
+                                autoOpenCardId: notification.cardId,
+                              },
+                            });
+                          }
+                        }}
+                      >
                         <CardHeader>
                           <TimeText>
                             <FontAwesomeIcon icon={faClock} /> 
