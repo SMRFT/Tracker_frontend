@@ -663,6 +663,7 @@ const CardNameInput = styled.input`
   padding: 4px 8px;
   border: 1px solid var(--primary-accent);
   border-radius: 6px;
+  background: var(--bg-secondary);
   color: var(--text-main);
   width: 90%;
   outline: none;
@@ -863,13 +864,6 @@ const Card = React.memo(function Card({
       </CardRow>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-        {created_date && (
-          <DateBadge title="Created Date">
-            <FaRegCalendarAlt size={10} />
-            <span>Created: {formatCardDate(created_date)}</span>
-          </DateBadge>
-        )}
-
         {(startdate || enddate) && (
           <div style={{ display: "flex", gap: "4px", alignItems: "center", flexWrap: "wrap", width: "100%" }}>
             {startdate && (
@@ -885,12 +879,6 @@ const Card = React.memo(function Card({
               </DateBadge>
             )}
           </div>
-        )}
-
-        {(lastmodifiedByName || lastmodifiedBy) && (
-          <CreatorInfo style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px" }}>
-            Updated by: {lastmodifiedByName || lastmodifiedBy}
-          </CreatorInfo>
         )}
       </div>
 
@@ -1082,10 +1070,41 @@ const DragAndDropCards = () => {
   const { employeeId, employeeName, boardId, boardName, boardColor } =
     location.state || {};
 
+  const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
+
+  const [boardInfo, setBoardInfo] = useState({
+    name: boardName || "",
+    createdBy: location.state?.created_by_name || (location.state?.created_by && isNaN(location.state.created_by) ? location.state.created_by : null) || location.state?.employeeName || "",
+    color: boardColor || "",
+  });
+
+  useEffect(() => {
+    const role = localStorage.getItem("role") || "Employee";
+    if (boardId) {
+      apiRequest(`${Trackerbaseurl}get-boards/${role}/`, "GET")
+        .then((res) => {
+          if (res.success && Array.isArray(res.data)) {
+            const foundBoard = res.data.find(
+              (b) => String(b.boardId) === String(boardId)
+            );
+            if (foundBoard) {
+              setBoardInfo({
+                name: foundBoard.boardName || foundBoard.title || boardName || "",
+                createdBy: foundBoard.created_by_name || foundBoard.created_by || foundBoard.employeeName || "",
+                color: foundBoard.boardColor || boardColor || "",
+              });
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [boardId, boardName, boardColor, Trackerbaseurl, location.state]);
+
   const [selectedMemberFilter, setSelectedMemberFilter] = useState(null);
   const [selectedPriorityFilter, setSelectedPriorityFilter] = useState("All");
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const initialModalValues = useRef(null);
+  const [cardDescriptions, setCardDescriptions] = useState({});
 
   const [modalContent, setModalContent] = useState({
     cardName: "",
@@ -1100,15 +1119,21 @@ const DragAndDropCards = () => {
     created_date: null,
     viewed_by: [],
   });
+  const [cards, setCards] = useState([]);
+  const [cardId, setCardId] = useState(null);
+  const [cardName, setCardName] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editedCardName, setEditedCardName] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [userRole, setRole] = useState("");
   const [members, setMembers] = useState([]);
   const [cardMembers, setCardMembers] = useState([]);
   const [cardAdded, setCardAdded] = useState(false);
   const [showDeleteCardConfirm, setShowDeleteCardConfirm] = useState(false);
   const [cardToDelete, setCardToDelete] = useState(null);
-  const Trackerbaseurl = process.env.REACT_APP_BACKEND_TRACKER_BASE_URL;
 
   const localizer = momentLocalizer(moment);
 
@@ -1117,13 +1142,35 @@ const DragAndDropCards = () => {
     setShowDeleteCardConfirm(true);
   }, []);
 
-  const checkHasUnsavedChanges = () => {
-    if (!initialModalValues.current) return false;
-    return JSON.stringify(modalContent) !== initialModalValues.current;
+  const checkIsMissingDetails = () => {
+    const selectedCard = cards.find((c) => String(c.cardId) === String(cardId));
+
+    // Check members
+    const currentMembers = members.length > 0 ? members : (cardMembers[cardId] || selectedCard?.members || []);
+    const hasMembers = Array.isArray(currentMembers) && currentMembers.length > 0;
+
+    // Check dates
+    const hasDates = Boolean(
+      modalContent.startdate ||
+      modalContent.enddate ||
+      selectedCard?.startdate ||
+      selectedCard?.enddate
+    );
+
+    // Check description
+    const currentDesc = cardDescriptions[cardId] !== undefined ? cardDescriptions[cardId] : selectedCard?.description;
+    const hasDescription = Boolean(
+      currentDesc &&
+      typeof currentDesc === "string" &&
+      currentDesc.trim() !== "" &&
+      currentDesc !== "<p><br></p>"
+    );
+
+    return !hasMembers || !hasDates || !hasDescription;
   };
 
   const handleRequestCloseModal = () => {
-    if (checkHasUnsavedChanges()) {
+    if (checkIsMissingDetails()) {
       setShowUnsavedConfirm(true);
     } else {
       closeModal();
@@ -1190,14 +1237,6 @@ const DragAndDropCards = () => {
       console.error("Error updating priority:", error);
     }
   };
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [cardId, setCardId] = useState("");
-  const [cardName, setCardName] = useState("");
-  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
-  const [events, setEvents] = useState([]);
-  const [cards, setCards] = useState([]);
-  const [userRole, setRole] = useState("");
 
   useEffect(() => {
     const userRole = localStorage.getItem("role");
@@ -1619,11 +1658,11 @@ const DragAndDropCards = () => {
 
   return (
     <TodolistContainer>
-      <HeaderBanner bannerColor={boardColor}>
+      <HeaderBanner bannerColor={boardInfo.color || boardColor}>
         <HeaderLeft>
-          <BoardTitle>{boardName || "Board Workspace"}</BoardTitle>
+          <BoardTitle>{boardInfo.name || boardName || "Board Workspace"}</BoardTitle>
           <BoardSubtitle>
-            HOD / Owner: {location.state?.created_by_name || (location.state?.created_by && isNaN(location.state.created_by) ? location.state.created_by : null) || location.state?.employeeName || "General"}
+            HOD / Owner: {boardInfo.createdBy || location.state?.created_by_name || (location.state?.created_by && isNaN(location.state.created_by) ? location.state.created_by : null) || location.state?.employeeName || "General"}
           </BoardSubtitle>
         </HeaderLeft>
 
@@ -2092,18 +2131,18 @@ const DragAndDropCards = () => {
         <ModalOverlay onClick={() => setShowUnsavedConfirm(false)}>
           <ConfirmModalContainer onClick={(e) => e.stopPropagation()}>
             <ConfirmModalHeader>
-              <h3>Unsaved Changes</h3>
+              <h3>Warning</h3>
               <ConfirmCloseButton onClick={() => setShowUnsavedConfirm(false)}>
                 <FaTimes />
               </ConfirmCloseButton>
             </ConfirmModalHeader>
             <ConfirmModalBody>
-              Are you sure you want to close this card without updating / saving your changes?
+              Are you sure you want to close without adding description, dates, or members?
             </ConfirmModalBody>
             <ConfirmButtonGroup>
               <ConfirmCancelButton onClick={() => setShowUnsavedConfirm(false)}>Keep Editing</ConfirmCancelButton>
-              <ConfirmDeleteButton style={{ background: "#f59e0b" }} onClick={closeModal}>
-                Close Without Saving
+              <ConfirmDeleteButton style={{ background: "var(--primary-accent)" }} onClick={closeModal}>
+                Save
               </ConfirmDeleteButton>
             </ConfirmButtonGroup>
           </ConfirmModalContainer>

@@ -237,10 +237,13 @@ const DescriptionInput = styled.div`
 `;
 
 const DescriptionView = styled.div`
+  flex: 1;
   padding: 16px;
   font-size: 14px;
   line-height: 1.6;
   color: ${colors.text};
+  white-space: pre-wrap;
+  word-break: break-word;
 
   h1,
   h2,
@@ -464,7 +467,7 @@ const PreviewModalBody = styled.div`
 `;
 
 // Main Component
-const Description = ({ cardId, cardName, boardName, boardId }) => {
+const Description = ({ cardId, cardName, boardName, boardId, onDescriptionUpdate }) => {
   const [previewModalItem, setPreviewModalItem] = useState(null);
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -580,6 +583,7 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
       if (response.success) {
         setEditing(false);
         setDescription(text);
+        if (onDescriptionUpdate) onDescriptionUpdate(text);
         showToast("Description saved successfully", "success");
         console.log("Description saved successfully:", response.data);
       } else {
@@ -608,8 +612,10 @@ const Description = ({ cardId, cardName, boardName, boardId }) => {
 
         if (response.data && response.data.description) {
           setDescription(response.data.description);
+          if (onDescriptionUpdate) onDescriptionUpdate(response.data.description);
         } else {
           setDescription("");
+          if (onDescriptionUpdate) onDescriptionUpdate("");
           console.log("No description found for this card");
         }
       } else {
