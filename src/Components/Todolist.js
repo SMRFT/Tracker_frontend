@@ -663,6 +663,7 @@ const CardNameInput = styled.input`
   padding: 4px 8px;
   border: 1px solid var(--primary-accent);
   border-radius: 6px;
+  background: var(--bg-secondary);
   color: var(--text-main);
   width: 90%;
   outline: none;
@@ -863,13 +864,6 @@ const Card = React.memo(function Card({
       </CardRow>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-        {created_date && (
-          <DateBadge title="Created Date">
-            <FaRegCalendarAlt size={10} />
-            <span>Created: {formatCardDate(created_date)}</span>
-          </DateBadge>
-        )}
-
         {(startdate || enddate) && (
           <div style={{ display: "flex", gap: "4px", alignItems: "center", flexWrap: "wrap", width: "100%" }}>
             {startdate && (
@@ -885,12 +879,6 @@ const Card = React.memo(function Card({
               </DateBadge>
             )}
           </div>
-        )}
-
-        {(lastmodifiedByName || lastmodifiedBy) && (
-          <CreatorInfo style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px" }}>
-            Updated by: {lastmodifiedByName || lastmodifiedBy}
-          </CreatorInfo>
         )}
       </div>
 

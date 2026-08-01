@@ -237,10 +237,13 @@ const DescriptionInput = styled.div`
 `;
 
 const DescriptionView = styled.div`
+  flex: 1;
   padding: 16px;
   font-size: 14px;
   line-height: 1.6;
   color: ${colors.text};
+  white-space: pre-wrap;
+  word-break: break-word;
 
   h1,
   h2,
