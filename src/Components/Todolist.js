@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
@@ -1096,7 +1096,7 @@ const DragAndDropCards = () => {
             }
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [boardId, boardName, boardColor, Trackerbaseurl, location.state]);
 
@@ -1508,6 +1508,32 @@ const DragAndDropCards = () => {
   const [employeeCards, setEmployeeCards] = useState([]);
   const [members1, setMembers1] = useState([]);
 
+  // Compute members assigned to at least one card on this board ("availed card members")
+  const availedMembers = useMemo(() => {
+    const memberMap = new Map();
+
+    Object.values(cardMembers).forEach((mList) => {
+      if (Array.isArray(mList)) {
+        mList.forEach((m) => {
+          if (m && m.employeeId && !memberMap.has(String(m.employeeId))) {
+            const foundInMembers1 = members1.find(
+              (bMember) => String(bMember.employeeId) === String(m.employeeId)
+            );
+            memberMap.set(
+              String(m.employeeId),
+              foundInMembers1 || {
+                employeeId: String(m.employeeId),
+                employeeName: m.employeeName || m.name || String(m.employeeId),
+              }
+            );
+          }
+        });
+      }
+    });
+
+    return Array.from(memberMap.values());
+  }, [members1, cardMembers]);
+
   const fetchEmployees = async (boardId) => {
     try {
       const result = await apiRequest(`${Trackerbaseurl}employees/${boardId}/`);
@@ -1668,7 +1694,7 @@ const DragAndDropCards = () => {
 
         <HeaderRight>
           <EmployeeAvatars>
-            {members1.map((member) => {
+            {availedMembers.map((member) => {
               if (!member.employeeName || member.employeeName.trim() === "") {
                 return null;
               }
@@ -1764,7 +1790,7 @@ const DragAndDropCards = () => {
                 gap: "4px",
               }}
             >
-              Member: {members1.find((m) => m.employeeId === selectedMemberFilter)?.employeeName || selectedMemberFilter}
+              Member: {availedMembers.find((m) => m.employeeId === selectedMemberFilter)?.employeeName || members1.find((m) => m.employeeId === selectedMemberFilter)?.employeeName || selectedMemberFilter}
               <FaTimes
                 size={10}
                 style={{ cursor: "pointer" }}
@@ -2137,12 +2163,12 @@ const DragAndDropCards = () => {
               </ConfirmCloseButton>
             </ConfirmModalHeader>
             <ConfirmModalBody>
-              Are you sure you want to close without adding description, dates, or members?
+              Description / Dates / Members are not added yet. Are you sure to close?
             </ConfirmModalBody>
             <ConfirmButtonGroup>
               <ConfirmCancelButton onClick={() => setShowUnsavedConfirm(false)}>Keep Editing</ConfirmCancelButton>
               <ConfirmDeleteButton style={{ background: "var(--primary-accent)" }} onClick={closeModal}>
-                Save
+                Close
               </ConfirmDeleteButton>
             </ConfirmButtonGroup>
           </ConfirmModalContainer>

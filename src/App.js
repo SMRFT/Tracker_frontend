@@ -320,10 +320,7 @@ const AppContent = ({ boards, addBoard, refreshBoards, boardsLoading }) => {
   }, []);
 
   const handleSignOut = () => {
-    localStorage.removeItem("employeeId");
-    localStorage.removeItem("employeeName");
-    localStorage.removeItem("role");
-    window.location.href = "/login";
+    window.location.href = "/secure";
   };
 
   return (
@@ -336,7 +333,7 @@ const AppContent = ({ boards, addBoard, refreshBoards, boardsLoading }) => {
               <HeaderTitle>Tracker</HeaderTitle>
             </HeaderLeft>
             <HeaderRight>
-              <SignOut isCollapsed={true} isHeader={true} />
+              <SignOut isCollapsed={false} isHeader={true} />
               <ThemeToggleBtn onClick={toggleTheme} title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
                 {isDarkMode ? <FiSun /> : <FiMoon />}
               </ThemeToggleBtn>
