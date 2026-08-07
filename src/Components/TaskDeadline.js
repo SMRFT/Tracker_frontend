@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { toast } from "react-toastify";
 import styled, { keyframes } from "styled-components";
 import { FiSearch } from "react-icons/fi";
@@ -400,6 +402,67 @@ const Tr = styled.tr`
 
   &:last-child td {
     border-bottom: none;
+  }
+`;
+
+const DatePickerWrapper = styled.div`
+  width: ${(props) => (props.isMobile ? "100%" : "auto")};
+  display: inline-block;
+  position: relative;
+
+  .react-datepicker-wrapper {
+    width: ${(props) => (props.isMobile ? "100%" : "auto")};
+  }
+
+  .react-datepicker__input-container input {
+    width: ${(props) => (props.isMobile ? "100%" : "140px")};
+    padding: ${(props) => (props.isMobile ? "12px 14px" : "8px 12px")};
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    font-size: ${(props) => (props.isMobile ? "16px" : "0.85rem")};
+    transition: all 0.3s ease;
+    background: var(--bg-primary);
+    color: var(--text-main);
+    font-weight: 500;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: var(--text-light);
+      font-size: ${(props) => (props.isMobile ? "14px" : "inherit")};
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary-accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      background: var(--bg-secondary);
+    }
+
+    &:hover {
+      border-color: var(--primary-accent);
+    }
+  }
+
+  .react-datepicker-popper {
+    z-index: 1000 !important;
+  }
+
+  .react-datepicker {
+    z-index: 1000 !important;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .react-datepicker__header {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+  }
+
+  .react-datepicker__day--selected {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white;
   }
 `;
 
@@ -906,11 +969,15 @@ const NoDataMessage = styled.p`
 `;
 
 const TaskDeadline = () => {
+  const today = new Date();
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(today.getDate() - 6);
+
   const [overdueCards, setOverdueCards] = useState([]);
   const [filteredCards, setFilteredCards] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(oneWeekAgo);
+  const [toDate, setToDate] = useState(today);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const [isMobileView, setIsMobileView] = useState(isMobile());
@@ -990,15 +1057,23 @@ const TaskDeadline = () => {
     }
 
     if (fromDate) {
-      filtered = filtered.filter(
-        (card) => new Date(card.enddate) >= new Date(fromDate)
-      );
+      const fromDt = new Date(fromDate);
+      fromDt.setHours(0, 0, 0, 0);
+      filtered = filtered.filter((card) => {
+        if (!card.enddate) return false;
+        const cardDt = new Date(card.enddate);
+        return cardDt >= fromDt;
+      });
     }
 
     if (toDate) {
-      filtered = filtered.filter(
-        (card) => new Date(card.enddate) <= new Date(toDate)
-      );
+      const toDt = new Date(toDate);
+      toDt.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((card) => {
+        if (!card.enddate) return false;
+        const cardDt = new Date(card.enddate);
+        return cardDt <= toDt;
+      });
     }
 
     setFilteredCards(filtered);
@@ -1006,8 +1081,11 @@ const TaskDeadline = () => {
 
   const handleClear = () => {
     setSearchQuery("");
-    setFromDate("");
-    setToDate("");
+    const newTo = new Date();
+    const newFrom = new Date();
+    newFrom.setDate(newTo.getDate() - 6);
+    setFromDate(newFrom);
+    setToDate(newTo);
     setSelectedBoards([]);
     toast.info("Filters cleared", { 
       autoClose: 1500,
@@ -1040,12 +1118,28 @@ const TaskDeadline = () => {
     setSelectedCard(null);
   };
 
-  const formatDate = (dateString) =>
-    new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    try {
+      if (typeof dateString === "string") {
+        const trimmed = dateString.trim();
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+        const parts = trimmed.split("T")[0].split("-");
+        if (parts.length === 3 && parts[0].length === 4) {
+          const [year, month, day] = parts;
+          return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+        }
+      }
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "—";
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      return "—";
+    }
+  };
 
   const handlePrint = () => {
     const printWindow = window.open("", "_blank");
@@ -1234,23 +1328,27 @@ const TaskDeadline = () => {
         </BoardFilterWrapper>
 
         <DateFilterWrapper isMobile={isMobileView}>
-          <DateFilter
-            isMobile={isMobileView}
-            type="date"
-            placeholder="From Date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            title="From Date"
-          />
+          <DatePickerWrapper isMobile={isMobileView}>
+            <DatePicker
+              selected={fromDate}
+              onChange={(date) => setFromDate(date)}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="From Date"
+              withPortal={isMobileView}
+              portalId="task-deadline-datepicker-portal"
+            />
+          </DatePickerWrapper>
 
-          <DateFilter
-            isMobile={isMobileView}
-            type="date"
-            placeholder="To Date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            title="To Date"
-          />
+          <DatePickerWrapper isMobile={isMobileView}>
+            <DatePicker
+              selected={toDate}
+              onChange={(date) => setToDate(date)}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="To Date"
+              withPortal={isMobileView}
+              portalId="task-deadline-datepicker-portal"
+            />
+          </DatePickerWrapper>
         </DateFilterWrapper>
 
         <ClearButton isMobile={isMobileView} onClick={handleClear}>

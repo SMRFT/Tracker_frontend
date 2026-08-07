@@ -20,11 +20,13 @@ const ModalOverlay = styled(motion.div)`
 `
 
 const ModalContent = styled(motion.div)`
-  background: white;
+  background: var(--bg-secondary);
+  color: var(--text-main);
   padding: 28px;
   border-radius: 12px;
   width: 400px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-subtle);
 `
 
 const ModalHeader = styled.div`
@@ -59,12 +61,12 @@ const ModalDescription = styled.p`
   margin-bottom: 24px;
   font-size: 15px;
   line-height: 1.6;
-  color: #7e88c3;
+  color: var(--text-muted);
 `
 
 const BoardName = styled.span`
   font-weight: 600;
-  color: #333;
+  color: var(--text-main);
 `
 
 const ButtonContainer = styled.div`

@@ -832,17 +832,13 @@ export default function DeletedCards() {
 
   const setDefaultDates = () => {
     const today = new Date();
-    
-    // Set to date as today
-    const end = today.toISOString().slice(0, 10);
-    
-    // Set from date as 30 days ago
-    const start = new Date(today);
-    start.setDate(start.getDate() - 30);
-    const startStr = start.toISOString().slice(0, 10);
-    
-    setFromDate(startStr);
-    setToDate(end);
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${year}-${month}-${day}`;
+
+    setFromDate(todayStr);
+    setToDate(todayStr);
   };
 
   const loadDeletedCards = useCallback(async () => {
@@ -959,10 +955,21 @@ export default function DeletedCards() {
   const formatDate = (dateString) => {
     if (!dateString) return "—";
     try {
+      if (typeof dateString === "string") {
+        const trimmed = dateString.trim();
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+        const parts = trimmed.split("T")[0].split("-");
+        if (parts.length === 3 && parts[0].length === 4) {
+          const [year, month, day] = parts;
+          return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+        }
+      }
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "—";
-      const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-      return date.toLocaleDateString(undefined, options);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
     } catch (error) {
       return "—";
     }

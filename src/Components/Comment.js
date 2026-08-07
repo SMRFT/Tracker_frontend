@@ -479,6 +479,29 @@ const MemberInitial = styled.div`
   font-weight: bold;
 `;
 
+const formatCommentDate = (dateVal) => {
+  if (!dateVal) return "";
+  try {
+    if (typeof dateVal === "string") {
+      const trimmed = dateVal.trim();
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+      const parts = trimmed.split("T")[0].split("-");
+      if (parts.length === 3 && parts[0].length === 4) {
+        const [year, month, day] = parts;
+        return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+      }
+    }
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return String(dateVal);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (e) {
+    return String(dateVal);
+  }
+};
+
 const Comment = ({ cardId, cardName, boardName, boardId }) => {
   const [comments, setComments] = useState([]);
   const [editingCommentIndex, setEditingCommentIndex] = useState(null);
@@ -563,12 +586,15 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
 
   const canModifyComment = (comment) => {
     const userRole = localStorage.getItem("role");
-    const isAdminOrHOD = userRole === "Admin" || userRole === "HOD";
-    return (
-      isAdminOrHOD ||
-      String(comment.empid) === String(employeeId) ||
-      comment.empname === employeeName
-    );
+    const isAdmin = userRole === "Admin";
+    const currentEmpId = localStorage.getItem("employeeId") || employeeId;
+    const currentEmpName = localStorage.getItem("employeeName") || employeeName;
+
+    const isAuthor =
+      (comment.empid && String(comment.empid) === String(currentEmpId)) ||
+      (comment.empname && currentEmpName && comment.empname.trim().toLowerCase() === currentEmpName.trim().toLowerCase());
+
+    return isAdmin || isAuthor;
   };
 
   const showSuccessToast = (message) => toast.success(message);
@@ -817,11 +843,18 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
   const handleDeleteComment = async () => {
     if (!commentToDelete) return;
     try {
+      const userRole = localStorage.getItem("role");
+      const currentEmpId = localStorage.getItem("employeeId") || employeeId;
+      const currentEmpName = localStorage.getItem("employeeName") || employeeName;
+
       const payload = {
         cardId: String(cardId),
         boardId: String(boardId),
         commentId: commentToDelete.commentId,
         commenttext: commentToDelete.commenttext,
+        userRole,
+        employeeId: currentEmpId,
+        employeeName: currentEmpName,
       };
 
       const result = await apiRequest(
@@ -850,12 +883,19 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
     }
 
     try {
+      const userRole = localStorage.getItem("role");
+      const currentEmpId = localStorage.getItem("employeeId") || employeeId;
+      const currentEmpName = localStorage.getItem("employeeName") || employeeName;
+
       const payload = {
         cardId: String(cardId),
         boardId: String(boardId),
         commentId: comment.commentId,
         originalCommentText: comment.commenttext,
         newCommentText: editCommentText,
+        userRole,
+        employeeId: currentEmpId,
+        employeeName: currentEmpName,
       };
 
       const result = await apiRequest(
@@ -1096,7 +1136,7 @@ const Comment = ({ cardId, cardName, boardName, boardId }) => {
                     <>
                       <div style={{ margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <CommentAuthor>{comment.empname || "Anonymous"}</CommentAuthor>
-                        <CommentDate>{comment.date} at {comment.time}</CommentDate>
+                        <CommentDate>{formatCommentDate(comment.date)} at {comment.time}</CommentDate>
                       </div>
 
                       <CommentText>{renderCommentWithTags(comment.commenttext)}</CommentText>

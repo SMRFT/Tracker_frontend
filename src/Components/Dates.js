@@ -126,6 +126,29 @@ const ModalContainer = styled.div`
 
 // --- MODAL COMPONENT ---
 
+const formatDateDDMMYYYY = (dateVal) => {
+  if (!dateVal) return "";
+  try {
+    if (typeof dateVal === "string") {
+      const trimmed = dateVal.trim();
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+      const parts = trimmed.split("T")[0].split("-");
+      if (parts.length === 3 && parts[0].length === 4) {
+        const [year, month, day] = parts;
+        return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+      }
+    }
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return String(dateVal);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (e) {
+    return String(dateVal);
+  }
+};
+
 const DateModal = ({ closeModal, cardId, boardId, onDateUpdate, existingStartDate }) => {
   // Initialize state with existingStartDate if present
   const [startDate, setStartDate] = useState(existingStartDate || null);
@@ -237,7 +260,7 @@ const DateModal = ({ closeModal, cardId, boardId, onDateUpdate, existingStartDat
           </IconWrapper>
           <DateTextContainer disabled={!!existingStartDate}>
             <span>
-              {startDate ? startDate.toLocaleDateString() : "Not selected"}
+              {startDate ? formatDateDDMMYYYY(startDate) : "Not selected"}
             </span>
           </DateTextContainer>
         </DateWrapper>
@@ -246,6 +269,7 @@ const DateModal = ({ closeModal, cardId, boardId, onDateUpdate, existingStartDat
           <DatePicker
             selected={startDate}
             onChange={handleStartDateChange}
+            dateFormat="dd/MM/yyyy"
             inline
           />
         )}
@@ -258,7 +282,7 @@ const DateModal = ({ closeModal, cardId, boardId, onDateUpdate, existingStartDat
           </IconWrapper>
           <DateTextContainer>
             <span>
-              {endDate ? endDate.toLocaleDateString() : "Not selected"}
+              {endDate ? formatDateDDMMYYYY(endDate) : "Not selected"}
             </span>
           </DateTextContainer>
         </DateWrapper>
@@ -268,6 +292,7 @@ const DateModal = ({ closeModal, cardId, boardId, onDateUpdate, existingStartDat
             selected={endDate}
             onChange={handleEndDateChange}
             minDate={startDate}
+            dateFormat="dd/MM/yyyy"
             inline
           />
         )}
