@@ -19,18 +19,20 @@ const ModalOverlay = styled(motion.div)`
 `;
 
 const ModalContent = styled(motion.div)`
-  background: white;
+  background: var(--bg-secondary);
+  color: var(--text-main);
   padding: 28px;
   border-radius: 12px;
   width: 380px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-subtle);
 `;
 
 const ModalTitle = styled.h2`
   margin-bottom: 24px;
   font-size: 20px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-main);
 `;
 
 const ModalInput = styled.input`
@@ -38,13 +40,21 @@ const ModalInput = styled.input`
   padding: 12px 16px;
   margin-bottom: 24px;
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
+  color: var(--text-main);
   font-size: 16px;
   transition: border 0.2s ease;
+
+  &::placeholder {
+    color: var(--text-light);
+  }
 
   &:focus {
     outline: none;
     border-color: #7c5dfa;
+    background: var(--bg-secondary);
+    color: var(--text-main);
     box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.2);
   }
 `;

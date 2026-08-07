@@ -55,10 +55,27 @@ const isOverdue = (endDate, columnId) => {
   return todayDateOnly > endDateOnly;
 };
 
-const formatCardDate = (dateString) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  return date.toLocaleDateString();
+const formatCardDate = (dateVal) => {
+  if (!dateVal) return "";
+  try {
+    if (typeof dateVal === "string") {
+      const trimmed = dateVal.trim();
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+      const parts = trimmed.split("T")[0].split("-");
+      if (parts.length === 3 && parts[0].length === 4) {
+        const [year, month, day] = parts;
+        return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+      }
+    }
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return String(dateVal);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (e) {
+    return String(dateVal);
+  }
 };
 
 const COLUMN_ACCENT_COLORS = {
@@ -827,9 +844,12 @@ const Card = React.memo(function Card({
   trackerBaseUrl,
   onRequestDelete,
 }) {
-  const [, drag] = useDrag({
+  const [{ isDragging }, drag] = useDrag({
     type: ItemType.CARD,
-    item: { id, index, columnId },
+    item: { id, columnId },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
   });
 
   const overdue = enddate && isOverdue(enddate, columnId);
@@ -839,7 +859,7 @@ const Card = React.memo(function Card({
       ref={drag}
       accentColor={COLUMN_ACCENT_COLORS[columnId]}
       onClick={() => openModal(text, id, columnTitle)}
-      style={{ cursor: "pointer" }}
+      style={{ cursor: "pointer", opacity: isDragging ? 0.4 : 1 }}
     >
       <CardRow>
         <CardBody>
@@ -946,33 +966,11 @@ const Column = React.memo(function Column({
 }) {
   const [, drop] = useDrop({
     accept: ItemType.CARD,
-    hover(item) {
-      if (!item) return;
-      const dragIndex = item.index;
-      const fromColumnId = item.columnId;
-
-      if (fromColumnId !== id) {
-        moveCard(dragIndex, fromColumnId, 0, id);
-        item.columnId = id;
-        item.index = 0;
-      }
-    },
     drop(item) {
-      if (!item) return;
-      const fromIndex = item.index;
-      const fromColumnId = item.columnId;
-
-      if (fromColumnId === id) {
-        const toIndex = cards.findIndex((c) => c.cardId === item.id);
-        if (toIndex !== -1 && toIndex !== fromIndex) {
-          moveCard(fromIndex, fromColumnId, toIndex, id);
-          item.index = toIndex;
-        }
-      } else {
-        const toIndex = cards.length;
-        moveCard(fromIndex, fromColumnId, toIndex, id);
+      if (!item || !item.id) return;
+      if (item.columnId !== id) {
+        moveCard(item.id, item.columnId, id);
         item.columnId = id;
-        item.index = toIndex;
       }
     },
   });
@@ -1147,7 +1145,15 @@ const DragAndDropCards = () => {
 
     // Check members
     const currentMembers = members.length > 0 ? members : (cardMembers[cardId] || selectedCard?.members || []);
-    const hasMembers = Array.isArray(currentMembers) && currentMembers.length > 0;
+    let parsedMembers = currentMembers;
+    if (typeof currentMembers === "string") {
+      try {
+        parsedMembers = JSON.parse(currentMembers);
+      } catch (e) {
+        parsedMembers = [];
+      }
+    }
+    const hasMembers = Array.isArray(parsedMembers) && parsedMembers.length > 0;
 
     // Check dates
     const hasDates = Boolean(
@@ -1158,12 +1164,15 @@ const DragAndDropCards = () => {
     );
 
     // Check description
-    const currentDesc = cardDescriptions[cardId] !== undefined ? cardDescriptions[cardId] : selectedCard?.description;
+    const currentDesc = cardDescriptions[cardId] !== undefined
+      ? cardDescriptions[cardId]
+      : (selectedCard?.description || modalContent.description);
     const hasDescription = Boolean(
       currentDesc &&
       typeof currentDesc === "string" &&
       currentDesc.trim() !== "" &&
-      currentDesc !== "<p><br></p>"
+      currentDesc !== "<p><br></p>" &&
+      currentDesc !== "<p></p>"
     );
 
     return !hasMembers || !hasDates || !hasDescription;
@@ -1315,31 +1324,40 @@ const DragAndDropCards = () => {
     fetchCardsWithMembers(boardId);
   }, [boardId, userRole]);
 
-  const moveCard = useCallback(async (fromIndex, fromColumnId, toIndex, toColumnId) => {
+  const moveCard = useCallback(async (targetCardId, fromColumnId, toColumnId) => {
+    if (fromColumnId === toColumnId) return;
     const updatedColumns = { ...columns };
     if (!updatedColumns[fromColumnId] || !updatedColumns[toColumnId]) {
       console.error("Invalid column IDs:", fromColumnId, toColumnId);
       return;
     }
-    const [movedCard] = updatedColumns[fromColumnId].splice(fromIndex, 1);
-    if (!movedCard) {
-      console.error("Card not found:", { fromIndex, fromColumnId });
+
+    const fromList = [...updatedColumns[fromColumnId]];
+    const fromIndex = fromList.findIndex((c) => String(c.cardId) === String(targetCardId));
+    if (fromIndex === -1) {
+      console.error("Card not found in source column:", { targetCardId, fromColumnId });
       return;
     }
-    updatedColumns[toColumnId].splice(toIndex, 0, movedCard);
+
+    const [movedCard] = fromList.splice(fromIndex, 1);
+    if (!movedCard) return;
+
+    movedCard.columnId = toColumnId;
+    const toList = [...updatedColumns[toColumnId], movedCard];
+
+    updatedColumns[fromColumnId] = fromList;
+    updatedColumns[toColumnId] = toList;
     setColumns(updatedColumns);
 
-    if (fromColumnId !== toColumnId) {
-      const fromTitle = COLUMN_TITLES[fromColumnId] || fromColumnId;
-      const toTitle = COLUMN_TITLES[toColumnId] || toColumnId;
-      const accentColor = COLUMN_ACCENT_COLORS[toColumnId] || "var(--primary-accent)";
-      toast.info(`"${movedCard.cardName}" moved from ${fromTitle} to ${toTitle}`, {
-        autoClose: 2000,
-        style: { borderLeft: `4px solid ${accentColor}` },
-        progressStyle: { background: accentColor },
-        icon: <span style={{ color: accentColor, fontSize: "1.1rem" }}>●</span>,
-      });
-    }
+    const fromTitle = COLUMN_TITLES[fromColumnId] || fromColumnId;
+    const toTitle = COLUMN_TITLES[toColumnId] || toColumnId;
+    const accentColor = COLUMN_ACCENT_COLORS[toColumnId] || "var(--primary-accent)";
+    toast.info(`"${movedCard.cardName}" moved from ${fromTitle} to ${toTitle}`, {
+      autoClose: 2000,
+      style: { borderLeft: `4px solid ${accentColor}` },
+      progressStyle: { background: accentColor },
+      icon: <span style={{ color: accentColor, fontSize: "1.1rem" }}>●</span>,
+    });
 
     const userRole = localStorage.getItem("role");
     try {
@@ -1362,7 +1380,7 @@ const DragAndDropCards = () => {
       toast.error("Failed to move card.");
       fetchCardsWithMembers(boardId);
     }
-  }, [columns, boardId, Trackerbaseurl]);
+  }, [columns, boardId, Trackerbaseurl, fetchCardsWithMembers]);
 
   const addCard = useCallback(async (columnId, text, priority = "Low") => {
     const newCard = {
@@ -1414,6 +1432,12 @@ const DragAndDropCards = () => {
 
     setCardName(cardName || "No Card Name");
     setCardId(cardId || null);
+    if (selectedCard?.description) {
+      setCardDescriptions((prev) => ({
+        ...prev,
+        [cardId]: selectedCard.description,
+      }));
+    }
     const contentObj = {
       cardName: cardName || "No Card Name",
       cardId: cardId || null,
@@ -2045,6 +2069,12 @@ const DragAndDropCards = () => {
                       boardName={boardName}
                       cardId={cardId}
                       cardName={cardName}
+                      onDescriptionUpdate={(newDesc) => {
+                        setCardDescriptions((prev) => ({
+                          ...prev,
+                          [cardId]: newDesc,
+                        }));
+                      }}
                     />
                   </ModalLeft>
 
@@ -2086,7 +2116,7 @@ const DragAndDropCards = () => {
                           <strong>Start:</strong>
                           <span style={{ fontWeight: 600 }}>
                             {modalContent.startdate
-                              ? modalContent.startdate.toLocaleDateString()
+                              ? formatCardDate(modalContent.startdate)
                               : "—"}
                           </span>
                         </DateRow>
@@ -2099,7 +2129,7 @@ const DragAndDropCards = () => {
                             }}
                           >
                             {modalContent.enddate
-                              ? modalContent.enddate.toLocaleDateString()
+                              ? formatCardDate(modalContent.enddate)
                               : "—"}
                           </span>
                         </DateRow>
@@ -2117,7 +2147,7 @@ const DragAndDropCards = () => {
                         <DetailLabel>Created At</DetailLabel>
                         <DetailValue style={{ fontWeight: 500 }}>
                           {modalContent.created_date
-                            ? new Date(modalContent.created_date).toLocaleDateString()
+                            ? formatCardDate(modalContent.created_date)
                             : "—"}
                         </DetailValue>
                       </DetailGroup>

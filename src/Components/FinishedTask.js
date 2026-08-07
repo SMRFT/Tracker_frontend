@@ -1013,7 +1013,7 @@ const CommentTime = styled.div`
 const FinishedTask = () => {
   const today = new Date();
   const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(today.getDate() - 7);
+  oneWeekAgo.setDate(today.getDate() - 6);
 
   const [from, setFrom] = useState(oneWeekAgo);
   const [to, setTo] = useState(today);
@@ -1106,21 +1106,35 @@ const FinishedTask = () => {
     setFilteredCards(filtered);
   }, [searchTerm, selectedBoards, finishedCards]);
 
-  const formatDate = (dateString) =>
-    dateString
-      ? new Date(dateString).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })
-      : "—";
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    try {
+      if (typeof dateString === "string") {
+        const trimmed = dateString.trim();
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+        const parts = trimmed.split("T")[0].split("-");
+        if (parts.length === 3 && parts[0].length === 4) {
+          const [year, month, day] = parts;
+          return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+        }
+      }
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "—";
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      return "—";
+    }
+  };
 
   const handleClear = () => {
     setSearchTerm("");
     setSelectedBoards([]);
     const newFrom = new Date();
     const newTo = new Date();
-    newFrom.setDate(newTo.getDate() - 7);
+    newFrom.setDate(newTo.getDate() - 6);
     setFrom(newFrom);
     setTo(newTo);
     toast.info("Filters cleared", { autoClose: 1500 });
@@ -1363,7 +1377,7 @@ const FinishedTask = () => {
             <DatePicker
               selected={from}
               onChange={(date) => setFrom(date)}
-              dateFormat="yyyy-MM-dd"
+              dateFormat="dd/MM/yyyy"
               placeholderText="Select start date"
               maxDate={new Date()}
               withPortal={isMobileView}
@@ -1375,7 +1389,7 @@ const FinishedTask = () => {
             <DatePicker
               selected={to}
               onChange={(date) => setTo(date)}
-              dateFormat="yyyy-MM-dd"
+              dateFormat="dd/MM/yyyy"
               placeholderText="Select end date"
               maxDate={new Date()}
               withPortal={isMobileView}

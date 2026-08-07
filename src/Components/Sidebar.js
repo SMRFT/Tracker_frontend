@@ -415,6 +415,12 @@ const BoardRow = React.memo(function BoardRow({
   onDelete,
 }) {
   const { boardId, boardName, boardColor } = board;
+  const userRole = localStorage.getItem("role");
+  const currentEmpId = localStorage.getItem("employeeId");
+  const canModify =
+    userRole === "Admin" ||
+    String(board.employeeId) === String(currentEmpId) ||
+    String(board.created_by) === String(currentEmpId);
 
   return (
     <BoardItemContainer
@@ -427,35 +433,37 @@ const BoardRow = React.memo(function BoardRow({
         <ColorBox bgColor={boardColor} />
         <BoardName isCollapsed={isCollapsed}>{boardName}</BoardName>
       </BoardDetails>
-      <div className={`menu-${index}`}>
-        <MenuIcon
-          isCollapsed={isCollapsed}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleMenu(index);
-          }}
-        >
-          <FontAwesomeIcon icon={faEllipsisV} />
-          <MenuDropdown isOpen={isMenuOpen}>
-            <MenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit({ boardId, boardName, boardColor }, index);
-              }}
-            >
-              Edit
-            </MenuItem>
-            <MenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete({ boardId, boardName });
-              }}
-            >
-              Delete
-            </MenuItem>
-          </MenuDropdown>
-        </MenuIcon>
-      </div>
+      {canModify && (
+        <div className={`menu-${index}`}>
+          <MenuIcon
+            isCollapsed={isCollapsed}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleMenu(index);
+            }}
+          >
+            <FontAwesomeIcon icon={faEllipsisV} />
+            <MenuDropdown isOpen={isMenuOpen}>
+              <MenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit({ boardId, boardName, boardColor }, index);
+                }}
+              >
+                Edit
+              </MenuItem>
+              <MenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete({ boardId, boardName });
+                }}
+              >
+                Delete
+              </MenuItem>
+            </MenuDropdown>
+          </MenuIcon>
+        </div>
+      )}
     </BoardItemContainer>
   );
 });
@@ -551,6 +559,7 @@ const Sidebar = ({ boards, refreshBoards, isCollapsed, setIsCollapsed }) => {
         {
           boardName: newTitle,
           boardColor: selectedBoard.boardColor,
+          userRole: role,
         }
       );
 
@@ -593,6 +602,7 @@ const Sidebar = ({ boards, refreshBoards, isCollapsed, setIsCollapsed }) => {
         "PUT",
         {
           is_active: false,
+          userRole: role,
         }
       );
 
@@ -602,6 +612,9 @@ const Sidebar = ({ boards, refreshBoards, isCollapsed, setIsCollapsed }) => {
         toast.success("Board deleted successfully!", {
           position: isMobileView ? "top-center" : "top-right",
         });
+        if (location.state?.boardId === selectedBoard?.boardId || location.pathname === "/Todolist") {
+          navigate("/Board");
+        }
       } else {
         console.error("Failed to delete board:", result.error);
         toast.error(result.error || "An error occurred while deleting the board", {

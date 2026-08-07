@@ -314,10 +314,15 @@ const DialogInput = styled.input`
   background: var(--bg-primary);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
+  &::placeholder {
+    color: var(--text-light);
+  }
+
   &:focus {
     outline: none;
     border-color: var(--primary-accent);
-    background: white;
+    background: var(--bg-secondary);
+    color: var(--text-main);
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
   }
 `;
